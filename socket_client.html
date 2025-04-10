@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Socket.io + REST Example</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  </head>
+  <body>
+    <script>
+      const socket = io("http://localhost:3000");
+
+      // Listen for server events
+      socket.on("newPostsAvailable", (data) => {
+        console.log("Data:", data);
+        // Reload the posts feed page
+      });
+      socket.on("chatMessage", (data) => {
+        console.log("Message:", data);
+      });
+
+      // Emit an event
+      socket.emit('chatMessage', 'Hello from client!');
+    </script>
+  </body>
+</html>
