@@ -5,7 +5,6 @@ import {
   PutObjectCommandInput,
   DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
-// import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { getSignedUrl } from "@aws-sdk/cloudfront-signer";
 import {
   CloudFrontClient,
@@ -62,16 +61,7 @@ export default class AwsS3Service {
     return filePath;
   };
 
-  // static readonly getDownloadUrl = async (fileName: string, category: AwsS3FileCategory): Promise<string> => {
-  //   const params = {
-  //     Bucket: process.env.AWS_S3_BUCKET_NAME!,
-  //     Key: `${category}/${fileName}`,
-  //   };
-  //   const command = new GetObjectCommand(params);
-  //   return await getSignedUrl(this.#s3Client, command, { expiresIn: IMAGE_EXPIRY_TIME_IN_SECONDS });
-  // };
-
-  static readonly getCloudfrontDownloadUrl = (filePath: string): string => {
+  static readonly getCloudFrontSignedUrl = (filePath: string): string => {
     const privateKey = fs.readFileSync(
       process.env.CLOUDFRONT_PRIVATE_KEY_FILE_NAME!,
       "utf8"

@@ -11,17 +11,6 @@ export interface SuccessResponseHandlerParams {
   data?: Record<string, any>;
 }
 
-// export const requestHandler = async (
-//   next: NextFunction,
-//   callback: () => Promise<void>
-// ): Promise<void> => {
-//   try {
-//     await callback();
-//   } catch (error) {
-//     next(error);
-//   }
-// };
-
 export const successResponseHandler = ({
   res,
   status,

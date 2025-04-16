@@ -1,6 +1,8 @@
 import { Server } from "http";
 import { Server as SocketIO } from "socket.io";
 
+import logger from "./utils/logger.js";
+
 export default class SocketManager {
   static #io: SocketIO;
 
@@ -22,15 +24,15 @@ export default class SocketManager {
     });
 
     this.#io.on("connection", (socket) => {
-      console.log(`Socket connected: ${socket.id}`);
+      logger.info(`Socket connected: ${socket.id}`);
 
       // Receive data from client
       socket.on("chatMessage", (msg) => {
-        console.log("Received chatMessage:", msg);
+        logger.info("Received chatMessage:", msg);
       });
 
       socket.on("disconnect", () => {
-        console.log(`Socket disconnected: ${socket.id}`);
+        logger.info(`Socket disconnected: ${socket.id}`);
       });
     });
   };

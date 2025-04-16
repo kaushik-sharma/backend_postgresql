@@ -1,24 +1,18 @@
-import mongoose, { ClientSession } from "mongoose";
+import { Transaction } from "sequelize";
+import { getSequelize } from "../services/postgres_service.js";
 
-export const performTransaction = async <T>(task: (session: ClientSession) => Promise<T>): Promise<T> => {
-  const session = await mongoose.startSession();
-  let result: T | null = null;
-  let error: any | null = null;
+export const performTransaction = async <T>(
+  task: (transaction: Transaction) => Promise<T>
+): Promise<T> => {
+  const sequelize = getSequelize();
+  const transaction = await sequelize.transaction();
 
   try {
-    session.startTransaction();
-    result = await task(session);
-    await session.commitTransaction();    
-  } catch (err) {
-    error = err;
-    await session.abortTransaction();
-  } finally {
-    await session.endSession();
+    const result = await task(transaction);
+    await transaction.commit();
+    return result;
+  } catch (error: any) {
+    await transaction.rollback();
+    throw error;
   }
-
-  if (result === null) {
-    throw error!;
-  }
-
-  return result!;
 };

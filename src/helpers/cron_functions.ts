@@ -1,17 +1,21 @@
 import { deleteCustomProfileImage } from "../controllers/profile_controller.js";
 import ProfileDatasource from "../datasources/profile_datasource.js";
-import { UserDeletionRequestType } from "../models/profile/user_deletion_request_model.js";
 import logger from "../utils/logger.js";
+import { performTransaction } from "./transaction_helper.js";
 
 export const deleteScheduledUserAccounts = async () => {
-  const users: UserDeletionRequestType[] =
-    await ProfileDatasource.getDueUserDeletions();
+  const dueRequests = await ProfileDatasource.getDueUserDeletions();
 
-  for (const user of users) {
-    await deleteCustomProfileImage(user.userId.toString());
-    await ProfileDatasource.deleteAccount(user.userId.toString());
-    await ProfileDatasource.removeDeletionRequest(user.userId.toString());
+  for (const request of dueRequests) {
+    await deleteCustomProfileImage(request.userId);
+    await performTransaction<void>(async (transaction) => {
+      await ProfileDatasource.deleteAccount(request.userId, transaction);
+      await ProfileDatasource.removeDeletionRequest(
+        request.userId,
+        transaction
+      );
+    });
   }
 
-  logger.info(`Deleted ${users.length} scheduled user deletions.`);
+  logger.info(`Deleted ${dueRequests.length} scheduled user deletions.`);
 };

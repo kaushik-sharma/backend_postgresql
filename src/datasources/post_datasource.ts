@@ -1,87 +1,65 @@
-import { ObjectId } from "mongodb";
-
-import {
-  CommentModel,
-  CommentType,
-  CommentViewModel,
-  CommentViewType,
-} from "../models/post/comment_model.js";
-import {
-  PostModel,
-  PostType,
-  PostFeedModel,
-  PostFeedType,
-} from "../models/post/post_model.js";
-import {
-  EmotionType,
-  ReactionModel,
-  ReactionType,
-} from "../models/post/reaction_model.js";
-import AuthDatasource from "./auth_datasource.js";
-import {
-  COMMENTS_PAGE_SIZE,
-  DEFAULT_PROFILE_IMAGE_PATH,
-  POSTS_PAGE_SIZE,
-} from "../constants/values.js";
-import AwsS3Service from "../services/aws_s3_service.js";
-import { validateModel } from "../helpers/validation_helpers.js";
+import { FindOptions, Includeable, literal } from "sequelize";
 import { EntityStatus } from "../constants/enums.js";
+import { COMMENTS_PAGE_SIZE, POSTS_PAGE_SIZE } from "../constants/values.js";
+import { UserModel } from "../models/auth/user_model.js";
+import { CommentModel } from "../models/post/comment_model.js";
+import { PostModel } from "../models/post/post_model.js";
+import { EmotionType, ReactionModel } from "../models/post/reaction_model.js";
+import AuthDatasource from "./auth_datasource.js";
 
 export default class PostDatasource {
-  static readonly createPost = async (postData: PostType): Promise<void> => {
-    const post = new PostModel(postData);
+  static readonly createPost = async (post: PostModel): Promise<void> => {
     await post.save();
   };
 
   static readonly postExists = async (id: string): Promise<boolean> => {
-    const result = await PostModel.findOne(
-      { _id: id, status: EntityStatus.active },
-      { userId: true }
-    );
-    if (result === null) return false;
+    const post = await PostModel.findOne({
+      where: {
+        id: id,
+        status: EntityStatus.active,
+      },
+      attributes: ["userId"],
+      raw: true,
+    });
 
-    const isUserActive = await AuthDatasource.isUserActive(
-      result!.userId.toString()
-    );
+    if (post === null) return false;
+
+    const isUserActive = await AuthDatasource.isUserActive(post.userId);
     if (!isUserActive) return false;
 
     return true;
   };
 
   static readonly createReaction = async (
-    reactionData: ReactionType
+    reaction: ReactionModel
   ): Promise<void> => {
-    const reaction = new ReactionModel(reactionData);
-
-    /// Check if the user already has a reaction for that post
-    const prevReaction = await ReactionModel.findOne(
-      {
+    // Check if the user already has a reaction for that post
+    const prevReaction = await ReactionModel.findOne({
+      where: {
         postId: reaction.postId,
         userId: reaction.userId,
       },
-      { emotionType: true }
-    );
+      raw: true,
+    });
 
-    /// If it is a new reaction, then save it
+    // If it is a new reaction, then save it
     if (prevReaction === null) {
       await reaction.save();
-      return;
-    }
-
-    if (reaction.emotionType === prevReaction.emotionType) {
-      /// If same reaction as before then delete it
-      await ReactionModel.deleteOne({
-        postId: reaction.postId,
-        userId: reaction.userId,
-      });
-    } else {
-      /// Else update it to the new reaction
-      await ReactionModel.updateOne(
-        {
+    } else if (reaction.emotionType === prevReaction.emotionType) {
+      // If same reaction as before then delete it
+      await ReactionModel.destroy({
+        where: {
           postId: reaction.postId,
           userId: reaction.userId,
         },
-        { $set: { emotionType: reaction.emotionType } }
+      });
+    } else {
+      // Else update it to the new reaction
+      await ReactionModel.update(
+        {
+          emotionType: reaction.emotionType,
+        },
+        { where: { postId: reaction.postId, userId: reaction.userId } }
       );
     }
   };
@@ -92,7 +70,7 @@ export default class PostDatasource {
     postId?: string
   ): Promise<boolean> => {
     const query: Record<string, any> = {
-      _id: commentId,
+      id: commentId,
       status: EntityStatus.active,
     };
     if (level !== undefined) {
@@ -102,499 +80,305 @@ export default class PostDatasource {
       query.postId = postId;
     }
 
-    const result = await CommentModel.findOne(query, { userId: true });
-    if (result === null) return false;
+    const comment = await CommentModel.findOne({
+      where: query,
+      attributes: ["userId"],
+      raw: true,
+    });
+    if (comment === null) return false;
 
-    const isUserActive = await AuthDatasource.isUserActive(
-      result!.userId.toString()
-    );
+    const isUserActive = await AuthDatasource.isUserActive(comment.userId);
     if (!isUserActive) return false;
 
     return true;
   };
 
-  static readonly createComment = async (
-    commentData: CommentType
-  ): Promise<void> => {
-    const comment = new CommentModel(commentData);
-    await comment.save();
-  };
-
-  static readonly getCommentsByPostId = async (
-    postId: string
-  ): Promise<CommentViewType[]> => {
-    const isActiveCondition = {
-      $and: [
-        { $eq: ["$status", EntityStatus.active] },
-        { $eq: ["$user.status", EntityStatus.active] },
-      ],
-    };
-
-    const getEffectiveStatus = (
-      commentStatus: EntityStatus,
-      userStatus: EntityStatus
-    ): EntityStatus =>
-      userStatus !== EntityStatus.active ? userStatus : commentStatus;
-
-    const docs = await CommentModel.aggregate([
-      { $match: { postId: new ObjectId(postId) } },
-      { $sort: { createdAt: -1 } },
-      {
-        $lookup: {
-          from: "users",
-          localField: "userId",
-          foreignField: "_id",
-          as: "user",
-        },
-      },
-      // Unwind the user array to flatten the structure
-      { $unwind: "$user" },
-      {
-        $project: {
-          firstName: {
-            $cond: {
-              if: isActiveCondition,
-              then: "$user.firstName",
-              else: null,
-            },
-          },
-          lastName: {
-            $cond: {
-              if: isActiveCondition,
-              then: "$user.lastName",
-              else: null,
-            },
-          },
-          profileImagePath: {
-            $cond: {
-              if: isActiveCondition,
-              then: "$user.profileImagePath",
-              else: null,
-            },
-          },
-          userStatus: "$user.status",
-          text: {
-            $cond: {
-              if: isActiveCondition,
-              then: "$text",
-              else: null,
-            },
-          },
-          createdAt: {
-            $cond: {
-              if: isActiveCondition,
-              then: "$createdAt",
-              else: null,
-            },
-          },
-          parentCommentId: true,
-          status: true,
-        },
-      },
-    ]);
-
-    const comments: CommentViewType[] = [];
-    for (const doc of docs) {
-      let profileImageUrl: string | null = null;
-      if (
-        doc.status === EntityStatus.active &&
-        doc.userStatus === EntityStatus.active
-      ) {
-        profileImageUrl = AwsS3Service.getCloudfrontDownloadUrl(
-          doc.profileImagePath ?? DEFAULT_PROFILE_IMAGE_PATH
-        );
-      }
-      const status = getEffectiveStatus(doc.status, doc.userStatus);
-      const data: Record<string, any> = {
-        ...doc,
-        profileImageUrl: profileImageUrl,
-        status: status,
-      };
-      const comment = new CommentViewModel(data);
-      validateModel(comment);
-      comments.push(comment);
-    }
-
-    return comments;
+  static readonly createComment = async (comment: CommentModel): Promise<string> => {
+    const result = await comment.save();
+    return result.id;
   };
 
   static readonly getPostUserId = async (postId: string): Promise<string> => {
-    const result = await PostModel.findOne(
-      {
-        _id: postId,
-        status: EntityStatus.active,
-      },
-      {
-        userId: true,
-      }
-    );
-    return result!.userId.toString();
+    const post = await PostModel.findByPk(postId, {
+      attributes: ["userId"],
+      raw: true,
+    });
+    return post!.userId;
   };
 
   static readonly getPostImagePath = async (
     postId: string
   ): Promise<string | null> => {
-    const result = await PostModel.findOne(
-      {
-        _id: postId,
-        status: EntityStatus.active,
-      },
-      {
-        _id: false,
-        imagePath: true,
-      }
-    ).lean();
-    return (result as Record<string, any>)["imagePath"]!;
+    const post = await PostModel.findByPk(postId, {
+      attributes: ["imagePath"],
+      raw: true,
+    });
+    return post!.imagePath;
   };
 
   static readonly deletePost = async (
     postId: string,
     userId: string
   ): Promise<void> => {
-    await PostModel.updateOne(
+    await PostModel.update(
       {
-        _id: postId,
-        userId: userId,
+        status: EntityStatus.deleted,
       },
-      { $set: { status: EntityStatus.deleted } }
+      {
+        where: {
+          id: postId,
+          userId: userId,
+        },
+      }
     );
   };
 
   static readonly getCommentUserId = async (
     commentId: string
   ): Promise<string> => {
-    const result = await CommentModel.findOne(
-      { _id: commentId, status: EntityStatus.active },
-      { userId: true }
-    );
-    return result!.userId.toString();
+    const comment = await CommentModel.findByPk(commentId, {
+      attributes: ["userId"],
+      raw: true,
+    });
+    return comment!.userId;
   };
 
   static readonly deleteComment = async (
     commentId: string,
     userId: string
   ): Promise<void> => {
-    await CommentModel.updateOne(
+    await CommentModel.update(
       {
-        _id: commentId,
-        userId: userId,
+        status: EntityStatus.deleted,
       },
       {
-        $set: { status: EntityStatus.deleted },
+        where: {
+          id: commentId,
+          userId: userId,
+        },
       }
     );
   };
 
-  static readonly #postsAggregatePipeline = async (
-    page: number,
-    userId?: string
-  ): Promise<PostFeedType[]> => {
-    const matchStage: Record<string, any> = { status: EntityStatus.active };
-
-    if (userId !== undefined) {
-      matchStage.userId = new ObjectId(userId!);
-    }
-
-    const postFeedAggregationPipeline = [
-      // Join reactions to calculate like and dislike counts
-      {
-        $lookup: {
-          from: "reactions",
-          let: { postId: "$_id" },
-          pipeline: [
-            { $match: { $expr: { $eq: ["$postId", "$$postId"] } } },
-            { $group: { _id: "$emotionType", count: { $sum: 1 } } },
-          ],
-          as: "reactionCounts",
-        },
-      },
-      {
-        $addFields: {
-          likes: {
-            $ifNull: [
-              {
-                $arrayElemAt: [
-                  {
-                    $filter: {
-                      input: "$reactionCounts",
-                      as: "r",
-                      cond: { $eq: ["$$r._id", EmotionType.like] },
-                    },
-                  },
-                  0,
-                ],
-              },
-              { count: 0 },
-            ],
-          },
-          dislikes: {
-            $ifNull: [
-              {
-                $arrayElemAt: [
-                  {
-                    $filter: {
-                      input: "$reactionCounts",
-                      as: "r",
-                      cond: { $eq: ["$$r._id", EmotionType.dislike] },
-                    },
-                  },
-                  0,
-                ],
-              },
-              { count: 0 },
-            ],
-          },
-        },
-      },
-      // Join comments to count them directly
-      {
-        $lookup: {
-          from: "comments",
-          let: { postId: "$_id" },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $and: [{ $eq: ["$postId", "$$postId"] }],
-                },
-              },
-            },
-            {
-              $match: {
-                $expr: {
-                  $and: [{ $eq: ["$status", EntityStatus.active] }],
-                },
-              },
-            },
-            { $count: "commentCount" },
-          ],
-          as: "comments",
-        },
-      },
-      {
-        $addFields: {
-          commentCount: {
-            $ifNull: [{ $arrayElemAt: ["$comments.commentCount", 0] }, 0],
-          },
-        },
-      },
-      // Join users to get author details
-      {
-        $lookup: {
-          from: "users",
-          localField: "userId",
-          foreignField: "_id",
-          pipeline: [
-            {
-              $project: {
-                _id: 1,
-                firstName: 1,
-                lastName: 1,
-                profileImagePath: 1,
-                status: 1,
-              },
-            },
-          ],
+  static readonly #getComments = async (
+    filterQuery: Record<string, any>,
+    offset?: number
+  ): Promise<CommentModel[]> => {
+    const options: FindOptions = {
+      where: filterQuery,
+      include: [
+        {
+          model: UserModel,
           as: "user",
-        },
-      },
-      {
-        $addFields: {
-          user: {
-            $ifNull: [{ $arrayElemAt: ["$user", 0] }, {}],
-          },
-        },
-      },
-      // Filter out posts where the user's status is not ACTIVE
-      {
-        $match: {
-          "user.status": EntityStatus.active,
-        },
-      },
-      // =============== This step is only allowed for paid Atlas tiers ===============
-      // Add a field for the image download URL
-      // {
-      //   $addFields: {
-      //     imageUrl: {
-      //       $cond: {
-      //         if: { $not: ["$imageName"] },
-      //         then: null,
-      //         else: {
-      //           $function: {
-      //             body: "async function(name) { return await AwsS3Service.getDownloadUrl(name); }",
-      //             args: ["$imageName"],
-      //             lang: "js",
-      //           },
-      //         },
-      //       },
-      //     },
-      //   },
-      // },
-    ];
-
-    const docs = await PostModel.aggregate([
-      { $match: matchStage },
-      ...postFeedAggregationPipeline,
-      // Add lookup for reposted post using the same pipeline
-      {
-        $lookup: {
-          from: "posts",
-          localField: "repostedPostId",
-          foreignField: "_id",
-          pipeline: [
-            ...postFeedAggregationPipeline,
-            {
-              $project: {
-                _id: 1,
-                text: 1,
-                imagePath: 1,
-                likeCount: "$likes.count",
-                dislikeCount: "$dislikes.count",
-                commentCount: 1,
-                userId: "$user._id",
-                firstName: "$user.firstName",
-                lastName: "$user.lastName",
-                profileImagePath: "$user.profileImagePath",
-                createdAt: 1,
-              },
-            },
+          attributes: [
+            "id",
+            "firstName",
+            "lastName",
+            "profileImagePath",
+            "status",
           ],
-          as: "repostedPost",
+          required: true,
         },
-      },
-      {
-        $addFields: {
-          repostedPost: {
-            $ifNull: [{ $arrayElemAt: ["$repostedPost", 0] }, null],
-          },
-        },
-      },
-      // Project only the necessary fields
-      {
-        $project: {
-          _id: 1,
-          text: 1,
-          imagePath: 1,
-          likeCount: "$likes.count",
-          dislikeCount: "$dislikes.count",
-          commentCount: 1,
-          firstName: "$user.firstName",
-          lastName: "$user.lastName",
-          profileImagePath: "$user.profileImagePath",
-          createdAt: 1,
-          repostedPost: 1,
-        },
-      },
-      // Add sorting stages
-      { $sort: { createdAt: -1 } },
-      // Add pagination stages
-      { $skip: page * POSTS_PAGE_SIZE },
-      { $limit: POSTS_PAGE_SIZE },
-    ]);
-
-    const posts: PostFeedType[] = [];
-    for (const doc of docs) {
-      const postImageUrl =
-        doc.imagePath !== null
-          ? AwsS3Service.getCloudfrontDownloadUrl(doc.imagePath)
-          : null;
-
-      const profileImageUrl = AwsS3Service.getCloudfrontDownloadUrl(
-        doc.profileImagePath ?? DEFAULT_PROFILE_IMAGE_PATH
-      );
-
-      const repostedPostImageUrl =
-        doc.repostedPost !== null && doc.repostedPost.imagePath !== null
-          ? AwsS3Service.getCloudfrontDownloadUrl(doc.repostedPost.imagePath)
-          : null;
-
-      const repostedPostProfileImageUrl =
-        doc.repostedPost !== null
-          ? AwsS3Service.getCloudfrontDownloadUrl(
-              doc.repostedPost.profileImagePath ?? DEFAULT_PROFILE_IMAGE_PATH
-            )
-          : null;
-
-      const repostedPostData =
-        doc.repostedPost !== null
-          ? {
-              ...doc.repostedPost,
-              imageUrl: repostedPostImageUrl,
-              profileImageUrl: repostedPostProfileImageUrl,
-            }
-          : null;
-
-      const postData = {
-        ...doc,
-        imageUrl: postImageUrl,
-        profileImageUrl: profileImageUrl,
-        repostedPost: repostedPostData,
-      };
-
-      posts.push(new PostFeedModel(postData));
+      ],
+      order: [["createdAt", "DESC"]],
+      raw: true,
+      nest: true,
+    };
+    if (offset !== undefined) {
+      options.offset = offset;
+      options.limit = COMMENTS_PAGE_SIZE;
     }
 
-    return posts;
+    return await CommentModel.findAll(options);
   };
 
-  static readonly getPostsByUserId = async (
-    userId: string,
-    page: number
-  ): Promise<PostFeedType[]> => {
-    return await PostDatasource.#postsAggregatePipeline(page, userId);
+  static readonly getCommentsByPostId = async (
+    postId: string
+  ): Promise<CommentModel[]> => {
+    return await this.#getComments({ postId: postId });
   };
 
   static readonly getCommentsByUserId = async (
     userId: string,
     page: number
-  ): Promise<CommentViewType[]> => {
-    const docs = await CommentModel.aggregate([
-      { $match: { userId: new ObjectId(userId), status: EntityStatus.active } },
-      {
-        $lookup: {
-          from: "users",
-          localField: "userId",
-          foreignField: "_id",
-          as: "user",
-        },
-      },
-      // Unwind the user array to flatten the structure
-      { $unwind: "$user" },
-      {
-        $project: {
-          firstName: "$user.firstName",
-          lastName: "$user.lastName",
-          profileImagePath: "$user.profileImagePath",
-          createdAt: true,
-          text: true,
-          status: true,
-        },
-      },
-      { $sort: { createdAt: -1 } },
-      { $skip: page * COMMENTS_PAGE_SIZE },
-      { $limit: COMMENTS_PAGE_SIZE },
-    ]);
-
-    const comments: CommentViewType[] = [];
-    for (const doc of docs) {
-      const profileImageUrl = AwsS3Service.getCloudfrontDownloadUrl(
-        doc.profileImagePath ?? DEFAULT_PROFILE_IMAGE_PATH
-      );
-      const data = {
-        ...doc,
-        profileImageUrl: profileImageUrl,
-      };
-      const comment = new CommentViewModel(data);
-      validateModel(comment);
-      comments.push(comment);
-    }
-
-    return comments;
+  ): Promise<CommentModel[]> => {
+    const offset = page * COMMENTS_PAGE_SIZE;
+    return await this.#getComments(
+      { userId: userId, status: EntityStatus.active },
+      offset
+    );
   };
 
-  static readonly getPostsFeed = async (
+  static readonly getCommentById = async (
+    commentId: string
+  ): Promise<CommentModel> => {
+    const result = await this.#getComments({
+      id: commentId,
+      status: EntityStatus.active,
+    });
+    if (result.length === 0) {
+      throw new Error("Comment not found");
+    }
+    return result[0];
+  };
+
+  static readonly #getPosts = async (
+    page: number,
+    filterQuery?: Record<string, any>
+  ): Promise<PostModel[]> => {
+    const whereCondition: Record<string, any> = {
+      ...(filterQuery ?? {}),
+      status: EntityStatus.active,
+    };
+
+    const offset = page * POSTS_PAGE_SIZE;
+
+    const include: Includeable[] = [
+      {
+        model: UserModel,
+        as: "user",
+        attributes: [
+          "id",
+          "firstName",
+          "lastName",
+          "profileImagePath",
+          "status",
+        ],
+        where: { status: EntityStatus.active },
+        required: true,
+      },
+    ];
+    if (filterQuery === undefined) {
+      include.push({
+        model: PostModel,
+        as: "repostedPost",
+        attributes: {
+          include: [
+            [
+              // Count likes for this reposted post.
+              literal(`(
+                SELECT CAST(COUNT(*) AS INTEGER) 
+                FROM reactions AS r 
+                INNER JOIN users AS ru ON r."userId" = ru."id"
+                WHERE r."postId" = "repostedPost"."id" 
+                  AND r."emotionType" = '${EmotionType.like}'
+                  AND ru."status" = '${EntityStatus.active}'
+              )`),
+              "likeCount",
+            ],
+            [
+              // Count dislikes for this reposted post.
+              literal(`(
+                SELECT CAST(COUNT(*) AS INTEGER) 
+                FROM reactions AS r 
+                INNER JOIN users AS ru ON r."userId" = ru."id"
+                WHERE r."postId" = "repostedPost"."id" 
+                  AND r."emotionType" = '${EmotionType.dislike}'
+                  AND ru."status" = '${EntityStatus.active}'
+              )`),
+              "dislikeCount",
+            ],
+            [
+              // Count active comments for this reposted post.
+              literal(`(
+                SELECT CAST(COUNT(*) AS INTEGER) 
+                FROM comments AS c
+                INNER JOIN users AS cu ON c."userId" = cu."id"
+                WHERE c."postId" = "repostedPost"."id" 
+                  AND c."status" = '${EntityStatus.active}'
+                  AND cu."status" = '${EntityStatus.active}'
+              )`),
+              "commentCount",
+            ],
+          ],
+        },
+        include: [
+          {
+            model: UserModel,
+            as: "user",
+            attributes: [
+              "id",
+              "firstName",
+              "lastName",
+              "profileImagePath",
+              "status",
+            ],
+            where: { status: EntityStatus.active },
+            required: true,
+          },
+        ],
+        required: false,
+      });
+    }
+
+    const posts = await PostModel.findAll({
+      where: whereCondition,
+      attributes: {
+        include: [
+          [
+            // Count likes for this post.
+            literal(`(
+              SELECT CAST(COUNT(*) AS INTEGER) 
+              FROM reactions AS r 
+              INNER JOIN users AS ru ON r."userId" = ru."id"
+              WHERE r."postId" = "PostModel"."id" 
+                AND r."emotionType" = '${EmotionType.like}'
+                AND ru."status" = '${EntityStatus.active}'
+            )`),
+            "likeCount",
+          ],
+          [
+            // Count dislikes for this post.
+            literal(`(
+              SELECT CAST(COUNT(*) AS INTEGER) 
+              FROM reactions AS r 
+              INNER JOIN users AS ru ON r."userId" = ru."id"
+              WHERE r."postId" = "PostModel"."id" 
+                AND r."emotionType" = '${EmotionType.dislike}'
+                AND ru."status" = '${EntityStatus.active}'
+            )`),
+            "dislikeCount",
+          ],
+          [
+            // Count active comments for this post.
+            literal(`(
+              SELECT CAST(COUNT(*) AS INTEGER) 
+              FROM comments AS c
+              INNER JOIN users AS cu ON c."userId" = cu."id"
+              WHERE c."postId" = "PostModel"."id" 
+                AND c."status" = '${EntityStatus.active}'
+                AND cu."status" = '${EntityStatus.active}'
+            )`),
+            "commentCount",
+          ],
+        ],
+      },
+      include: include,
+      order: [["createdAt", "DESC"]],
+      offset: offset,
+      limit: POSTS_PAGE_SIZE,
+      nest: true,
+    });
+
+    return posts.map((post) => post.toJSON());
+  };
+
+  static readonly getPostsFeed = async (page: number): Promise<PostModel[]> => {
+    return await this.#getPosts(page);
+  };
+
+  static readonly getPostsByUserId = async (
+    userId: string,
     page: number
-  ): Promise<PostFeedType[]> => {
-    return await PostDatasource.#postsAggregatePipeline(page);
+  ): Promise<PostModel[]> => {
+    return await this.#getPosts(page, { userId: userId });
+  };
+
+  static readonly getPostById = async (postId: string): Promise<PostModel> => {
+    const result = await this.#getPosts(0, { id: postId });
+    if (result.length === 0) {
+      throw new Error("Post not found!");
+    }
+    return result[0];
   };
 }

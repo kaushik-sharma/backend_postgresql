@@ -1,75 +1,57 @@
-import mongoose, { InferSchemaType, Schema, Types } from "mongoose";
-import validator from "validator";
+import { DataTypes, Model } from "sequelize";
 
-import Collections from "../../constants/collections.js";
+import { ReportReason } from "../../constants/enums.js";
+import Tables from "../../constants/tables.js";
+import { getSequelize } from "../../services/postgres_service.js";
 
-enum UserReportReason {
-  spam = "SPAM",
-  misleading = "MISLEADING",
-  hatefulContent = "HATEFUL_CONTENT",
+interface ReportUserAttributes {
+  id?: string;
+  reportedUserId: string;
+  userId: string;
+  reason: ReportReason;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
-const reportUserSchema = new Schema(
-  {
-    userId: {
-      type: Types.ObjectId,
-      index: 1,
-      required: true,
-    },
-    reason: {
-      type: String,
-      required: true,
-      trim: true,
-      enum: Object.values(UserReportReason),
-    },
-  },
-  {
-    timestamps: true,
-    versionKey: false,
-  }
-);
+export class ReportUserModel
+  extends Model<ReportUserAttributes>
+  implements ReportUserAttributes
+{
+  public readonly id!: string;
+  public readonly reportedUserId!: string;
+  public readonly userId!: string;
+  public readonly reason!: ReportReason;
+  public readonly createdAt!: Date;
+  public readonly updatedAt!: Date;
+}
 
-export type ReportUserType = InferSchemaType<typeof reportUserSchema>;
-
-export const ReportUserModel = mongoose.model<ReportUserType>(
-  "ReportUserModel",
-  reportUserSchema,
-  Collections.reportedUsers
-);
-
-const reportUserRequestSchema = new Schema(
-  {
-    reportedUserEmail: {
-      type: String,
-      required: true,
-      trim: true,
-      minLength: 1,
-      maxLength: 255,
-      validate: {
-        validator: (value: string) => validator.isEmail(value),
-        message: "Email address is invalid.",
+export const initReportUserModel = () => {
+  ReportUserModel.init(
+    {
+      id: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        primaryKey: true,
+      },
+      reportedUserId: {
+        type: DataTypes.UUID,
+        allowNull: false,
+      },
+      userId: {
+        type: DataTypes.UUID,
+        allowNull: false,
+      },
+      reason: {
+        type: DataTypes.STRING,
+        allowNull: false,
       },
     },
-    reason: {
-      type: String,
-      required: true,
-      trim: true,
-      enum: Object.values(UserReportReason),
-    },
-  },
-  {
-    _id: false,
-    timestamps: false,
-    versionKey: false,
-    autoCreate: false,
-  }
-);
-
-export type ReportUserRequestType = InferSchemaType<
-  typeof reportUserRequestSchema
->;
-
-export const ReportUserRequestModel = mongoose.model<ReportUserRequestType>(
-  "ReportUserRequestModel",
-  reportUserRequestSchema
-);
+    {
+      timestamps: true,
+      tableName: Tables.reportedUsers,
+      modelName: "ReportUserModel",
+      sequelize: getSequelize(),
+      indexes: [{ fields: ["reportedUserId"] }, { fields: ["userId"] }],
+    }
+  );
+};

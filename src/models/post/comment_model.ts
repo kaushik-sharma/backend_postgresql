@@ -1,96 +1,67 @@
-import mongoose, { InferSchemaType, Schema, Types } from "mongoose";
-import Collections from "../../constants/collections.js";
-import { MAX_COMMENT_LEVEL } from "../../constants/values.js";
+import { DataTypes, Model } from "sequelize";
+
 import { EntityStatus } from "../../constants/enums.js";
+import Tables from "../../constants/tables.js";
+import { getSequelize } from "../../services/postgres_service.js";
+import { UserModel } from "../auth/user_model.js";
 
-const commentSchema = new Schema(
-  {
-    postId: { type: Types.ObjectId, index: 1, required: true },
-    userId: { type: Types.ObjectId, index: 1, required: true },
-    parentCommentId: { type: Types.ObjectId },
-    level: {
-      type: Number,
-      required: true,
-      validate: {
-        validator: (value: number) => value >= 0 && value < MAX_COMMENT_LEVEL,
-        message: `Level must be less than ${MAX_COMMENT_LEVEL}.`,
+interface CommentAttributes {
+  id?: string;
+  postId: string;
+  userId: string;
+  parentCommentId: string | null;
+  level: number;
+  text: string;
+  status: EntityStatus;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export class CommentModel
+  extends Model<CommentAttributes>
+  implements CommentAttributes
+{
+  public readonly id!: string;
+  public readonly postId!: string;
+  public readonly userId!: string;
+  public readonly parentCommentId!: string | null;
+  public readonly level!: number;
+  public readonly text!: string;
+  public readonly status!: EntityStatus;
+  public readonly createdAt!: Date;
+  public readonly updatedAt!: Date;
+
+  // Associations
+  public readonly user!: UserModel;
+
+  static associate() {
+    CommentModel.belongsTo(UserModel, { foreignKey: "userId", as: "user" });
+  }
+}
+
+export const initCommentModel = () => {
+  CommentModel.init(
+    {
+      id: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        primaryKey: true,
       },
+      postId: { type: DataTypes.UUID, allowNull: false },
+      userId: { type: DataTypes.UUID, allowNull: false },
+      parentCommentId: { type: DataTypes.UUID, allowNull: true },
+      level: { type: DataTypes.INTEGER, allowNull: false },
+      text: { type: DataTypes.STRING, allowNull: false },
+      status: { type: DataTypes.STRING, allowNull: false },
     },
-    text: {
-      type: String,
-      required: true,
-      trim: true,
-      minLength: 1,
-      maxLength: 255,
-    },
-    status: {
-      type: String,
-      enum: Object.values(EntityStatus),
-    },
-  },
-  {
-    timestamps: true,
-    versionKey: false,
-  }
-);
+    {
+      timestamps: true,
+      tableName: Tables.comments,
+      modelName: "CommentModel",
+      sequelize: getSequelize(),
+      indexes: [{ fields: ["postId"] }, { fields: ["userId"] }],
+    }
+  );
 
-commentSchema.pre<CommentType>("save", function (next) {
-  this.status = EntityStatus.active;
-  next();
-});
-
-export type CommentType = InferSchemaType<typeof commentSchema> & {
-  _id: string;
+  CommentModel.associate();
 };
-
-export const CommentModel = mongoose.model<CommentType>(
-  "CommentModel",
-  commentSchema,
-  Collections.comments
-);
-
-const commentViewSchema = new Schema(
-  {
-    firstName: {
-      type: String,
-      required: false,
-    },
-    lastName: {
-      type: String,
-      required: false,
-    },
-    profileImageUrl: {
-      type: String,
-      required: false,
-    },
-    createdAt: {
-      type: Date,
-      required: false,
-    },
-    parentCommentId: {
-      type: String,
-      required: false,
-    },
-    text: {
-      type: String,
-      required: false,
-    },
-    status: {
-      type: String,
-      required: true,
-      enum: Object.values(EntityStatus),
-    },
-  },
-  {
-    timestamps: false,
-    versionKey: false,
-    autoCreate: false,
-  }
-);
-
-export type CommentViewType = InferSchemaType<typeof commentViewSchema>;
-
-export const CommentViewModel = mongoose.model<CommentViewType>(
-  "CommentViewModel",
-  commentViewSchema
-);

@@ -1,196 +1,146 @@
 import { RequestHandler } from "express";
 
-import {
-  ReportPostModel,
-  ReportPostType,
-} from "../models/moderation/report_post_model.js";
-import { validateModel } from "../helpers/validation_helpers.js";
-import ModerationDatasource from "../datasources/moderation_datasource.js";
-import { successResponseHandler } from "../helpers/custom_handlers.js";
-import {
-  ReportCommentModel,
-  ReportCommentType,
-} from "../models/moderation/report_comment_model.js";
+import { validateModel } from "../helpers/validation_helper.js";
+import { reportSchema, ReportType } from "../validation/moderation_schema.js";
+import { asyncHandler } from "../helpers/async_handler.js";
 import PostDatasource from "../datasources/post_datasource.js";
+import { CustomError } from "../middlewares/error_middlewares.js";
+import ModerationDatasource from "../datasources/moderation_datasource.js";
+import { ReportPostModel } from "../models/moderation/report_post_model.js";
 import {
-  ReportUserModel,
-  ReportUserRequestModel,
-  ReportUserRequestType,
-  ReportUserType,
-} from "../models/moderation/report_user_model.js";
-import AuthDatasource from "../datasources/auth_datasource.js";
-import {
-  POST_BAN_THRESHOLD,
   COMMENT_BAN_THRESHOLD,
+  POST_BAN_THRESHOLD,
   USER_BAN_THRESHOLD,
 } from "../constants/values.js";
-import { asyncHandler } from "../helpers/exception_handlers.js";
-import { CustomError } from "../middlewares/error_middlewares.js";
+import { successResponseHandler } from "../helpers/success_handler.js";
+import { ReportCommentModel } from "../models/moderation/report_comment_model.js";
+import AuthDatasource from "../datasources/auth_datasource.js";
+import { ReportUserModel } from "../models/moderation/report_user_model.js";
+import { performTransaction } from "../helpers/transaction_helper.js";
 
-export const validateReportPostRequest: RequestHandler = (req, res, next) => {
-  const requestBody = {
-    ...req.body,
-    postId: req.params.postId,
+export default class ModerationController {
+  static readonly validateReportRequest: RequestHandler = (req, res, next) => {
+    req.parsedData = validateModel(reportSchema, req.body);
+    next();
   };
-  const reportPostModel = new ReportPostModel(requestBody as ReportPostType);
-  validateModel(reportPostModel);
-  next();
-};
 
-export const reportPost: RequestHandler = asyncHandler(
-  async (req, res, next) => {
-    const userId = req.user!.userId;
+  static readonly reportPost: RequestHandler = asyncHandler(
+    async (req, res, next) => {
+      const userId = req.user!.userId;
 
-    const requestBody = {
-      ...req.body,
-      postId: req.params.postId,
-    };
-    const reportPostModel = new ReportPostModel(requestBody as ReportPostType);
+      const parsedData = req.parsedData! as ReportType;
+      const postId = req.params.postId;
 
-    const postExists: boolean = await PostDatasource.postExists(
-      reportPostModel.postId!.toString()
-    );
-    if (!postExists) {
-      throw new CustomError(404, "Post not found!");
-    }
+      const postExists: boolean = await PostDatasource.postExists(postId);
+      if (!postExists) {
+        throw new CustomError(404, "Post not found!");
+      }
 
-    const postUserId = await PostDatasource.getPostUserId(
-      reportPostModel.postId!.toString()
-    );
-    if (userId === postUserId) {
-      throw new CustomError(403, "Can not report your own post!");
-    }
+      const postUserId = await PostDatasource.getPostUserId(postId);
+      if (userId === postUserId) {
+        throw new CustomError(403, "Can not report your own post!");
+      }
 
-    await ModerationDatasource.reportPost(reportPostModel);
+      const model = new ReportPostModel({
+        postId: postId,
+        userId: userId,
+        reason: parsedData.reason,
+      });
+      await ModerationDatasource.reportPost(model);
 
-    const postReportCount = await ModerationDatasource.postReportCount(
-      reportPostModel.postId!.toString()
-    );
-
-    if (postReportCount >= POST_BAN_THRESHOLD) {
-      await ModerationDatasource.banPost(reportPostModel.postId!.toString());
-    }
-
-    successResponseHandler({
-      res: res,
-      status: 200,
-    });
-  }
-);
-
-export const validateReportCommentRequest: RequestHandler = (
-  req,
-  res,
-  next
-) => {
-  const requestBody = {
-    ...req.body,
-    commentId: req.params.commentId,
-  };
-  const reportCommentModel = new ReportCommentModel(
-    requestBody as ReportCommentType
-  );
-  validateModel(reportCommentModel);
-  next();
-};
-
-export const reportComment: RequestHandler = asyncHandler(
-  async (req, res, next) => {
-    const userId = req.user!.userId;
-
-    const requestBody = {
-      ...req.body,
-      commentId: req.params.commentId,
-    };
-    const reportCommentModel = new ReportCommentModel(
-      requestBody as ReportCommentType
-    );
-
-    const commentExists: boolean = await PostDatasource.commentExists(
-      reportCommentModel.commentId!.toString()
-    );
-    if (!commentExists) {
-      throw new CustomError(404, "Comment not found!");
-    }
-
-    const commentUserId = await PostDatasource.getCommentUserId(
-      reportCommentModel.commentId!.toString()
-    );
-    if (userId === commentUserId) {
-      throw new CustomError(403, "Can not report your own comment!");
-    }
-
-    await ModerationDatasource.reportComment(reportCommentModel);
-
-    const commentReportCount = await ModerationDatasource.commentReportCount(
-      reportCommentModel.commentId!.toString()
-    );
-
-    if (commentReportCount >= COMMENT_BAN_THRESHOLD) {
-      await ModerationDatasource.banComment(
-        reportCommentModel.commentId!.toString()
+      const postReportCount = await ModerationDatasource.postReportCount(
+        postId
       );
+
+      if (postReportCount >= POST_BAN_THRESHOLD()) {
+        await ModerationDatasource.banPost(postId);
+      }
+
+      successResponseHandler({
+        res: res,
+        status: 200,
+      });
     }
-
-    successResponseHandler({
-      res: res,
-      status: 200,
-    });
-  }
-);
-
-export const validateReportUserRequest: RequestHandler = (req, res, next) => {
-  const reportUserRequestModel = new ReportUserRequestModel(
-    req.body as ReportUserRequestType
   );
-  validateModel(reportUserRequestModel);
-  next();
-};
 
-export const reportUser: RequestHandler = asyncHandler(
-  async (req, res, next) => {
-    const userId = req.user!.userId;
+  static readonly reportComment: RequestHandler = asyncHandler(
+    async (req, res, next) => {
+      const userId = req.user!.userId;
 
-    const reportUserRequestModel = new ReportUserRequestModel(
-      req.body as ReportUserRequestType
-    );
+      const parsedData = req.parsedData! as ReportType;
+      const commentId = req.params.commentId;
 
-    const reportedUserId = await AuthDatasource.getUserIdFromEmail(
-      reportUserRequestModel.reportedUserEmail
-    );
-    if (reportedUserId === null) {
-      throw new CustomError(404, "User not found!");
+      const commentExists: boolean = await PostDatasource.commentExists(
+        commentId
+      );
+      if (!commentExists) {
+        throw new CustomError(404, "Comment not found!");
+      }
+
+      const commentUserId = await PostDatasource.getCommentUserId(commentId);
+      if (userId === commentUserId) {
+        throw new CustomError(403, "Can not report your own comment!");
+      }
+
+      const model = new ReportCommentModel({
+        commentId: commentId,
+        userId: userId,
+        reason: parsedData.reason,
+      });
+      await ModerationDatasource.reportComment(model);
+
+      const commentReportCount = await ModerationDatasource.commentReportCount(
+        commentId
+      );
+
+      if (commentReportCount >= COMMENT_BAN_THRESHOLD()) {
+        await ModerationDatasource.banComment(commentId);
+      }
+
+      successResponseHandler({
+        res: res,
+        status: 200,
+      });
     }
+  );
 
-    const reportUserData: Record<string, any> = {
-      userId: reportedUserId,
-      reason: reportUserRequestModel.reason,
-    };
+  static readonly reportUser: RequestHandler = asyncHandler(
+    async (req, res, next) => {
+      const userId = req.user!.userId;
 
-    const reportUserModel = new ReportUserModel(
-      reportUserData as ReportUserType
-    );
+      const parsedData = req.parsedData! as ReportType;
+      const reportedUserId = req.params.reportedUserId;
 
-    validateModel(reportUserModel);
+      const userExists = await AuthDatasource.isUserActive(reportedUserId);
+      if (!userExists) {
+        throw new CustomError(404, "User not found!");
+      }
 
-    if (userId === reportedUserId) {
-      throw new CustomError(403, "Can not report yourself!");
+      if (userId === reportedUserId) {
+        throw new CustomError(403, "Can not report your own account!");
+      }
+
+      const model = new ReportUserModel({
+        reportedUserId: reportedUserId,
+        userId: userId,
+        reason: parsedData.reason,
+      });
+      await ModerationDatasource.reportUser(model);
+
+      const userReportedCount = await ModerationDatasource.userReportedCount(
+        reportedUserId
+      );
+      if (userReportedCount >= USER_BAN_THRESHOLD()) {
+        await performTransaction<void>(async (transaction) => {
+          await ModerationDatasource.banUser(reportedUserId, transaction);
+          await AuthDatasource.signOutAllSessions(reportedUserId, transaction);
+        });
+      }
+
+      successResponseHandler({
+        res: res,
+        status: 200,
+      });
     }
-
-    await ModerationDatasource.reportUser(reportUserModel);
-
-    const userReportedCount = await ModerationDatasource.userReportedCount(
-      reportUserModel.userId!.toString()
-    );
-
-    if (userReportedCount >= USER_BAN_THRESHOLD) {
-      await ModerationDatasource.banUser(reportUserModel.userId!.toString());
-      await AuthDatasource.signOutAllSessions(reportedUserId);
-    }
-
-    successResponseHandler({
-      res: res,
-      status: 200,
-    });
-  }
-);
+  );
+}

@@ -1,21 +1,9 @@
 import { Router } from "express";
 
-import {
-  createPost,
-  createReaction,
-  createComment,
-  getCommentsByPostId,
-  getUserPosts,
-  getUserComments,
-  deletePost,
-  deleteComment,
-  getPostsFeed,
-  validateCreatePostRequest,
-  validateCreateReactionRequest,
-  validateCreateCommentRequest,
-} from "../controllers/post_controller.js";
-import { AuthMode, requireAuth } from "../middlewares/auth_middlewares.js";
 import { createSingleImageUploadMiddleware } from "../middlewares/file_upload_middlewares.js";
+import { requireAuth } from "../middlewares/auth_middlewares.js";
+import PostController from "../controllers/post_controller.js";
+import { AuthMode } from "../constants/enums.js";
 
 const router = Router();
 
@@ -23,34 +11,42 @@ router.post(
   "/",
   createSingleImageUploadMiddleware("image"),
   requireAuth(),
-  validateCreatePostRequest,
-  createPost
+  PostController.validateCreatePostRequest,
+  PostController.createPost
 );
 router.post(
   "/reactions/:postId",
   requireAuth(),
-  validateCreateReactionRequest,
-  createReaction
+  PostController.validateCreateReactionRequest,
+  PostController.createReaction
 );
 router.post(
   "/comments/:postId",
   requireAuth(),
-  validateCreateCommentRequest,
-  createComment
+  PostController.validateCreateCommentRequest,
+  PostController.createComment
 );
 router.get(
   "/:page",
   requireAuth({ authMode: AuthMode.ALLOW_ANONYMOUS }),
-  getPostsFeed
+  PostController.getPostsFeed
 );
 router.get(
   "/comments/:postId",
   requireAuth({ authMode: AuthMode.ALLOW_ANONYMOUS }),
-  getCommentsByPostId
+  PostController.getCommentsByPostId
 );
-router.get("/user/:page", requireAuth(), getUserPosts);
-router.get("/comments/user/:page", requireAuth(), getUserComments);
-router.delete("/:postId", requireAuth(), deletePost);
-router.delete("/comments/:commentId", requireAuth(), deleteComment);
+router.get("/user/:page", requireAuth(), PostController.getUserPosts);
+router.get(
+  "/comments/user/:page",
+  requireAuth(),
+  PostController.getUserComments
+);
+router.delete("/:postId", requireAuth(), PostController.deletePost);
+router.delete(
+  "/comments/:commentId",
+  requireAuth(),
+  PostController.deleteComment
+);
 
 export default router;

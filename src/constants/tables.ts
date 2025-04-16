@@ -1,4 +1,4 @@
-export default class Collections {
+export default class Tables {
   static readonly users = "users";
   static readonly sessions = "sessions";
   static readonly posts = "posts";

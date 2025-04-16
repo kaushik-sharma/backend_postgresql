@@ -1,30 +1,29 @@
 import { Router } from "express";
 
-import {
-  getUser,
-  requestAccountDeletion,
-  updateProfile,
-  deleteProfileImage,
-  validateUpdateProfileRequest,
-} from "../controllers/profile_controller.js";
 import { requireAuth } from "../middlewares/auth_middlewares.js";
+import ProfileController from "../controllers/profile_controller.js";
 import { createSingleImageUploadMiddleware } from "../middlewares/file_upload_middlewares.js";
 
 const router = Router();
 
-router.get("/user", requireAuth(), getUser);
+router.get("/user", requireAuth(), ProfileController.getUser);
+router.get("/user/:userId", requireAuth(), ProfileController.getPublicUser);
 router.patch(
   "/updateProfile",
   createSingleImageUploadMiddleware("profileImage"),
   requireAuth(),
-  validateUpdateProfileRequest,
-  updateProfile
+  ProfileController.validateUpdateProfileRequest,
+  ProfileController.updateProfile
 );
-router.delete("/deleteProfileImage", requireAuth(), deleteProfileImage);
+router.delete(
+  "/deleteProfileImage",
+  requireAuth(),
+  ProfileController.deleteProfileImage
+);
 router.delete(
   "/requestAccountDeletion",
   requireAuth(),
-  requestAccountDeletion
+  ProfileController.requestAccountDeletion
 );
 
 export default router;

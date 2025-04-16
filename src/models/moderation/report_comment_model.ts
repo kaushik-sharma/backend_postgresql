@@ -1,31 +1,57 @@
-import mongoose, { InferSchemaType, Schema, Types } from "mongoose";
-import Collections from "../../constants/collections.js";
-import { ContentReportReason } from "./report_post_model.js";
+import { DataTypes, Model } from "sequelize";
 
-const reportCommentSchema = new Schema(
-  {
-    commentId: {
-      type: Types.ObjectId,
-      index: 1,
-      required: true,
+import { ReportReason } from "../../constants/enums.js";
+import Tables from "../../constants/tables.js";
+import { getSequelize } from "../../services/postgres_service.js";
+
+interface ReportCommentAttributes {
+  id?: string;
+  commentId: string;
+  userId: string;
+  reason: ReportReason;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export class ReportCommentModel
+  extends Model<ReportCommentAttributes>
+  implements ReportCommentAttributes
+{
+  public readonly id!: string;
+  public readonly commentId!: string;
+  public readonly userId!: string;
+  public readonly reason!: ReportReason;
+  public readonly createdAt!: Date;
+  public readonly updatedAt!: Date;
+}
+
+export const initReportCommentModel = () => {
+  ReportCommentModel.init(
+    {
+      id: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        primaryKey: true,
+      },
+      commentId: {
+        type: DataTypes.UUID,
+        allowNull: false,
+      },
+      userId: {
+        type: DataTypes.UUID,
+        allowNull: false,
+      },
+      reason: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
     },
-    reason: {
-      type: String,
-      required: true,
-      trim: true,
-      enum: Object.values(ContentReportReason),
-    },
-  },
-  {
-    timestamps: true,
-    versionKey: false,
-  }
-);
-
-export type ReportCommentType = InferSchemaType<typeof reportCommentSchema>;
-
-export const ReportCommentModel = mongoose.model<ReportCommentType>(
-  "ReportCommentModel",
-  reportCommentSchema,
-  Collections.reportedComments
-);
+    {
+      timestamps: true,
+      tableName: Tables.reportedComments,
+      modelName: "ReportCommentModel",
+      sequelize: getSequelize(),
+      indexes: [{ fields: ["commentId"] }, { fields: ["userId"] }],
+    }
+  );
+};

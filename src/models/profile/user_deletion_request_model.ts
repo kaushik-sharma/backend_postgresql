@@ -1,37 +1,44 @@
-import mongoose, { Schema, InferSchemaType, Types } from "mongoose";
-import Collections from "../../constants/collections.js";
+import { DataTypes, Model } from "sequelize";
 
-const userDeletionRequestSchema = new Schema(
-  {
-    userId: {
-      type: Types.ObjectId,
-      required: true,
-      unique: true,
-      index: 1,
-    },
-    deleteAt: {
-      type: Date,
-      required: true,
-      index: 1,
-      validate: {
-        validator: (value: string) => {
-          const date = new Date(value);
-          const now = new Date();
-          return date > now;
-        },
-        message: "Deletion date can not be before now.",
+import Tables from "../../constants/tables.js";
+import { getSequelize } from "../../services/postgres_service.js";
+
+interface UserDeletionRequestAttributes {
+  id?: string;
+  userId: string;
+  deleteAt: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export class UserDeletionRequestModel
+  extends Model<UserDeletionRequestAttributes>
+  implements UserDeletionRequestAttributes
+{
+  public readonly id!: string;
+  public readonly userId!: string;
+  public readonly deleteAt!: Date;
+  public readonly createdAt!: Date;
+  public readonly updatedAt!: Date;
+}
+
+export const initUserDeletionRequestModel = () => {
+  UserDeletionRequestModel.init(
+    {
+      id: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        primaryKey: true,
       },
+      userId: { type: DataTypes.UUID, allowNull: false },
+      deleteAt: { type: DataTypes.DATE, allowNull: false },
     },
-  },
-  { timestamps: true, versionKey: false }
-);
-
-export type UserDeletionRequestType = InferSchemaType<
-  typeof userDeletionRequestSchema
->;
-
-export const UserDeletionRequestModel = mongoose.model<UserDeletionRequestType>(
-  "UserDeletionRequestModel",
-  userDeletionRequestSchema,
-  Collections.userDeletionRequests
-);
+    {
+      timestamps: true,
+      tableName: Tables.userDeletionRequests,
+      modelName: "UserDeletionRequestModel",
+      sequelize: getSequelize(),
+      indexes: [{ fields: ["userId"] }, { fields: ["deleteAt"] }],
+    }
+  );
+};

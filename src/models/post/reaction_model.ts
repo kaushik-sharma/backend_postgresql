@@ -1,40 +1,52 @@
-import mongoose, { InferSchemaType, Schema, Types } from "mongoose";
-import Collections from "../../constants/collections.js";
+import { DataTypes, Model } from "sequelize";
+
+import Tables from "../../constants/tables.js";
+import { getSequelize } from "../../services/postgres_service.js";
 
 export enum EmotionType {
   like = "LIKE",
   dislike = "DISLIKE",
 }
 
-const reactionSchema = new Schema(
-  {
-    userId: {
-      type: Types.ObjectId,
-      required: true,
-      index: 1,
-    },
-    postId: {
-      type: Types.ObjectId,
-      required: true,
-      index: 1,
-    },
-    emotionType: {
-      type: String,
-      required: true,
-      trim: true,
-      enum: Object.values(EmotionType),
-    },
-  },
-  {
-    timestamps: true,
-    versionKey: false,
-  }
-);
+interface ReactionAttributes {
+  id?: string;
+  userId: string;
+  postId: string;
+  emotionType: EmotionType;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
 
-export type ReactionType = InferSchemaType<typeof reactionSchema>;
+export class ReactionModel
+  extends Model<ReactionAttributes>
+  implements ReactionAttributes
+{
+  public readonly id!: string;
+  public readonly userId!: string;
+  public readonly postId!: string;
+  public readonly emotionType!: EmotionType;
+  public readonly createdAt!: Date;
+  public readonly updatedAt!: Date;
+}
 
-export const ReactionModel = mongoose.model<ReactionType>(
-  "ReactionModel",
-  reactionSchema,
-  Collections.reactions
-);
+export const initReactionModel = () => {
+  ReactionModel.init(
+    {
+      id: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        primaryKey: true,
+      },
+      userId: { type: DataTypes.UUID, allowNull: false },
+      postId: { type: DataTypes.UUID, allowNull: false },
+      emotionType: { type: DataTypes.STRING, allowNull: false },
+    },
+    {
+      timestamps: true,
+      tableName: Tables.reactions,
+      modelName: "ReactionModel",
+      sequelize: getSequelize(),
+      indexes: [{ fields: ["userId"] }, { fields: ["postId"] }],
+    }
+  );
+};

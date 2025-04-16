@@ -1,12 +1,11 @@
 import jwt from "jsonwebtoken";
 import fs from "fs";
-import { ClientSession } from "mongoose";
+import { Transaction } from "sequelize";
 
 import { SessionModel } from "../models/session/session_model.js";
 import AuthDatasource from "../datasources/auth_datasource.js";
-import { AuthMode } from "../middlewares/auth_middlewares.js";
 import { CustomError } from "../middlewares/error_middlewares.js";
-import { EntityStatus } from "../constants/enums.js";
+import { AuthMode, EntityStatus } from "../constants/enums.js";
 
 export default class JwtService {
   static readonly #generateJwt = (payload: Record<string, any>): string => {
@@ -21,24 +20,23 @@ export default class JwtService {
     return jwt.sign(payload, privateKey, options);
   };
 
-  static readonly getAuthToken = async (
+  static readonly createAuthToken = async (
     userId: string,
-    session?: ClientSession
+    transaction?: Transaction
   ): Promise<string> => {
-    const sessionModel = new SessionModel({
-      userId: userId,
-    });
-    const result = await sessionModel.save({ session: session });
-    const sessionId = result.id as string;
+    const session = await SessionModel.create(
+      { userId: userId },
+      { transaction: transaction }
+    );
 
     const payload = {
-      sessionId: sessionId,
+      sessionId: session.id,
     };
 
     return this.#generateJwt(payload);
   };
 
-  static readonly verifyJwt = async (
+  static readonly verifyAuthToken = async (
     token: string,
     { authMode }: { authMode: AuthMode }
   ): Promise<[string, string]> => {
@@ -62,12 +60,14 @@ export default class JwtService {
       throw new CustomError(401, "Invalid auth token.");
     }
 
-    const session = await SessionModel.findById(sessionId).lean();
+    const session = await SessionModel.findByPk(sessionId, {
+      raw: true,
+    });
     if (session === null) {
       throw new CustomError(403, "Session not found.");
     }
 
-    const userId = session.userId.toString();
+    const userId = session.userId;
 
     const userStatus = await AuthDatasource.getUserStatus(userId);
 

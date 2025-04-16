@@ -26,3 +26,28 @@ export enum EntityStatus {
   banned = "BANNED",
   anonymous = "ANONYMOUS",
 }
+
+export enum AuthUserAction {
+  signIn = "SIGN_IN",
+  signUp = "SIGN_UP",
+  banned = "BANNED",
+  requestedDeletion = "REQUESTED_DELETION",
+}
+
+export enum Gender {
+  male = "MALE",
+  female = "FEMALE",
+  nonBinary = "NON_BINARY",
+}
+
+export enum AuthMode {
+  AUTHENTICATED,
+  ANONYMOUS_ONLY,
+  ALLOW_ANONYMOUS,
+}
+
+export enum ReportReason {
+  spam = "SPAM",
+  misleading = "MISLEADING",
+  hatefulContent = "HATEFUL_CONTENT",
+}

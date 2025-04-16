@@ -1,22 +1,43 @@
-import mongoose, { Schema, InferSchemaType, Types } from "mongoose";
+import { DataTypes, Model } from "sequelize";
+import Tables from "../../constants/tables.js";
+import { getSequelize } from "../../services/postgres_service.js";
 
-import Collections from "../../constants/collections.js";
+interface SessionAttributes {
+  id?: string;
+  userId: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
 
-const sessionSchema = new Schema(
-  {
-    userId: {
-      type: Types.ObjectId,
-      required: true,
-      index: 1,
+export class SessionModel
+  extends Model<SessionAttributes>
+  implements SessionAttributes
+{
+  public readonly id!: string;
+  public readonly userId!: string;
+  public readonly createdAt!: Date;
+  public readonly updatedAt!: Date;
+}
+
+export const initSessionModel = () => {
+  SessionModel.init(
+    {
+      id: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        primaryKey: true,
+      },
+      userId: {
+        type: DataTypes.UUID,
+        allowNull: false,
+      },
     },
-  },
-  { timestamps: true, versionKey: false }
-);
-
-export type SessionType = InferSchemaType<typeof sessionSchema>;
-
-export const SessionModel = mongoose.model<SessionType>(
-  "SessionModel",
-  sessionSchema,
-  Collections.sessions
-);
+    {
+      timestamps: true,
+      tableName: Tables.sessions,
+      modelName: "SessionModel",
+      sequelize: getSequelize(),
+      indexes: [{ fields: ["userId"] }],
+    }
+  );
+};

@@ -1,241 +1,284 @@
 import { RequestHandler } from "express";
 
-import { UserModel, UserType } from "../models/auth/user_model.js";
-import { successResponseHandler } from "../helpers/custom_handlers.js";
-import { validateModel } from "../helpers/validation_helpers.js";
-import AuthDatasource from "../datasources/auth_datasource.js";
-import JwtService from "../services/jwt_service.js";
+import { asyncHandler } from "../helpers/async_handler.js";
 import {
-  AuthUserAction,
-  PhoneNumberModel,
+  phoneNumberSchema,
   PhoneNumberType,
-  SignInModel,
+  signInSchema,
   SignInType,
-} from "../models/auth/sign_in_model.js";
-import BcryptService from "../services/bcrypt_service.js";
-import { performTransaction } from "../helpers/transaction_helper.js";
-import { AnonymousUserModel } from "../models/auth/anonymous_user_model.js";
-import { asyncHandler } from "../helpers/exception_handlers.js";
+  signUpSchema,
+  SignUpType,
+} from "../validation/auth_schema.js";
+import { validateModel } from "../helpers/validation_helper.js";
+import AuthDatasource from "../datasources/auth_datasource.js";
+import { successResponseHandler } from "../helpers/success_handler.js";
+import { AuthUserAction, EntityStatus } from "../constants/enums.js";
 import { CustomError } from "../middlewares/error_middlewares.js";
+import JwtService from "../services/jwt_service.js";
+import { UserModel } from "../models/auth/user_model.js";
+import { performTransaction } from "../helpers/transaction_helper.js";
+import BcryptService from "../services/bcrypt_service.js";
 import ProfileDatasource from "../datasources/profile_datasource.js";
-import { EntityStatus } from "../constants/enums.js";
 
-export const validatePhoneNumberRequest: RequestHandler = (req, res, next) => {
-  const phoneNumberModel = new PhoneNumberModel(req.body as PhoneNumberType);
-  validateModel(phoneNumberModel);
-  next();
-};
+export class AuthController {
+  static readonly validatePhoneNumberRequest: RequestHandler = (
+    req,
+    res,
+    next
+  ) => {
+    req.parsedData = validateModel(phoneNumberSchema, req.body);
+    next();
+  };
 
-export const checkPhoneNumber: RequestHandler = asyncHandler(
-  async (req, res, next) => {
-    const phoneNumberModel = new PhoneNumberModel(req.body as PhoneNumberType);
+  static readonly checkPhoneNumber: RequestHandler = asyncHandler(
+    async (req, res, next) => {
+      const parsedData = req.parsedData! as PhoneNumberType;
 
-    const user = await AuthDatasource.findUserByPhoneNumber(
-      phoneNumberModel.countryCode,
-      phoneNumberModel.phoneNumber
-    );
+      const user = await AuthDatasource.findUserByPhoneNumber(
+        parsedData.countryCode,
+        parsedData.phoneNumber
+      );
 
-    if (user === null) {
-      return successResponseHandler({
-        res: res,
-        status: 200,
-        data: { userAction: AuthUserAction.signUp },
-      });
-    }
-
-    // Check if there is an active account deletion request pending
-    const deletionRequestExists =
-      await ProfileDatasource.userDeletionRequestExists(user._id);
-    if (deletionRequestExists) {
-      return successResponseHandler({
-        res: res,
-        status: 200,
-        data: { userAction: AuthUserAction.requestedDeletion },
-      });
-    }
-
-    switch (user!.status!) {
-      case EntityStatus.active:
+      if (user === null) {
         return successResponseHandler({
           res: res,
           status: 200,
-          data: { userAction: AuthUserAction.signIn },
+          data: { userAction: AuthUserAction.signUp },
         });
-      case EntityStatus.banned:
+      }
+
+      // Check if there is an active account deletion request pending
+      const deletionRequestExists =
+        await ProfileDatasource.userDeletionRequestExists(user.id);
+      if (deletionRequestExists) {
         return successResponseHandler({
           res: res,
           status: 200,
-          data: { userAction: AuthUserAction.banned },
+          data: { userAction: AuthUserAction.requestedDeletion },
         });
+      }
+
+      switch (user!.status!) {
+        case EntityStatus.active:
+          return successResponseHandler({
+            res: res,
+            status: 200,
+            data: { userAction: AuthUserAction.signIn },
+          });
+        case EntityStatus.banned:
+          return successResponseHandler({
+            res: res,
+            status: 200,
+            data: { userAction: AuthUserAction.banned },
+          });
+      }
     }
-  }
-);
-
-export const validateSignUpRequest: RequestHandler = (req, res, next) => {
-  const newUser = new UserModel(req.body as UserType);
-  validateModel(newUser);
-  next();
-};
-
-export const signUp: RequestHandler = asyncHandler(async (req, res, next) => {
-  const anonymousUserId = req.user?.userId ?? null;
-
-  const newUser = new UserModel(req.body as UserType);
-
-  const email = newUser.email;
-  const countryCode = newUser.countryCode;
-  const phoneNumber = newUser.phoneNumber;
-
-  const canSignUpWithEmail = await AuthDatasource.canSignUpWithEmail(email);
-  if (!canSignUpWithEmail) {
-    throw new CustomError(409, "Account with this email already exists.");
-  }
-
-  const canSignUpWithPhoneNumber =
-    await AuthDatasource.canSignUpWithPhoneNumber(countryCode, phoneNumber);
-  if (!canSignUpWithPhoneNumber) {
-    throw new CustomError(
-      409,
-      "Account with this phone number already exists."
-    );
-  }
-
-  const authToken = await performTransaction<string>(async (session) => {
-    /// Delete anonymous user (if exists)
-    if (anonymousUserId !== null) {
-      await AuthDatasource.signOutAllSessions(anonymousUserId, session);
-      await AuthDatasource.deleteAnonymousUser(anonymousUserId, session);
-    }
-    const userId = await AuthDatasource.createUser(newUser, session);
-    return await JwtService.getAuthToken(userId, session);
-  });
-
-  successResponseHandler({
-    res: res,
-    status: 200,
-    data: { authToken: authToken },
-  });
-});
-
-export const validateSignInRequest: RequestHandler = (req, res, next) => {
-  const signInModel = new SignInModel(req.body as SignInType);
-  validateModel(signInModel);
-  next();
-};
-
-export const signIn: RequestHandler = asyncHandler(async (req, res, next) => {
-  const anonymousUserId = req.user?.userId ?? null;
-
-  const signInModel = new SignInModel(req.body as SignInType);
-
-  const user = await AuthDatasource.findUserByPhoneNumber(
-    signInModel.countryCode,
-    signInModel.phoneNumber
   );
 
-  if (user === null) {
-    throw new CustomError(
-      404,
-      "Account with this phone number does not exist."
-    );
-  }
+  static readonly validateSignUpRequest: RequestHandler = (req, res, next) => {
+    req.parsedData = validateModel(signUpSchema, req.body);
+    next();
+  };
 
-  const enteredPassword = signInModel.password;
-  const savedPassword = user.password;
-  const isEqual = await BcryptService.compare(enteredPassword, savedPassword);
-  if (!isEqual) {
-    throw new CustomError(401, "Incorrect password.");
-  }
+  static readonly signUp: RequestHandler = asyncHandler(
+    async (req, res, next) => {
+      const anonymousUserId = req.user?.userId ?? null;
 
-  if (user!.status === EntityStatus.banned) {
-    throw new CustomError(
-      403,
-      "Your account is banned due to violation of our moderation guidelines. Please contact our customer support."
-    );
-  }
+      const parsedData = req.parsedData! as SignUpType;
 
-  if (signInModel.cancelAccountDeletionRequest) {
-    await ProfileDatasource.cancelUserDeletionRequest(user._id);
-    // TODO: Cancel Cron Job
-  }
+      const email = parsedData.email;
+      const countryCode = parsedData.countryCode;
+      const phoneNumber = parsedData.phoneNumber;
 
-  // Check if there is an active account deletion request pending
-  const deletionRequestExists =
-    await ProfileDatasource.userDeletionRequestExists(user._id);
-  if (deletionRequestExists) {
-    throw new CustomError(
-      403,
-      "You have an active account deletion request pending."
-    );
-  }
+      const canSignUpWithEmail = await AuthDatasource.canSignUpWithEmail(email);
+      if (!canSignUpWithEmail) {
+        throw new CustomError(409, "Account with this email already exists.");
+      }
 
-  const authToken = await performTransaction<string>(async (session) => {
-    /// Delete anonymous user (if exists)
-    if (anonymousUserId !== null) {
-      await AuthDatasource.signOutAllSessions(anonymousUserId!, session);
-      await AuthDatasource.deleteAnonymousUser(anonymousUserId!, session);
+      const canSignUpWithPhoneNumber =
+        await AuthDatasource.canSignUpWithPhoneNumber(countryCode, phoneNumber);
+      if (!canSignUpWithPhoneNumber) {
+        throw new CustomError(
+          409,
+          "Account with this phone number already exists."
+        );
+      }
+
+      const user = new UserModel({
+        firstName: parsedData.firstName,
+        lastName: parsedData.lastName,
+        gender: parsedData.gender,
+        countryCode: parsedData.countryCode,
+        phoneNumber: parsedData.phoneNumber,
+        email: parsedData.email,
+        dob: parsedData.dob,
+        password: parsedData.password,
+        status: EntityStatus.active,
+      });
+
+      const authToken = await performTransaction<string>(
+        async (transaction) => {
+          /// Delete anonymous user (if exists)
+          if (anonymousUserId !== null) {
+            await AuthDatasource.signOutAllSessions(
+              anonymousUserId,
+              transaction
+            );
+            await AuthDatasource.deleteAnonymousUser(
+              anonymousUserId,
+              transaction
+            );
+          }
+          const userId = await AuthDatasource.createUser(user, transaction);
+          return await JwtService.createAuthToken(userId, transaction);
+        }
+      );
+
+      successResponseHandler({
+        res: res,
+        status: 200,
+        data: { authToken: authToken },
+      });
     }
-    return await JwtService.getAuthToken(user._id, session);
-  });
+  );
 
-  successResponseHandler({
-    res: res,
-    status: 200,
-    data: { authToken: authToken },
-  });
-});
+  static readonly validateSignInRequest: RequestHandler = (req, res, next) => {
+    req.parsedData = validateModel(signInSchema, req.body);
+    next();
+  };
 
-export const signOut: RequestHandler = asyncHandler(async (req, res, next) => {
-  const { userId, sessionId } = req.user!;
+  static readonly signIn: RequestHandler = asyncHandler(
+    async (req, res, next) => {
+      const anonymousUserId = req.user?.userId ?? null;
 
-  await AuthDatasource.signOutSession(userId, sessionId);
+      const parsedData = req.parsedData! as SignInType;
 
-  successResponseHandler({
-    res: res,
-    status: 200,
-  });
-});
+      const user = await AuthDatasource.findUserByPhoneNumber(
+        parsedData.countryCode,
+        parsedData.phoneNumber
+      );
 
-export const signOutAllSessions: RequestHandler = asyncHandler(
-  async (req, res, next) => {
-    const userId = req.user!.userId;
+      if (user === null) {
+        throw new CustomError(
+          404,
+          "Account with this phone number does not exist."
+        );
+      }
 
-    await AuthDatasource.signOutAllSessions(userId);
+      const enteredPassword: string = parsedData.password;
+      const savedPassword: string = user.password!;
+      const isEqual = await BcryptService.compare(
+        enteredPassword,
+        savedPassword
+      );
+      if (!isEqual) {
+        throw new CustomError(401, "Incorrect password.");
+      }
 
-    successResponseHandler({
-      res: res,
-      status: 200,
-    });
-  }
-);
+      if (user!.status === EntityStatus.banned) {
+        throw new CustomError(
+          403,
+          "Your account is banned due to violation of our moderation guidelines. Please contact our customer support."
+        );
+      }
 
-export const refreshAuthToken: RequestHandler = asyncHandler(
-  async (req, res, next) => {
-    const sessionId = req.user!.sessionId;
+      if (parsedData.cancelAccountDeletionRequest) {
+        await ProfileDatasource.cancelUserDeletionRequest(user.id);
+      }
 
-    const refreshToken = JwtService.getRefreshToken(sessionId);
+      // Check if there is an active account deletion request pending
+      const deletionRequestExists =
+        await ProfileDatasource.userDeletionRequestExists(user.id);
+      if (deletionRequestExists) {
+        throw new CustomError(
+          403,
+          "You have an active account deletion request pending."
+        );
+      }
 
-    successResponseHandler({
-      res: res,
-      status: 200,
-      data: { refreshToken: refreshToken },
-    });
-  }
-);
+      const authToken = await performTransaction<string>(
+        async (transaction) => {
+          /// Delete anonymous user (if exists)
+          if (anonymousUserId !== null) {
+            await AuthDatasource.signOutAllSessions(
+              anonymousUserId!,
+              transaction
+            );
+            await AuthDatasource.deleteAnonymousUser(
+              anonymousUserId!,
+              transaction
+            );
+          }
+          return await JwtService.createAuthToken(user.id, transaction);
+        }
+      );
 
-export const anonymousAuth: RequestHandler = asyncHandler(
-  async (req, res, next) => {
-    const user = new AnonymousUserModel();
+      successResponseHandler({
+        res: res,
+        status: 200,
+        data: { authToken: authToken },
+      });
+    }
+  );
 
-    const authToken = await performTransaction<string>(async (session) => {
-      const userId = await AuthDatasource.createAnonymousUser(user, session);
-      return await JwtService.getAuthToken(userId, session);
-    });
+  static readonly signOut: RequestHandler = asyncHandler(
+    async (req, res, next) => {
+      const { userId, sessionId } = req.user!;
 
-    successResponseHandler({
-      res: res,
-      status: 200,
-      data: { authToken: authToken },
-    });
-  }
-);
+      await AuthDatasource.signOutSession(userId, sessionId);
+
+      successResponseHandler({
+        res: res,
+        status: 200,
+      });
+    }
+  );
+
+  static readonly signOutAllSessions: RequestHandler = asyncHandler(
+    async (req, res, next) => {
+      const userId = req.user!.userId;
+
+      await AuthDatasource.signOutAllSessions(userId);
+
+      successResponseHandler({
+        res: res,
+        status: 200,
+      });
+    }
+  );
+
+  static readonly refreshAuthToken: RequestHandler = asyncHandler(
+    async (req, res, next) => {
+      const sessionId = req.user!.sessionId;
+
+      const refreshToken = JwtService.getRefreshToken(sessionId);
+
+      successResponseHandler({
+        res: res,
+        status: 200,
+        data: { refreshToken: refreshToken },
+      });
+    }
+  );
+
+  static readonly anonymousAuth: RequestHandler = asyncHandler(
+    async (req, res, next) => {
+      const user = new UserModel({
+        status: EntityStatus.anonymous,
+      });
+
+      const authToken = await performTransaction<string>(
+        async (transaction) => {
+          const userId = await AuthDatasource.createUser(user, transaction);
+          return await JwtService.createAuthToken(userId, transaction);
+        }
+      );
+
+      successResponseHandler({
+        res: res,
+        status: 200,
+        data: { authToken: authToken },
+      });
+    }
+  );
+}
