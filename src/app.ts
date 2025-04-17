@@ -54,10 +54,11 @@ app.use("/api/v1/moderation", moderationRouter);
 app.use(errorHandler);
 
 process.on("unhandledRejection", (reason, promise) => {
-  logger.error("Unhandled Rejection at:", promise, "\nReason:", reason);
+  console.error(reason);
 });
 process.on("uncaughtException", (error, origin) => {
-  logger.error("Uncaught Exception:", error, "\nOrigin:", origin);
+  console.error(error);
+  console.error(origin);
 });
 
 try {

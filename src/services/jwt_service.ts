@@ -8,16 +8,33 @@ import { CustomError } from "../middlewares/error_middlewares.js";
 import { AuthMode, EntityStatus } from "../constants/enums.js";
 
 export default class JwtService {
-  static readonly #generateJwt = (payload: Record<string, any>): string => {
-    const privateKey = fs.readFileSync(
-      process.env.JWT_PRIVATE_KEY_FILE_NAME!,
-      "utf8"
-    );
+  static get #privateKey(): string {
+    return fs.readFileSync(process.env.JWT_PRIVATE_KEY_FILE_NAME!, "utf8");
+  }
+
+  static get #publicKey(): string {
+    return fs.readFileSync(process.env.JWT_PUBLIC_KEY_FILE_NAME!, "utf8");
+  }
+
+  static readonly #generateAuthTokenJwt = (
+    payload: Record<string, any>
+  ): string => {
     const options: jwt.SignOptions = {
       algorithm: "RS512",
-      expiresIn: "30d",
+      expiresIn: "30d", // 30 days
     };
-    return jwt.sign(payload, privateKey, options);
+    return jwt.sign(payload, this.#privateKey, options);
+  };
+
+  static readonly #verifyJwt = (token: string): jwt.JwtPayload => {
+    try {
+      return jwt.verify(token, this.#publicKey) as jwt.JwtPayload;
+    } catch (err: any) {
+      if (err.name === jwt.TokenExpiredError.name) {
+        throw new CustomError(401, "Auth token expired.");
+      }
+      throw err;
+    }
   };
 
   static readonly createAuthToken = async (
@@ -28,35 +45,20 @@ export default class JwtService {
       { userId: userId },
       { transaction: transaction }
     );
-
     const payload = {
       sessionId: session.id,
     };
-
-    return this.#generateJwt(payload);
+    return this.#generateAuthTokenJwt(payload);
   };
 
   static readonly verifyAuthToken = async (
     token: string,
     { authMode }: { authMode: AuthMode }
   ): Promise<[string, string]> => {
-    const publicKey = fs.readFileSync(
-      process.env.JWT_PUBLIC_KEY_FILE_NAME!,
-      "utf8"
-    );
+    const decoded = this.#verifyJwt(token);
 
-    let decoded: jwt.JwtPayload;
-    try {
-      decoded = jwt.verify(token, publicKey) as jwt.JwtPayload;
-    } catch (err: any) {
-      if (err.name === jwt.TokenExpiredError.name) {
-        throw new CustomError(401, "Auth token expired.");
-      }
-      throw err;
-    }
-
-    const sessionId = decoded.sessionId as string | undefined;
-    if (sessionId === undefined) {
+    const sessionId = decoded.sessionId as string | null | undefined;
+    if (!sessionId) {
       throw new CustomError(401, "Invalid auth token.");
     }
 
@@ -111,8 +113,34 @@ export default class JwtService {
     const payload = {
       sessionId: sessionId,
     };
+    return this.#generateAuthTokenJwt(payload);
+  };
 
-    return this.#generateJwt(payload);
+  static readonly createEmailVerificationToken = (
+    hashedEmail: string,
+    hashedCodes: string[],
+  ): string => {
+    const payload = {
+      hashedEmail: hashedEmail,
+      hashedCodes: hashedCodes,
+    };
+    const options: jwt.SignOptions = {
+      algorithm: "RS512",
+      expiresIn: 600, // 10 minutes
+    };
+    return jwt.sign(payload, this.#privateKey, options);
+  };
+
+  static readonly verifyEmailToken = (token: string): [string, string[]] => {
+    const decoded = this.#verifyJwt(token);
+
+    const hashedEmail = decoded.hashedEmail as string | null | undefined;
+    const hashedCodes = decoded.hashedCodes as string[] | null | undefined;
+    if (!hashedEmail || !hashedCodes) {
+      throw new CustomError(401, "Invalid auth token.");
+    }
+
+    return [hashedEmail, hashedCodes];
   };
 }
 

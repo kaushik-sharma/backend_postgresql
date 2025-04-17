@@ -1,9 +1,12 @@
 import { RequestHandler } from "express";
+import { randomInt } from "crypto";
 
 import { asyncHandler } from "../helpers/async_handler.js";
 import {
-  phoneNumberSchema,
-  PhoneNumberType,
+  emailSchema,
+  EmailType,
+  requestEmailCodeSchema,
+  RequestEmailCodeType,
   signInSchema,
   SignInType,
   signUpSchema,
@@ -17,27 +20,96 @@ import { CustomError } from "../middlewares/error_middlewares.js";
 import JwtService from "../services/jwt_service.js";
 import { UserModel } from "../models/auth/user_model.js";
 import { performTransaction } from "../helpers/transaction_helper.js";
-import BcryptService from "../services/bcrypt_service.js";
 import ProfileDatasource from "../datasources/profile_datasource.js";
+import BcryptService from "../services/bcrypt_service.js";
+import MailService from "../services/mail_service.js";
 
 export class AuthController {
-  static readonly validatePhoneNumberRequest: RequestHandler = (
+  static readonly #generateVerificationCode = (): string => {
+    let code = "";
+    for (let i = 0; i < 6; i++) {
+      code += randomInt(0, 10).toString();
+    }
+    return code;
+  };
+
+  static readonly #sendEmailCode = async (
+    email: string,
+    previousToken: string | undefined
+  ): Promise<string> => {
+    let prevHashedEmail: string | null = null;
+    let prevHashedCodes: string[] | null = null;
+    if (previousToken !== undefined) {
+      [prevHashedEmail, prevHashedCodes] =
+        JwtService.verifyEmailToken(previousToken);
+    }
+
+    if (prevHashedEmail !== null) {
+      const isEmailEqual = await BcryptService.compare(email, prevHashedEmail);
+      if (!isEmailEqual) {
+        throw new CustomError(401, "Email does not match!");
+      }
+    }
+
+    const code = this.#generateVerificationCode();
+    const hashedCode = await BcryptService.hash(code);
+    const hashedEmail = await BcryptService.hash(email);
+
+    const newToken = JwtService.createEmailVerificationToken(hashedEmail, [
+      ...(prevHashedCodes ?? []),
+      hashedCode,
+    ]);
+
+    MailService.sendMail({
+      recipientEmail: email,
+      subject: "Account Verification Code",
+      body: code,
+    });
+
+    return newToken;
+  };
+
+  static readonly #verifyEmailTokenCredentials = async (
+    email: string,
+    code: string,
+    token: string
+  ): Promise<void> => {
+    const [hashedEmail, hashedCodes] = JwtService.verifyEmailToken(token);
+
+    const isEmailEqual = await BcryptService.compare(email, hashedEmail);
+    let isCodeEqual: boolean = false;
+    for (const hashedCode of hashedCodes) {
+      isCodeEqual = await BcryptService.compare(code, hashedCode);
+      if (isCodeEqual) break;
+    }
+
+    if (!isEmailEqual) {
+      throw new CustomError(401, "Email does not match!");
+    }
+    if (!isCodeEqual) {
+      throw new CustomError(401, "Incorrect verification code!");
+    }
+  };
+
+  static readonly validateEmailRequest: RequestHandler = (req, res, next) => {
+    req.parsedData = validateModel(emailSchema, req.body);
+    next();
+  };
+
+  static readonly validateEmailCodeRequest: RequestHandler = (
     req,
     res,
     next
   ) => {
-    req.parsedData = validateModel(phoneNumberSchema, req.body);
+    req.parsedData = validateModel(requestEmailCodeSchema, req.body);
     next();
   };
 
-  static readonly checkPhoneNumber: RequestHandler = asyncHandler(
+  static readonly checkEmail: RequestHandler = asyncHandler(
     async (req, res, next) => {
-      const parsedData = req.parsedData! as PhoneNumberType;
+      const parsedData = req.parsedData! as EmailType;
 
-      const user = await AuthDatasource.findUserByPhoneNumber(
-        parsedData.countryCode,
-        parsedData.phoneNumber
-      );
+      const user = await AuthDatasource.findUserByEmail(parsedData.email);
 
       if (user === null) {
         return successResponseHandler({
@@ -75,6 +147,22 @@ export class AuthController {
     }
   );
 
+  static readonly requestEmailCode: RequestHandler = asyncHandler(
+    async (req, res, next) => {
+      const parsedData = req.parsedData! as RequestEmailCodeType;
+      const token = await this.#sendEmailCode(
+        parsedData.email,
+        parsedData.previousToken
+      );
+
+      successResponseHandler({
+        res: res,
+        status: 200,
+        data: { verificationToken: token },
+      });
+    }
+  );
+
   static readonly validateSignUpRequest: RequestHandler = (req, res, next) => {
     req.parsedData = validateModel(signUpSchema, req.body);
     next();
@@ -104,6 +192,12 @@ export class AuthController {
         );
       }
 
+      await this.#verifyEmailTokenCredentials(
+        parsedData.email,
+        parsedData.verificationCode,
+        parsedData.verificationToken
+      );
+
       const user = new UserModel({
         firstName: parsedData.firstName,
         lastName: parsedData.lastName,
@@ -112,7 +206,6 @@ export class AuthController {
         phoneNumber: parsedData.phoneNumber,
         email: parsedData.email,
         dob: parsedData.dob,
-        password: parsedData.password,
         status: EntityStatus.active,
       });
 
@@ -153,29 +246,19 @@ export class AuthController {
 
       const parsedData = req.parsedData! as SignInType;
 
-      const user = await AuthDatasource.findUserByPhoneNumber(
-        parsedData.countryCode,
-        parsedData.phoneNumber
-      );
+      const user = await AuthDatasource.findUserByEmail(parsedData.email);
 
       if (user === null) {
-        throw new CustomError(
-          404,
-          "Account with this phone number does not exist."
-        );
+        throw new CustomError(404, "Account with this email does not exist.");
       }
 
-      const enteredPassword: string = parsedData.password;
-      const savedPassword: string = user.password!;
-      const isEqual = await BcryptService.compare(
-        enteredPassword,
-        savedPassword
+      await this.#verifyEmailTokenCredentials(
+        parsedData.email,
+        parsedData.verificationCode,
+        parsedData.verificationToken
       );
-      if (!isEqual) {
-        throw new CustomError(401, "Incorrect password.");
-      }
 
-      if (user!.status === EntityStatus.banned) {
+      if (user.status === EntityStatus.banned) {
         throw new CustomError(
           403,
           "Your account is banned due to violation of our moderation guidelines. Please contact our customer support."

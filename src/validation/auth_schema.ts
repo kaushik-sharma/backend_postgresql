@@ -9,24 +9,24 @@ import {
   PHONE_NUMBER_REGEX,
 } from "../constants/regex.js";
 
-const countryCodeValidation = z
-  .string({ required_error: "Country code is required." })
+export const emailValidation = z
+  .string({ required_error: "Email is required." })
   .trim()
-  .nonempty({ message: "Country code must not be empty." })
-  .regex(COUNTRY_CODE_REGEX, { message: "Country code is invalid." });
+  .nonempty({ message: "Email must not be empty." })
+  .email()
+  .transform((value) => value.toLowerCase());
 
-const phoneNumberValidation = z
-  .string({ required_error: "Phone number is required." })
+export const verificationCodeValidation = z
+  .string({ required_error: "Verification code is required." })
   .trim()
-  .nonempty({ message: "Phone number must not be empty." })
-  .regex(PHONE_NUMBER_REGEX, { message: "Phone number is invalid." });
+  .nonempty({ message: "Verification code can not be empty." })
+  .length(6, { message: "Verification code must be 6 characters long." })
+  .regex(/^\d{6}$/, { message: "Must contain only digits." });
 
-const passwordValidation = z
-  .string({ required_error: "Password is required." })
+export const verificationTokenValidation = z
+  .string({ required_error: "Verification token is required." })
   .trim()
-  .nonempty({ message: "Password must not be empty." })
-  .min(8, { message: "Password must be at least 8 characters long." })
-  .max(256, { message: "Password must be less than 256 characters long." });
+  .nonempty({ message: "Verification token can not be empty." });
 
 export const firstNameValidation = z
   .string({ required_error: "First name is required." })
@@ -42,7 +42,9 @@ export const lastNameValidation = z
   .min(1)
   .max(50);
 
-export const genderValidation = z.nativeEnum(Gender);
+export const genderValidation = z.nativeEnum(Gender, {
+  required_error: "Gender is required.",
+});
 
 export const dobValidation = z
   .string({ required_error: "DoB is required." })
@@ -71,21 +73,29 @@ export const dobValidation = z
       return date >= MIN_DOB_DATE;
     },
     {
-      message: `Minimum date for DoB: ${MIN_DOB_DATE.toISOString().split("T")[0]}`,
+      message: `Minimum date for DoB: ${
+        MIN_DOB_DATE.toISOString().split("T")[0]
+      }`,
     }
   );
 
-export const phoneNumberSchema = z.object({
-  countryCode: countryCodeValidation,
-  phoneNumber: phoneNumberValidation,
+export const emailSchema = z.object({
+  email: emailValidation,
 });
 
-export type PhoneNumberType = z.infer<typeof phoneNumberSchema>;
+export type EmailType = z.infer<typeof emailSchema>;
+
+export const requestEmailCodeSchema = z.object({
+  email: emailValidation,
+  previousToken: verificationTokenValidation.optional(),
+});
+
+export type RequestEmailCodeType = z.infer<typeof requestEmailCodeSchema>;
 
 export const signInSchema = z.object({
-  countryCode: countryCodeValidation,
-  phoneNumber: phoneNumberValidation,
-  password: passwordValidation,
+  email: emailValidation,
+  verificationCode: verificationCodeValidation,
+  verificationToken: verificationTokenValidation,
   cancelAccountDeletionRequest: z.boolean().optional().default(false),
 });
 
@@ -95,16 +105,20 @@ export const signUpSchema = z.object({
   firstName: firstNameValidation,
   lastName: lastNameValidation,
   gender: genderValidation,
-  countryCode: countryCodeValidation,
-  phoneNumber: phoneNumberValidation,
-  password: passwordValidation,
-  email: z
-    .string({ required_error: "Email is required." })
+  countryCode: z
+    .string({ required_error: "Country code is required." })
     .trim()
-    .nonempty({ message: "Email must not be empty." })
-    .email()
-    .transform((value) => value.toLowerCase()),
+    .nonempty({ message: "Country code must not be empty." })
+    .regex(COUNTRY_CODE_REGEX, { message: "Country code is invalid." }),
+  phoneNumber: z
+    .string({ required_error: "Phone number is required." })
+    .trim()
+    .nonempty({ message: "Phone number must not be empty." })
+    .regex(PHONE_NUMBER_REGEX, { message: "Phone number is invalid." }),
   dob: dobValidation,
+  email: emailValidation,
+  verificationCode: verificationCodeValidation,
+  verificationToken: verificationTokenValidation,
 });
 
 export type SignUpType = z.infer<typeof signUpSchema>;

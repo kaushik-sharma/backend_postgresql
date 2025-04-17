@@ -1,6 +1,5 @@
 import { DataTypes, Model } from "sequelize";
 
-import BcryptService from "../../services/bcrypt_service.js";
 import { EntityStatus, Gender } from "../../constants/enums.js";
 import Tables from "../../constants/tables.js";
 import { getSequelize } from "../../services/postgres_service.js";
@@ -14,7 +13,6 @@ interface UserAttributes {
   phoneNumber?: string;
   email?: string;
   dob?: string;
-  password?: string;
   profileImagePath?: string | null;
   status: EntityStatus;
   createdAt?: Date;
@@ -30,7 +28,6 @@ export class UserModel extends Model<UserAttributes> implements UserAttributes {
   public readonly phoneNumber?: string;
   public readonly email?: string;
   public readonly dob?: string;
-  public readonly password?: string;
   public readonly profileImagePath?: string | null;
   public readonly status!: EntityStatus;
   public readonly createdAt!: Date;
@@ -52,7 +49,6 @@ export const initUserModel = () => {
       phoneNumber: { type: DataTypes.STRING, allowNull: true },
       email: { type: DataTypes.STRING, allowNull: true },
       dob: { type: DataTypes.STRING, allowNull: true },
-      password: { type: DataTypes.STRING, allowNull: true },
       profileImagePath: { type: DataTypes.STRING, allowNull: true },
       status: { type: DataTypes.STRING, allowNull: false },
     },
@@ -71,8 +67,6 @@ export const initUserModel = () => {
 
   UserModel.beforeSave(async (user: UserModel) => {
     if (user.status === EntityStatus.active) {
-      const hashedPassword = await BcryptService.hash(user.password!);
-      user.setDataValue("password", hashedPassword);
       user.setDataValue("profileImagePath", null);
     }
   });

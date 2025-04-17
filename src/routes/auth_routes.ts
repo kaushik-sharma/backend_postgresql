@@ -3,13 +3,20 @@ import { Router } from "express";
 import { AuthController } from "../controllers/auth_controller.js";
 import { requireAuth, optionalAuth } from "../middlewares/auth_middlewares.js";
 import { AuthMode } from "../constants/enums.js";
+import { requestEmailCodeRateLimiter } from "../helpers/rate_limiters.js";
 
 const router = Router();
 
 router.get(
-  "/checkPhoneNumber",
-  AuthController.validatePhoneNumberRequest,
-  AuthController.checkPhoneNumber
+  "/checkEmail",
+  AuthController.validateEmailRequest,
+  AuthController.checkEmail
+);
+router.post(
+  "/requestEmailCode",
+  requestEmailCodeRateLimiter,
+  AuthController.validateEmailCodeRequest,
+  AuthController.requestEmailCode
 );
 router.post(
   "/signUp",
