@@ -120,17 +120,19 @@ export default class PostDatasource {
     postId: string,
     userId: string
   ): Promise<void> => {
-    await PostModel.update(
-      {
-        status: EntityStatus.deleted,
-      },
-      {
-        where: {
-          id: postId,
-          userId: userId,
-        },
-      }
-    );
+    // TODO: Implement
+    throw new Error("Unimplemented error.");
+    // await PostModel.update(
+    //   {
+    //     status: EntityStatus.deleted,
+    //   },
+    //   {
+    //     where: {
+    //       id: postId,
+    //       userId: userId,
+    //     },
+    //   }
+    // );
   };
 
   static readonly getCommentUserId = async (
@@ -147,17 +149,19 @@ export default class PostDatasource {
     commentId: string,
     userId: string
   ): Promise<void> => {
-    await CommentModel.update(
-      {
-        status: EntityStatus.deleted,
-      },
-      {
-        where: {
-          id: commentId,
-          userId: userId,
-        },
-      }
-    );
+    // TODO: Implement
+    throw new Error("Unimplemented error.");
+    // await CommentModel.update(
+    //   {
+    //     status: EntityStatus.deleted,
+    //   },
+    //   {
+    //     where: {
+    //       id: commentId,
+    //       userId: userId,
+    //     },
+    //   }
+    // );
   };
 
   static readonly #getComments = async (

@@ -22,7 +22,7 @@ export default class AuthDatasource {
         countryCode: countryCode,
         phoneNumber: phoneNumber,
         status: {
-          [Op.ne]: EntityStatus.deleted,
+          [Op.ne]: EntityStatus.scheduledDeletion,
         },
       },
     });
@@ -43,7 +43,7 @@ export default class AuthDatasource {
       where: {
         email: email,
         status: {
-          [Op.ne]: EntityStatus.deleted,
+          [Op.ne]: EntityStatus.scheduledDeletion,
         },
       },
     });

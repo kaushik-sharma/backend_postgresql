@@ -21,19 +21,21 @@ export default class ProfileDatasource {
     userId: string,
     transaction: Transaction
   ): Promise<void> => {
-    await UserModel.update(
-      {
-        status: EntityStatus.deleted,
-        profileImagePath: null,
-      },
-      {
-        where: {
-          id: userId,
-          status: EntityStatus.active,
-        },
-        transaction: transaction,
-      }
-    );
+    // TODO: Implement
+    throw new Error("Unimplemented error.");
+    // await UserModel.update(
+    //   {
+    //     status: EntityStatus.deleted,
+    //     profileImagePath: null,
+    //   },
+    //   {
+    //     where: {
+    //       id: userId,
+    //       status: EntityStatus.active,
+    //     },
+    //     transaction: transaction,
+    //   }
+    // );
   };
 
   static readonly updateProfile = async (

@@ -22,8 +22,8 @@ export class Env {
 
 export enum EntityStatus {
   active = "ACTIVE",
-  deleted = "DELETED",
   banned = "BANNED",
+  scheduledDeletion = "SCHEDULED_DELETION",
   anonymous = "ANONYMOUS",
 }
 
