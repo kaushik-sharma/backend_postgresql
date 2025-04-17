@@ -1,3 +1,4 @@
+import http from "http";
 import dotenv from "dotenv";
 import express from "express";
 import helmet from "helmet";
@@ -42,7 +43,7 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.json());
+app.use(express.json({ limit: "100kb" }));
 
 app.use(defaultRateLimiter);
 
@@ -67,7 +68,14 @@ try {
 
   const port = Number(process.env.PORT!);
   const host = "0.0.0.0";
-  const server = app.listen(port, host, () => {
+
+  const server = http.createServer(
+    {
+      maxHeaderSize: 8192,
+    },
+    app
+  );
+  server.listen(port, host, () => {
     logger.info(`Server running at https://${host}:${port}/`);
   });
 
