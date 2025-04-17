@@ -119,10 +119,8 @@ export class AuthController {
         });
       }
 
-      // Check if there is an active account deletion request pending
-      const deletionRequestExists =
-        await ProfileDatasource.userDeletionRequestExists(user.id);
-      if (deletionRequestExists) {
+      // Checking if the user is marked for deletion
+      if (user.status === EntityStatus.scheduledDeletion) {
         return successResponseHandler({
           res: res,
           status: 200,
@@ -266,13 +264,11 @@ export class AuthController {
       }
 
       if (parsedData.cancelAccountDeletionRequest) {
-        await ProfileDatasource.cancelUserDeletionRequest(user.id);
+        await ProfileDatasource.removeDeletionRequest(user.id);
       }
 
-      // Check if there is an active account deletion request pending
-      const deletionRequestExists =
-        await ProfileDatasource.userDeletionRequestExists(user.id);
-      if (deletionRequestExists) {
+      // Checking if the user is marked for deletion
+      if (user.status === EntityStatus.scheduledDeletion) {
         throw new CustomError(
           403,
           "You have an active account deletion request pending."

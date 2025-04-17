@@ -21,21 +21,10 @@ export default class ProfileDatasource {
     userId: string,
     transaction: Transaction
   ): Promise<void> => {
-    // TODO: Implement
-    throw new Error("Unimplemented error.");
-    // await UserModel.update(
-    //   {
-    //     status: EntityStatus.deleted,
-    //     profileImagePath: null,
-    //   },
-    //   {
-    //     where: {
-    //       id: userId,
-    //       status: EntityStatus.active,
-    //     },
-    //     transaction: transaction,
-    //   }
-    // );
+    await UserModel.destroy({
+      where: { id: userId },
+      transaction: transaction,
+    });
   };
 
   static readonly updateProfile = async (
@@ -78,28 +67,11 @@ export default class ProfileDatasource {
     );
   };
 
-  static readonly userDeletionRequestExists = async (
-    userId: string
-  ): Promise<boolean> => {
-    const count = await UserDeletionRequestModel.count({
-      where: { userId: userId },
-    });
-    return count > 0;
-  };
-
   static readonly createUserDeletionRequest = async (
     model: UserDeletionRequestModel,
     transaction: Transaction
   ): Promise<void> => {
-    const result = await model.save({ transaction: transaction });
-  };
-
-  static readonly cancelUserDeletionRequest = async (
-    userId: string
-  ): Promise<void> => {
-    await UserDeletionRequestModel.destroy({
-      where: { userId: userId },
-    });
+    await model.save({ transaction: transaction });
   };
 
   static readonly getDueUserDeletions = async (): Promise<
@@ -117,8 +89,8 @@ export default class ProfileDatasource {
 
   static readonly removeDeletionRequest = async (
     userId: string,
-    transaction: Transaction
-  ) => {
+    transaction?: Transaction
+  ): Promise<void> => {
     await UserDeletionRequestModel.destroy({
       where: { userId: userId },
       transaction: transaction,

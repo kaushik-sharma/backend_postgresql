@@ -30,7 +30,9 @@ export default class AuthDatasource {
     if (result.length === 0) return null;
 
     if (result.length > 1) {
-      throw new Error("Multiple active users with the given phone number found!");
+      throw new Error(
+        "Multiple active users with the given phone number found!"
+      );
     }
 
     return result[0];
@@ -117,5 +119,23 @@ export default class AuthDatasource {
       where: { id: id, status: EntityStatus.active },
     });
     return count > 0;
+  };
+
+  static readonly markUserForDeletion = async (
+    userId: string,
+    transaction: Transaction
+  ) => {
+    await UserModel.update(
+      {
+        status: EntityStatus.scheduledDeletion,
+      },
+      {
+        where: {
+          id: userId,
+          status: EntityStatus.active,
+        },
+        transaction: transaction,
+      }
+    );
   };
 }

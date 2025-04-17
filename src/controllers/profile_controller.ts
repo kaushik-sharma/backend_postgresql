@@ -20,6 +20,7 @@ import { UserDeletionRequestModel } from "../models/profile/user_deletion_reques
 import AuthDatasource from "../datasources/auth_datasource.js";
 import { performTransaction } from "../helpers/transaction_helper.js";
 import PublicProfileDto from "../dtos/public_profile_dto.js";
+import { EntityStatus } from "../constants/enums.js";
 
 export const deleteCustomProfileImage = async (
   userId: string
@@ -168,9 +169,9 @@ export default class ProfileController {
     async (req, res, next) => {
       const userId = req.user!.userId;
 
-      // Check if a deletion schedule record already exists for the user account
-      const exists = await ProfileDatasource.userDeletionRequestExists(userId);
-      if (exists) {
+      // Checking if the user is already marked for deletion
+      const userStatus = await AuthDatasource.getUserStatus(userId);
+      if (userStatus === EntityStatus.scheduledDeletion) {
         throw new CustomError(
           409,
           "A deletion request already exists for this account. Can not initiate a duplicate one."
@@ -187,6 +188,7 @@ export default class ProfileController {
 
       await performTransaction<void>(async (transaction) => {
         await AuthDatasource.signOutAllSessions(userId, transaction);
+        await AuthDatasource.markUserForDeletion(userId, transaction);
         await ProfileDatasource.createUserDeletionRequest(model, transaction);
       });
 

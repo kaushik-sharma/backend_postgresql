@@ -1,4 +1,4 @@
-import { FindOptions, Includeable, literal } from "sequelize";
+import { FindOptions, Includeable, literal, Transaction } from "sequelize";
 import { EntityStatus } from "../constants/enums.js";
 import { COMMENTS_PAGE_SIZE, POSTS_PAGE_SIZE } from "../constants/values.js";
 import { UserModel } from "../models/auth/user_model.js";
@@ -93,7 +93,9 @@ export default class PostDatasource {
     return true;
   };
 
-  static readonly createComment = async (comment: CommentModel): Promise<string> => {
+  static readonly createComment = async (
+    comment: CommentModel
+  ): Promise<string> => {
     const result = await comment.save();
     return result.id;
   };
@@ -120,19 +122,12 @@ export default class PostDatasource {
     postId: string,
     userId: string
   ): Promise<void> => {
-    // TODO: Implement
-    throw new Error("Unimplemented error.");
-    // await PostModel.update(
-    //   {
-    //     status: EntityStatus.deleted,
-    //   },
-    //   {
-    //     where: {
-    //       id: postId,
-    //       userId: userId,
-    //     },
-    //   }
-    // );
+    await PostModel.destroy({
+      where: {
+        id: postId,
+        userId: userId,
+      },
+    });
   };
 
   static readonly getCommentUserId = async (
@@ -149,19 +144,12 @@ export default class PostDatasource {
     commentId: string,
     userId: string
   ): Promise<void> => {
-    // TODO: Implement
-    throw new Error("Unimplemented error.");
-    // await CommentModel.update(
-    //   {
-    //     status: EntityStatus.deleted,
-    //   },
-    //   {
-    //     where: {
-    //       id: commentId,
-    //       userId: userId,
-    //     },
-    //   }
-    // );
+    await CommentModel.destroy({
+      where: {
+        id: commentId,
+        userId: userId,
+      },
+    });
   };
 
   static readonly #getComments = async (
@@ -384,5 +372,35 @@ export default class PostDatasource {
       throw new Error("Post not found!");
     }
     return result[0];
+  };
+
+  static readonly deletePostsByUserId = async (
+    userId: string,
+    transaction: Transaction
+  ) => {
+    await PostModel.destroy({
+      where: { userId: userId },
+      transaction: transaction,
+    });
+  };
+
+  static readonly deleteCommentsByUserId = async (
+    userId: string,
+    transaction: Transaction
+  ) => {
+    await CommentModel.destroy({
+      where: { userId: userId },
+      transaction: transaction,
+    });
+  };
+
+  static readonly deleteReactionsByUserId = async (
+    userId: string,
+    transaction: Transaction
+  ) => {
+    await ReactionModel.destroy({
+      where: { userId: userId },
+      transaction: transaction,
+    });
   };
 }
