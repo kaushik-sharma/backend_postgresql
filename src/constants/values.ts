@@ -2,6 +2,7 @@ import { env } from "../app.js";
 import { AwsS3FileCategory } from "../services/aws_s3_service.js";
 import { Env } from "./enums.js";
 
+/// Images
 export const IMAGE_EXPIRY_TIME_IN_MILLISECONDS = 86400000; // 24 hours
 
 /// Users
