@@ -38,3 +38,5 @@ export const ALLOWED_IMAGE_MIMETYPES = [
   "image/webp",
   "image/gif",
 ];
+
+export const DEV_EMAIL_VERIFICATION_WHITELIST = ["gmail.com"];

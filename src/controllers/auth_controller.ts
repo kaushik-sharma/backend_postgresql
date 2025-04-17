@@ -15,7 +15,7 @@ import {
 import { validateModel } from "../helpers/validation_helper.js";
 import AuthDatasource from "../datasources/auth_datasource.js";
 import { successResponseHandler } from "../helpers/success_handler.js";
-import { AuthUserAction, EntityStatus } from "../constants/enums.js";
+import { AuthUserAction, EntityStatus, Env } from "../constants/enums.js";
 import { CustomError } from "../middlewares/error_middlewares.js";
 import JwtService from "../services/jwt_service.js";
 import { UserModel } from "../models/auth/user_model.js";
@@ -23,6 +23,8 @@ import { performTransaction } from "../helpers/transaction_helper.js";
 import ProfileDatasource from "../datasources/profile_datasource.js";
 import BcryptService from "../services/bcrypt_service.js";
 import MailService from "../services/mail_service.js";
+import { env } from "../app.js";
+import { DEV_EMAIL_VERIFICATION_WHITELIST } from "../constants/values.js";
 
 export class AuthController {
   static readonly #generateVerificationCode = (): string => {
@@ -31,6 +33,13 @@ export class AuthController {
       code += randomInt(0, 10).toString();
     }
     return code;
+  };
+
+  static readonly #requiresEmailVerification = (email: string): boolean => {
+    if (env === Env.production) return true;
+
+    const domain = email.split("@")[1];
+    return DEV_EMAIL_VERIFICATION_WHITELIST.includes(domain);
   };
 
   static readonly #sendEmailCode = async (
@@ -60,11 +69,13 @@ export class AuthController {
       hashedCode,
     ]);
 
-    MailService.sendMail({
-      recipientEmail: email,
-      subject: "Account Verification Code",
-      body: code,
-    });
+    if (this.#requiresEmailVerification(email)) {
+      MailService.sendMail({
+        recipientEmail: email,
+        subject: "Account Verification Code",
+        body: code,
+      });
+    }
 
     return newToken;
   };
@@ -74,6 +85,8 @@ export class AuthController {
     code: string,
     token: string
   ): Promise<void> => {
+    if (!this.#requiresEmailVerification(email)) return;
+
     const [hashedEmail, hashedCodes] = JwtService.verifyEmailToken(token);
 
     const isEmailEqual = await BcryptService.compare(email, hashedEmail);
