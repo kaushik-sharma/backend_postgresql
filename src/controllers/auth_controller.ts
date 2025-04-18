@@ -132,7 +132,7 @@ export class AuthController {
       }
 
       // Checking if the user is marked for deletion
-      if (user.status === EntityStatus.scheduledDeletion) {
+      if (user.status === EntityStatus.requestedDeletion) {
         return successResponseHandler({
           res: res,
           status: 200,
@@ -280,7 +280,7 @@ export class AuthController {
       }
 
       // Checking if the user is marked for deletion
-      if (user.status === EntityStatus.scheduledDeletion) {
+      if (user.status === EntityStatus.requestedDeletion) {
         throw new CustomError(
           403,
           "You have an active account deletion request pending."

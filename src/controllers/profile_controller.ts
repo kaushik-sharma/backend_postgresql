@@ -171,7 +171,7 @@ export default class ProfileController {
 
       // Checking if the user is already marked for deletion
       const userStatus = await AuthDatasource.getUserStatus(userId);
-      if (userStatus === EntityStatus.scheduledDeletion) {
+      if (userStatus === EntityStatus.requestedDeletion) {
         throw new CustomError(
           409,
           "A deletion request already exists for this account. Can not initiate a duplicate one."

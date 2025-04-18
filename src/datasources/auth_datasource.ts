@@ -130,7 +130,7 @@ export default class AuthDatasource {
   ) => {
     await UserModel.update(
       {
-        status: EntityStatus.scheduledDeletion,
+        status: EntityStatus.requestedDeletion,
       },
       {
         where: {

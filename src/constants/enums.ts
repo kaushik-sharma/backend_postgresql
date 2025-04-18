@@ -24,7 +24,7 @@ export enum EntityStatus {
   active = "ACTIVE",
   banned = "BANNED",
   deleted = "DELETED",
-  scheduledDeletion = "SCHEDULED_DELETION",
+  requestedDeletion = "REQUESTED_DELETION",
   anonymous = "ANONYMOUS",
 }
 
