@@ -1,6 +1,8 @@
-import { env } from "../app.js";
 import { AwsS3FileCategory } from "../services/aws_s3_service.js";
 import { Env } from "./enums.js";
+
+export let ENV: Env;
+export const initEnv = (env: Env) => (ENV = env);
 
 /// Images
 export const IMAGE_EXPIRY_TIME_IN_MILLISECONDS = 86400000; // 24 hours
@@ -17,10 +19,10 @@ export const POSTS_PAGE_SIZE = 20;
 export const COMMENTS_PAGE_SIZE = 30;
 
 /// Content Moderation
-export const POST_BAN_THRESHOLD = () => (env === Env.development ? 20 : 2000);
+export const POST_BAN_THRESHOLD = () => (ENV === Env.development ? 20 : 2000);
 export const COMMENT_BAN_THRESHOLD = () =>
-  env === Env.development ? 10 : 1000;
-export const USER_BAN_THRESHOLD = () => (env === Env.development ? 10 : 1000);
+  ENV === Env.development ? 10 : 1000;
+export const USER_BAN_THRESHOLD = () => (ENV === Env.development ? 10 : 1000);
 
 /// Rate Limiter
 export const DEFAULT_RATE_LIMITER_WINDOW_MS = 300000; // 5 minutes

@@ -14,12 +14,13 @@ import { errorHandler } from "./middlewares/error_middlewares.js";
 import SocketManager from "./socket.js";
 import logger from "./utils/logger.js";
 import { Env } from "./constants/enums.js";
+import { ENV, initEnv } from "./constants/values.js";
 import CronService from "./services/cron_service.js";
 import { initModels } from "./models/index.js";
 
-export const env = Env.fromString(process.env.ENV);
+initEnv(Env.fromString(process.env.ENV));
 
-dotenv.config({ path: env.filePath });
+dotenv.config({ path: ENV.filePath });
 
 const app = express();
 

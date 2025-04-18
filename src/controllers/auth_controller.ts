@@ -23,8 +23,7 @@ import { performTransaction } from "../helpers/transaction_helper.js";
 import ProfileDatasource from "../datasources/profile_datasource.js";
 import BcryptService from "../services/bcrypt_service.js";
 import MailService from "../services/mail_service.js";
-import { env } from "../app.js";
-import { DEV_EMAIL_VERIFICATION_WHITELIST } from "../constants/values.js";
+import { ENV, DEV_EMAIL_VERIFICATION_WHITELIST } from "../constants/values.js";
 
 export class AuthController {
   static readonly #generateVerificationCode = (): string => {
@@ -36,7 +35,7 @@ export class AuthController {
   };
 
   static readonly #requiresEmailVerification = (email: string): boolean => {
-    if (env === Env.production) return true;
+    if (ENV === Env.production) return true;
 
     const domain = email.split("@")[1];
     return DEV_EMAIL_VERIFICATION_WHITELIST.includes(domain);
