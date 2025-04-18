@@ -65,7 +65,7 @@ export const initUserModel = () => {
     }
   );
 
-  UserModel.beforeSave(async (user: UserModel) => {
+  UserModel.beforeSave((user: UserModel) => {
     if (user.status === EntityStatus.active) {
       user.setDataValue("profileImagePath", null);
     }
