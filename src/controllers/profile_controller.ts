@@ -7,7 +7,7 @@ import ProfileDatasource from "../datasources/profile_datasource.js";
 import AwsS3Service, { AwsS3FileCategory } from "../services/aws_s3_service.js";
 import {
   DEFAULT_PROFILE_IMAGE_PATH,
-  USER_ACCOUNT_DELETION_BUFFER_TIME_IN_DAYS,
+  USER_ACCOUNT_DELETION_BUFFER_DURATION_IN_DAYS,
 } from "../constants/values.js";
 import ProfileDto from "../dtos/profile_dto.js";
 import { validateModel } from "../helpers/validation_helper.js";
@@ -182,7 +182,7 @@ export default class ProfileController {
         userId: userId,
         deleteAt: addDays(
           new Date(),
-          USER_ACCOUNT_DELETION_BUFFER_TIME_IN_DAYS
+          USER_ACCOUNT_DELETION_BUFFER_DURATION_IN_DAYS
         ),
       });
 
