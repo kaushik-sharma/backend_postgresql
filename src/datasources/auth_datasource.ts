@@ -5,6 +5,16 @@ import { EntityStatus } from "../constants/enums.js";
 import { SessionModel } from "../models/session/session_model.js";
 
 export default class AuthDatasource {
+  static readonly isUserActive = async (userId: string): Promise<boolean> => {
+    const count = await UserModel.count({
+      where: { id: userId, status: EntityStatus.active },
+    });
+    if (count > 1) {
+      throw new Error("Multiple active users found!");
+    }
+    return count === 1;
+  };
+
   static readonly getUserStatus = async (id: string): Promise<EntityStatus> => {
     const user = await UserModel.findByPk(id, {
       attributes: ["status"],
@@ -22,7 +32,7 @@ export default class AuthDatasource {
         countryCode: countryCode,
         phoneNumber: phoneNumber,
         status: {
-          [Op.ne]: EntityStatus.scheduledDeletion,
+          [Op.ne]: EntityStatus.deleted,
         },
       },
     });
@@ -45,7 +55,7 @@ export default class AuthDatasource {
       where: {
         email: email,
         status: {
-          [Op.ne]: EntityStatus.scheduledDeletion,
+          [Op.ne]: EntityStatus.deleted,
         },
       },
     });
@@ -112,13 +122,6 @@ export default class AuthDatasource {
   ): Promise<string> => {
     const createdUser = await user.save({ transaction: transaction });
     return createdUser.id;
-  };
-
-  static readonly isUserActive = async (id: string): Promise<boolean> => {
-    const count = await UserModel.count({
-      where: { id: id, status: EntityStatus.active },
-    });
-    return count > 0;
   };
 
   static readonly markUserForDeletion = async (

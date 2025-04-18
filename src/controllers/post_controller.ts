@@ -109,6 +109,7 @@ export default class PostController {
             lastName: repostedPost.user.lastName!,
             profileImageUrl: profileImageUrl,
           },
+          status: repostedPost.status,
         });
       }
 
@@ -127,6 +128,7 @@ export default class PostController {
           lastName: user.lastName!,
           profileImageUrl: profileImageUrl,
         },
+        status: post.status,
       });
 
       successResponseHandler({
@@ -272,7 +274,9 @@ export default class PostController {
         commentStatus: EntityStatus,
         userStatus: EntityStatus
       ): EntityStatus => {
-        return userStatus !== EntityStatus.active ? userStatus : commentStatus;
+        return userStatus !== EntityStatus.active
+          ? EntityStatus.deleted
+          : commentStatus;
       };
 
       const postId = req.params.postId as string | undefined | null;
@@ -437,29 +441,37 @@ export default class PostController {
       );
 
       let repostedPost: FeedPostDto | null = null;
-      if (post.repostedPost !== undefined && post.repostedPost !== null) {
+      if (post.repostedPostId !== null) {
         const repostImageUrl =
-          post.repostedPost.imagePath != null
+          post.repostedPost?.imagePath != null
             ? AwsS3Service.getCloudFrontSignedUrl(post.repostedPost.imagePath)
             : null;
-        const repostProfileImageUrl = AwsS3Service.getCloudFrontSignedUrl(
-          post.repostedPost.user.profileImagePath || DEFAULT_PROFILE_IMAGE_PATH
-        );
+        const repostProfileImageUrl =
+          post.repostedPost !== null
+            ? AwsS3Service.getCloudFrontSignedUrl(
+                post.repostedPost!.user.profileImagePath ??
+                  DEFAULT_PROFILE_IMAGE_PATH
+              )
+            : null;
         repostedPost = new FeedPostDto({
-          id: post.repostedPost.id,
-          text: post.repostedPost.text,
+          id: post.repostedPost?.id ?? null,
+          text: post.repostedPost?.text ?? null,
           imageUrl: repostImageUrl,
-          likeCount: post.repostedPost.likeCount,
-          dislikeCount: post.repostedPost.dislikeCount,
-          commentCount: post.repostedPost.commentCount,
-          createdAt: post.repostedPost.createdAt,
+          likeCount: post.repostedPost?.likeCount ?? null,
+          dislikeCount: post.repostedPost?.dislikeCount ?? null,
+          commentCount: post.repostedPost?.commentCount ?? null,
+          createdAt: post.repostedPost?.createdAt ?? null,
           repostedPost: null,
-          creator: {
-            id: post.repostedPost.user.id,
-            firstName: post.repostedPost.user.firstName!,
-            lastName: post.repostedPost.user.lastName!,
-            profileImageUrl: repostProfileImageUrl,
-          },
+          creator:
+            post.repostedPost !== null
+              ? {
+                  id: post.repostedPost!.user.id,
+                  firstName: post.repostedPost!.user.firstName!,
+                  lastName: post.repostedPost!.user.lastName!,
+                  profileImageUrl: repostProfileImageUrl!,
+                }
+              : null,
+          status: post.repostedPost?.status ?? EntityStatus.deleted,
         });
       }
 
@@ -478,6 +490,7 @@ export default class PostController {
           lastName: post.user.lastName!,
           profileImageUrl: profileImageUrl,
         },
+        status: post.status,
       });
     });
   };

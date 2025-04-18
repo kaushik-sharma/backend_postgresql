@@ -1,3 +1,5 @@
+import { EntityStatus } from "../constants/enums.js";
+
 interface PostCreatorParams {
   id: string;
   firstName: string;
@@ -6,27 +8,29 @@ interface PostCreatorParams {
 }
 
 interface FeedPostDtoParams {
-  id: string;
-  text: string;
+  id: string | null;
+  text: string | null;
   imageUrl: string | null;
-  likeCount: number;
-  dislikeCount: number;
-  commentCount: number;
-  createdAt: Date;
+  likeCount: number | null;
+  dislikeCount: number | null;
+  commentCount: number | null;
+  createdAt: Date | null;
   repostedPost: FeedPostDtoParams | null;
-  creator: PostCreatorParams;
+  creator: PostCreatorParams | null;
+  status: EntityStatus;
 }
 
 export default class FeedPostDto {
-  public readonly id!: string;
-  public readonly text!: string;
+  public readonly id!: string | null;
+  public readonly text!: string | null;
   public readonly imageUrl!: string | null;
-  public readonly likeCount!: number;
-  public readonly dislikeCount!: number;
-  public readonly commentCount!: number;
-  public readonly createdAt!: Date;
+  public readonly likeCount!: number | null;
+  public readonly dislikeCount!: number | null;
+  public readonly commentCount!: number | null;
+  public readonly createdAt!: Date | null;
   public readonly repostedPost!: FeedPostDtoParams | null;
-  public readonly creator!: PostCreatorParams;
+  public readonly creator!: PostCreatorParams | null;
+  public readonly status!: EntityStatus;
 
   constructor(params: FeedPostDtoParams) {
     Object.assign(this, params);

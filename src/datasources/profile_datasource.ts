@@ -17,14 +17,19 @@ export default class ProfileDatasource {
     }))!;
   };
 
-  static readonly deleteAccount = async (
+  static readonly deleteUser = async (
     userId: string,
     transaction: Transaction
   ): Promise<void> => {
-    await UserModel.destroy({
-      where: { id: userId },
-      transaction: transaction,
-    });
+    await UserModel.update(
+      {
+        status: EntityStatus.deleted,
+      },
+      {
+        where: { id: userId },
+        transaction: transaction,
+      }
+    );
   };
 
   static readonly updateProfile = async (

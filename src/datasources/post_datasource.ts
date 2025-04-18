@@ -122,12 +122,17 @@ export default class PostDatasource {
     postId: string,
     userId: string
   ): Promise<void> => {
-    await PostModel.destroy({
-      where: {
-        id: postId,
-        userId: userId,
+    await PostModel.update(
+      {
+        status: EntityStatus.deleted,
       },
-    });
+      {
+        where: {
+          id: postId,
+          userId: userId,
+        },
+      }
+    );
   };
 
   static readonly getCommentUserId = async (
@@ -144,12 +149,17 @@ export default class PostDatasource {
     commentId: string,
     userId: string
   ): Promise<void> => {
-    await CommentModel.destroy({
-      where: {
-        id: commentId,
-        userId: userId,
+    await CommentModel.update(
+      {
+        status: EntityStatus.deleted,
       },
-    });
+      {
+        where: {
+          id: commentId,
+          userId: userId,
+        },
+      }
+    );
   };
 
   static readonly #getComments = async (
@@ -299,6 +309,7 @@ export default class PostDatasource {
             required: true,
           },
         ],
+        where: { status: EntityStatus.active },
         required: false,
       });
     }
@@ -372,35 +383,5 @@ export default class PostDatasource {
       throw new Error("Post not found!");
     }
     return result[0];
-  };
-
-  static readonly deletePostsByUserId = async (
-    userId: string,
-    transaction: Transaction
-  ) => {
-    await PostModel.destroy({
-      where: { userId: userId },
-      transaction: transaction,
-    });
-  };
-
-  static readonly deleteCommentsByUserId = async (
-    userId: string,
-    transaction: Transaction
-  ) => {
-    await CommentModel.destroy({
-      where: { userId: userId },
-      transaction: transaction,
-    });
-  };
-
-  static readonly deleteReactionsByUserId = async (
-    userId: string,
-    transaction: Transaction
-  ) => {
-    await ReactionModel.destroy({
-      where: { userId: userId },
-      transaction: transaction,
-    });
   };
 }
