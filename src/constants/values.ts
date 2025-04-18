@@ -5,7 +5,7 @@ export let ENV: Env;
 export const initEnv = (env: Env) => (ENV = env);
 
 /// Images
-export const IMAGE_EXPIRY_TIME_IN_MILLISECONDS = 86400000; // 24 hours
+export const IMAGE_EXPIRY_DURATION_IN_HOURS = 48;
 
 /// Users
 export const MIN_DOB_DATE = new Date(Date.UTC(1901, 0, 1));
