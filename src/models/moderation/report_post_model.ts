@@ -42,7 +42,7 @@ export const initReportPostModel = () => {
         allowNull: false,
       },
       reason: {
-        type: DataTypes.STRING,
+        type: DataTypes.ENUM,
         allowNull: false,
       },
     },

@@ -39,7 +39,7 @@ export const initReactionModel = () => {
       },
       userId: { type: DataTypes.UUID, allowNull: false },
       postId: { type: DataTypes.UUID, allowNull: false },
-      emotionType: { type: DataTypes.STRING, allowNull: false },
+      emotionType: { type: DataTypes.ENUM, allowNull: false },
     },
     {
       timestamps: true,

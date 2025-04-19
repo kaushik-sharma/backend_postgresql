@@ -42,7 +42,7 @@ export const initReportCommentModel = () => {
         allowNull: false,
       },
       reason: {
-        type: DataTypes.STRING,
+        type: DataTypes.ENUM,
         allowNull: false,
       },
     },

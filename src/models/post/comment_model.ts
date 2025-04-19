@@ -51,8 +51,8 @@ export const initCommentModel = () => {
       userId: { type: DataTypes.UUID, allowNull: false },
       parentCommentId: { type: DataTypes.UUID, allowNull: true },
       level: { type: DataTypes.INTEGER, allowNull: false },
-      text: { type: DataTypes.STRING, allowNull: false },
-      status: { type: DataTypes.STRING, allowNull: false },
+      text: { type: DataTypes.TEXT, allowNull: false },
+      status: { type: DataTypes.ENUM, allowNull: false },
     },
     {
       timestamps: true,
