@@ -3,6 +3,8 @@ import { DataTypes, Model } from "sequelize";
 import { ReportReason } from "../../constants/enums.js";
 import Tables from "../../constants/tables.js";
 import { getSequelize } from "../../services/postgres_service.js";
+import { UserModel } from "../auth/user_model.js";
+import { PostModel } from "../post/post_model.js";
 
 interface ReportPostAttributes {
   id?: string;
@@ -55,4 +57,8 @@ export const initReportPostModel = () => {
       indexes: [{ fields: ["postId"] }, { fields: ["userId"] }],
     }
   );
+
+  ReportPostModel.belongsTo(UserModel, { foreignKey: "userId", as: "user" });
+
+  ReportPostModel.belongsTo(PostModel, { foreignKey: "postId", as: "post" });
 };

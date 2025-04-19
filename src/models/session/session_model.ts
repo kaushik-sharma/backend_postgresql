@@ -1,6 +1,7 @@
 import { DataTypes, Model } from "sequelize";
 import Tables from "../../constants/tables.js";
 import { getSequelize } from "../../services/postgres_service.js";
+import { UserModel } from "../auth/user_model.js";
 
 interface SessionAttributes {
   id?: string;
@@ -40,4 +41,9 @@ export const initSessionModel = () => {
       indexes: [{ fields: ["userId"] }],
     }
   );
+
+  SessionModel.belongsTo(UserModel, {
+    foreignKey: "userId",
+    as: "user",
+  });
 };

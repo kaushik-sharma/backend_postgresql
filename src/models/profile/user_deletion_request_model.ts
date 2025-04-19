@@ -2,6 +2,7 @@ import { DataTypes, Model } from "sequelize";
 
 import Tables from "../../constants/tables.js";
 import { getSequelize } from "../../services/postgres_service.js";
+import { UserModel } from "../auth/user_model.js";
 
 interface UserDeletionRequestAttributes {
   id?: string;
@@ -30,7 +31,7 @@ export const initUserDeletionRequestModel = () => {
         defaultValue: DataTypes.UUIDV4,
         primaryKey: true,
       },
-      userId: { type: DataTypes.UUID, allowNull: false },
+      userId: { type: DataTypes.UUID, allowNull: false, unique: true },
       deleteAt: { type: DataTypes.DATE, allowNull: false },
     },
     {
@@ -41,4 +42,9 @@ export const initUserDeletionRequestModel = () => {
       indexes: [{ fields: ["userId"] }, { fields: ["deleteAt"] }],
     }
   );
+
+  UserDeletionRequestModel.belongsTo(UserModel, {
+    foreignKey: "userId",
+    as: "user",
+  });
 };

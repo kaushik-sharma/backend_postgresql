@@ -4,6 +4,8 @@ import { EntityStatus } from "../../constants/enums.js";
 import Tables from "../../constants/tables.js";
 import { getSequelize } from "../../services/postgres_service.js";
 import { UserModel } from "../auth/user_model.js";
+import { PostModel } from "./post_model.js";
+import { ReportCommentModel } from "../moderation/report_comment_model.js";
 
 interface CommentAttributes {
   id?: string;
@@ -33,10 +35,6 @@ export class CommentModel
 
   // Associations
   public readonly user!: UserModel;
-
-  static associate() {
-    CommentModel.belongsTo(UserModel, { foreignKey: "userId", as: "user" });
-  }
 }
 
 export const initCommentModel = () => {
@@ -67,5 +65,12 @@ export const initCommentModel = () => {
     }
   );
 
-  CommentModel.associate();
+  CommentModel.belongsTo(UserModel, { foreignKey: "userId", as: "user" });
+
+  CommentModel.belongsTo(PostModel, { foreignKey: "postId", as: "post" });
+
+  CommentModel.hasMany(ReportCommentModel, {
+    foreignKey: "commentId",
+    as: "reportedComments",
+  });
 };

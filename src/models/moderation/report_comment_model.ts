@@ -3,6 +3,8 @@ import { DataTypes, Model } from "sequelize";
 import { ReportReason } from "../../constants/enums.js";
 import Tables from "../../constants/tables.js";
 import { getSequelize } from "../../services/postgres_service.js";
+import { UserModel } from "../auth/user_model.js";
+import { CommentModel } from "../post/comment_model.js";
 
 interface ReportCommentAttributes {
   id?: string;
@@ -55,4 +57,11 @@ export const initReportCommentModel = () => {
       indexes: [{ fields: ["commentId"] }, { fields: ["userId"] }],
     }
   );
+
+  ReportCommentModel.belongsTo(UserModel, { foreignKey: "userId", as: "user" });
+
+  ReportCommentModel.belongsTo(CommentModel, {
+    foreignKey: "commentId",
+    as: "comment",
+  });
 };

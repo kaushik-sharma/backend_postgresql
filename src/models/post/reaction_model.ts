@@ -2,6 +2,8 @@ import { DataTypes, Model } from "sequelize";
 
 import Tables from "../../constants/tables.js";
 import { getSequelize } from "../../services/postgres_service.js";
+import { UserModel } from "../auth/user_model.js";
+import { PostModel } from "./post_model.js";
 
 export enum EmotionType {
   like = "LIKE",
@@ -53,4 +55,14 @@ export const initReactionModel = () => {
       indexes: [{ fields: ["userId"] }, { fields: ["postId"] }],
     }
   );
+
+  ReactionModel.belongsTo(UserModel, {
+    foreignKey: "userId",
+    as: "user",
+  });
+
+  ReactionModel.belongsTo(PostModel, {
+    foreignKey: "postId",
+    as: "post",
+  });
 };

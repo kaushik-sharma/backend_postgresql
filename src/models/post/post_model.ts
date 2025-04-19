@@ -4,6 +4,9 @@ import { EntityStatus } from "../../constants/enums.js";
 import Tables from "../../constants/tables.js";
 import { getSequelize } from "../../services/postgres_service.js";
 import { UserModel } from "../auth/user_model.js";
+import { CommentModel } from "./comment_model.js";
+import { ReactionModel } from "./reaction_model.js";
+import { ReportPostModel } from "../moderation/report_post_model.js";
 
 interface PostAttributes {
   id?: string;
@@ -32,14 +35,6 @@ export class PostModel extends Model<PostAttributes> implements PostAttributes {
   public readonly dislikeCount!: number;
   public readonly commentCount!: number;
   public readonly repostedPost?: PostModel | null;
-
-  static associate() {
-    PostModel.belongsTo(UserModel, { foreignKey: "userId", as: "user" });
-    PostModel.belongsTo(PostModel, {
-      foreignKey: "repostedPostId",
-      as: "repostedPost",
-    });
-  }
 }
 
 export const initPostModel = () => {
@@ -69,5 +64,25 @@ export const initPostModel = () => {
     }
   );
 
-  PostModel.associate();
+  PostModel.belongsTo(UserModel, { foreignKey: "userId", as: "user" });
+
+  PostModel.belongsTo(PostModel, {
+    foreignKey: "repostedPostId",
+    as: "repostedPost",
+  });
+
+  PostModel.hasMany(CommentModel, {
+    foreignKey: "postId",
+    as: "comments",
+  });
+
+  PostModel.hasMany(ReactionModel, {
+    foreignKey: "postId",
+    as: "reactions",
+  });
+
+  PostModel.hasMany(ReportPostModel, {
+    foreignKey: "postId",
+    as: "reportedPosts",
+  });
 };
