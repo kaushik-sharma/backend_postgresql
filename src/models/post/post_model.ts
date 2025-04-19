@@ -54,7 +54,11 @@ export const initPostModel = () => {
       repostedPostId: { type: DataTypes.UUID, allowNull: true },
       text: { type: DataTypes.TEXT, allowNull: false },
       imagePath: { type: DataTypes.STRING, allowNull: true },
-      status: { type: DataTypes.ENUM, allowNull: false },
+      status: {
+        type: DataTypes.ENUM,
+        values: Object.values(EntityStatus),
+        allowNull: false,
+      },
     },
     {
       timestamps: true,

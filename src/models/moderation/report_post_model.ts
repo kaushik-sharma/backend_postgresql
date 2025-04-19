@@ -44,6 +44,7 @@ export const initReportPostModel = () => {
       reason: {
         type: DataTypes.ENUM,
         allowNull: false,
+        values: Object.values(ReportReason),
       },
     },
     {

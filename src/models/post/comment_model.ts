@@ -52,7 +52,11 @@ export const initCommentModel = () => {
       parentCommentId: { type: DataTypes.UUID, allowNull: true },
       level: { type: DataTypes.INTEGER, allowNull: false },
       text: { type: DataTypes.TEXT, allowNull: false },
-      status: { type: DataTypes.ENUM, allowNull: false },
+      status: {
+        type: DataTypes.ENUM,
+        values: Object.values(EntityStatus),
+        allowNull: false,
+      },
     },
     {
       timestamps: true,

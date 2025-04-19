@@ -44,13 +44,21 @@ export const initUserModel = () => {
       },
       firstName: { type: DataTypes.STRING, allowNull: true },
       lastName: { type: DataTypes.STRING, allowNull: true },
-      gender: { type: DataTypes.ENUM, allowNull: true },
+      gender: {
+        type: DataTypes.ENUM,
+        values: Object.values(Gender),
+        allowNull: true,
+      },
       countryCode: { type: DataTypes.STRING, allowNull: true },
       phoneNumber: { type: DataTypes.STRING, allowNull: true },
       email: { type: DataTypes.STRING, allowNull: true },
       dob: { type: DataTypes.STRING, allowNull: true },
       profileImagePath: { type: DataTypes.STRING, allowNull: true },
-      status: { type: DataTypes.ENUM, allowNull: false },
+      status: {
+        type: DataTypes.ENUM,
+        values: Object.values(EntityStatus),
+        allowNull: false,
+      },
     },
     {
       timestamps: true,
