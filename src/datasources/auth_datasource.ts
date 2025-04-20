@@ -1,6 +1,6 @@
 import { Op, Transaction } from "sequelize";
 
-import { UserModel } from "../models/auth/user_model.js";
+import { UserModel } from "../models/user/user_model.js";
 import { EntityStatus } from "../constants/enums.js";
 import { SessionModel } from "../models/session/session_model.js";
 

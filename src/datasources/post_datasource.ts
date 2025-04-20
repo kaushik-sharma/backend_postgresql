@@ -1,7 +1,7 @@
 import { FindOptions, Includeable, literal, Transaction } from "sequelize";
 import { EntityStatus } from "../constants/enums.js";
 import { COMMENTS_PAGE_SIZE, POSTS_PAGE_SIZE } from "../constants/values.js";
-import { UserModel } from "../models/auth/user_model.js";
+import { UserModel } from "../models/user/user_model.js";
 import { CommentModel } from "../models/post/comment_model.js";
 import { PostModel } from "../models/post/post_model.js";
 import { EmotionType, ReactionModel } from "../models/post/reaction_model.js";

@@ -1,6 +1,6 @@
 import { Op, Transaction } from "sequelize";
 import { EntityStatus } from "../constants/enums.js";
-import { UserModel } from "../models/auth/user_model.js";
+import { UserModel } from "../models/user/user_model.js";
 import { UserDeletionRequestModel } from "../models/profile/user_deletion_request_model.js";
 
 export default class ProfileDatasource {

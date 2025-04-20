@@ -1,5 +1,5 @@
 import { initSessionModel } from "./session/session_model.js";
-import { initUserModel } from "./auth/user_model.js";
+import { initUserModel } from "./user/user_model.js";
 import { initUserDeletionRequestModel } from "./profile/user_deletion_request_model.js";
 import { initCommentModel } from "./post/comment_model.js";
 import { initPostModel } from "./post/post_model.js";

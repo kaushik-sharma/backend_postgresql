@@ -18,7 +18,7 @@ import { successResponseHandler } from "../helpers/success_handler.js";
 import { AuthUserAction, EntityStatus, Env } from "../constants/enums.js";
 import { CustomError } from "../middlewares/error_middlewares.js";
 import JwtService from "../services/jwt_service.js";
-import { UserModel } from "../models/auth/user_model.js";
+import { UserModel } from "../models/user/user_model.js";
 import { performTransaction } from "../helpers/transaction_helper.js";
 import ProfileDatasource from "../datasources/profile_datasource.js";
 import BcryptService from "../services/bcrypt_service.js";

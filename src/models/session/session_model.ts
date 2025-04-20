@@ -2,7 +2,7 @@ import { DataTypes, Model } from "sequelize";
 
 import Tables from "../../constants/tables.js";
 import { SEQUELIZE } from "../../constants/values.js";
-import { UserModel } from "../auth/user_model.js";
+import { UserModel } from "../user/user_model.js";
 
 interface SessionAttributes {
   id?: string;
