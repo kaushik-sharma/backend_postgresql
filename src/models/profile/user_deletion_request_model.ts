@@ -1,7 +1,7 @@
 import { DataTypes, Model } from "sequelize";
 
 import Tables from "../../constants/tables.js";
-import { getSequelize } from "../../services/postgres_service.js";
+import { SEQUELIZE } from "../../constants/values.js";
 import { UserModel } from "../auth/user_model.js";
 
 interface UserDeletionRequestAttributes {
@@ -38,7 +38,7 @@ export const initUserDeletionRequestModel = () => {
       timestamps: true,
       tableName: Tables.userDeletionRequests,
       modelName: "UserDeletionRequestModel",
-      sequelize: getSequelize(),
+      sequelize: SEQUELIZE,
       indexes: [{ fields: ["userId"] }, { fields: ["deleteAt"] }],
     }
   );

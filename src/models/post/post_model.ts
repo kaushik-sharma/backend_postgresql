@@ -2,7 +2,7 @@ import { DataTypes, Model } from "sequelize";
 
 import { EntityStatus } from "../../constants/enums.js";
 import Tables from "../../constants/tables.js";
-import { getSequelize } from "../../services/postgres_service.js";
+import { SEQUELIZE } from "../../constants/values.js";
 import { UserModel } from "../auth/user_model.js";
 import { CommentModel } from "./comment_model.js";
 import { ReactionModel } from "./reaction_model.js";
@@ -59,7 +59,7 @@ export const initPostModel = () => {
       timestamps: true,
       tableName: Tables.posts,
       modelName: "PostModel",
-      sequelize: getSequelize(),
+      sequelize: SEQUELIZE,
       indexes: [{ fields: ["userId"] }],
     }
   );

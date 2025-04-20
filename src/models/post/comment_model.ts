@@ -2,7 +2,7 @@ import { DataTypes, Model } from "sequelize";
 
 import { EntityStatus } from "../../constants/enums.js";
 import Tables from "../../constants/tables.js";
-import { getSequelize } from "../../services/postgres_service.js";
+import { SEQUELIZE } from "../../constants/values.js";
 import { UserModel } from "../auth/user_model.js";
 import { PostModel } from "./post_model.js";
 import { ReportCommentModel } from "../moderation/report_comment_model.js";
@@ -60,7 +60,7 @@ export const initCommentModel = () => {
       timestamps: true,
       tableName: Tables.comments,
       modelName: "CommentModel",
-      sequelize: getSequelize(),
+      sequelize: SEQUELIZE,
       indexes: [{ fields: ["postId"] }, { fields: ["userId"] }],
     }
   );

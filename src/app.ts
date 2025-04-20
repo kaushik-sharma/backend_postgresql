@@ -14,11 +14,11 @@ import { errorHandler } from "./middlewares/error_middlewares.js";
 import SocketManager from "./socket.js";
 import logger from "./utils/logger.js";
 import { Env } from "./constants/enums.js";
-import { ENV, initEnv } from "./constants/values.js";
+import { ENV, initEnv, initSequelize } from "./constants/values.js";
 import CronService from "./services/cron_service.js";
 import { initModels } from "./models/index.js";
 
-initEnv(Env.fromString(process.env.ENV));
+initEnv(Env.fromString(process.env.ENV!));
 
 dotenv.config({ path: ENV.filePath });
 
@@ -64,8 +64,9 @@ process.on("uncaughtException", (error, origin) => {
 });
 
 try {
-  await PostgresService.connect();
-  await initModels();
+  const sequelize = await PostgresService.connect();
+  initSequelize(sequelize);
+  initModels();
 
   const port = Number(process.env.PORT!);
   const host = "0.0.0.0";

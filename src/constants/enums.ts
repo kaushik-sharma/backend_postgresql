@@ -11,7 +11,7 @@ export class Env {
     return [Env.development, Env.production];
   }
 
-  static fromString(envStr: string | undefined): Env {
+  static fromString(envStr: string): Env {
     const env = this.values().find((e) => e.name === envStr);
     if (env === undefined) {
       throw new Error(`Invalid environment specified: ${envStr}`);

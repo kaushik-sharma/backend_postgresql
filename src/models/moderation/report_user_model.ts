@@ -2,7 +2,7 @@ import { DataTypes, Model } from "sequelize";
 
 import { ReportReason } from "../../constants/enums.js";
 import Tables from "../../constants/tables.js";
-import { getSequelize } from "../../services/postgres_service.js";
+import { SEQUELIZE } from "../../constants/values.js";
 import { UserModel } from "../auth/user_model.js";
 
 interface ReportUserAttributes {
@@ -52,7 +52,7 @@ export const initReportUserModel = () => {
       timestamps: true,
       tableName: Tables.reportedUsers,
       modelName: "ReportUserModel",
-      sequelize: getSequelize(),
+      sequelize: SEQUELIZE,
       indexes: [{ fields: ["reportedUserId"] }, { fields: ["userId"] }],
     }
   );

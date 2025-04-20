@@ -1,7 +1,7 @@
 import { DataTypes, Model } from "sequelize";
 
 import Tables from "../../constants/tables.js";
-import { getSequelize } from "../../services/postgres_service.js";
+import { SEQUELIZE } from "../../constants/values.js";
 import { UserModel } from "../auth/user_model.js";
 import { PostModel } from "./post_model.js";
 
@@ -51,7 +51,7 @@ export const initReactionModel = () => {
       timestamps: true,
       tableName: Tables.reactions,
       modelName: "ReactionModel",
-      sequelize: getSequelize(),
+      sequelize: SEQUELIZE,
       indexes: [{ fields: ["userId"] }, { fields: ["postId"] }],
     }
   );

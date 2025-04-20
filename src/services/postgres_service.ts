@@ -2,18 +2,9 @@ import { Sequelize } from "sequelize";
 
 import logger from "../utils/logger.js";
 
-let _sequelize: Sequelize | null = null;
-
-export const getSequelize = (): Sequelize => {
-  if (_sequelize === null) {
-    throw new Error("Postgres is not initialized.");
-  }
-  return _sequelize;
-};
-
 export default class PostgresService {
-  static readonly connect = async () => {
-    _sequelize = new Sequelize(process.env.SUPABASE_CONNECTION_URI!, {
+  static readonly connect = async (): Promise<Sequelize> => {
+    const sequelize = new Sequelize(process.env.SUPABASE_CONNECTION_URI!, {
       dialect: "postgres",
       dialectOptions: {
         ssl: {
@@ -24,8 +15,10 @@ export default class PostgresService {
       logging: false,
     });
 
-    await _sequelize.authenticate();
+    await sequelize.authenticate();
 
     logger.info("Connected to PostgreSQL successfully.");
+
+    return sequelize;
   };
 }

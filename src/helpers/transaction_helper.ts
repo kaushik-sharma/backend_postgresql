@@ -1,11 +1,11 @@
 import { Transaction } from "sequelize";
-import { getSequelize } from "../services/postgres_service.js";
+
+import { SEQUELIZE } from "../constants/values.js";
 
 export const performTransaction = async <T>(
   task: (transaction: Transaction) => Promise<T>
 ): Promise<T> => {
-  const sequelize = getSequelize();
-  const transaction = await sequelize.transaction();
+  const transaction = await SEQUELIZE.transaction();
 
   try {
     const result = await task(transaction);

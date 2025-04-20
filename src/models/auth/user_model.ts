@@ -2,7 +2,7 @@ import { DataTypes, Model } from "sequelize";
 
 import { EntityStatus, Gender } from "../../constants/enums.js";
 import Tables from "../../constants/tables.js";
-import { getSequelize } from "../../services/postgres_service.js";
+import { SEQUELIZE } from "../../constants/values.js";
 import { SessionModel } from "../session/session_model.js";
 import { UserDeletionRequestModel } from "../profile/user_deletion_request_model.js";
 import { PostModel } from "../post/post_model.js";
@@ -72,7 +72,7 @@ export const initUserModel = () => {
       timestamps: true,
       tableName: Tables.users,
       modelName: "UserModel",
-      sequelize: getSequelize(),
+      sequelize: SEQUELIZE,
       indexes: [
         { fields: ["email"] },
         { fields: ["countryCode"] },

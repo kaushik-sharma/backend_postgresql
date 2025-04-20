@@ -1,8 +1,12 @@
+import { Sequelize } from "sequelize";
 import { AwsS3FileCategory } from "../services/aws_s3_service.js";
 import { Env } from "./enums.js";
 
 export let ENV: Env;
 export const initEnv = (env: Env) => (ENV = env);
+
+export let SEQUELIZE: Sequelize;
+export const initSequelize = (sequelize: Sequelize) => (SEQUELIZE = sequelize);
 
 /// Images
 export const IMAGE_EXPIRY_DURATION_IN_HOURS = 48;
