@@ -85,6 +85,6 @@ try {
   CronService.scheduleDailyEmails();
   CronService.scheduleRequestedUserDeletions();
 } catch (err: any) {
-  logger.error(err);
+  console.error(err);
   process.exit(1);
 }
