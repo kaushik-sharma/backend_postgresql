@@ -33,8 +33,8 @@ export default {
       },
       reason: {
         type: DataTypes.ENUM,
-        allowNull: false,
         values: Object.values(ReportReason),
+        allowNull: false,
       },
       createdAt: {
         type: DataTypes.DATE,
