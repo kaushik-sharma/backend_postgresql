@@ -64,7 +64,9 @@ export const initCommentModel = () => {
       indexes: [{ fields: ["postId"] }, { fields: ["userId"] }],
     }
   );
+};
 
+export const associateCommentModel = () => {
   CommentModel.belongsTo(UserModel, { foreignKey: "userId", as: "user" });
 
   CommentModel.belongsTo(PostModel, { foreignKey: "postId", as: "post" });

@@ -63,7 +63,9 @@ export const initPostModel = () => {
       indexes: [{ fields: ["userId"] }],
     }
   );
+};
 
+export const associatePostModel = () => {
   PostModel.belongsTo(UserModel, { foreignKey: "userId", as: "user" });
 
   PostModel.belongsTo(PostModel, {

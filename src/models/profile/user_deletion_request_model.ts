@@ -42,7 +42,9 @@ export const initUserDeletionRequestModel = () => {
       indexes: [{ fields: ["userId"] }, { fields: ["deleteAt"] }],
     }
   );
+};
 
+export const associateUserDeletionRequestModel = () => {
   UserDeletionRequestModel.belongsTo(UserModel, {
     foreignKey: "userId",
     as: "user",

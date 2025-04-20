@@ -81,6 +81,14 @@ export const initUserModel = () => {
     }
   );
 
+  UserModel.beforeSave((user: UserModel) => {
+    if (user.status === EntityStatus.active) {
+      user.setDataValue("profileImagePath", null);
+    }
+  });
+};
+
+export const associateUserModel = () => {
   UserModel.hasMany(SessionModel, {
     foreignKey: "userId",
     as: "sessions",
@@ -119,11 +127,5 @@ export const initUserModel = () => {
   UserModel.hasMany(ReportUserModel, {
     foreignKey: "userId",
     as: "reportedUsers",
-  });
-
-  UserModel.beforeSave((user: UserModel) => {
-    if (user.status === EntityStatus.active) {
-      user.setDataValue("profileImagePath", null);
-    }
   });
 };

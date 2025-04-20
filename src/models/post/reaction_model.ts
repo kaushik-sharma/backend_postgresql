@@ -55,7 +55,9 @@ export const initReactionModel = () => {
       indexes: [{ fields: ["userId"] }, { fields: ["postId"] }],
     }
   );
+};
 
+export const associateReactionModel = () => {
   ReactionModel.belongsTo(UserModel, {
     foreignKey: "userId",
     as: "user",

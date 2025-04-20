@@ -56,7 +56,9 @@ export const initReportUserModel = () => {
       indexes: [{ fields: ["reportedUserId"] }, { fields: ["userId"] }],
     }
   );
+};
 
+export const associateReportUserModel = () => {
   ReportUserModel.belongsTo(UserModel, { foreignKey: "userId", as: "user" });
 
   ReportUserModel.belongsTo(UserModel, {

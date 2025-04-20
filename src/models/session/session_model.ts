@@ -42,7 +42,9 @@ export const initSessionModel = () => {
       indexes: [{ fields: ["userId"] }],
     }
   );
+};
 
+export const associateSessionModel = () => {
   SessionModel.belongsTo(UserModel, {
     foreignKey: "userId",
     as: "user",

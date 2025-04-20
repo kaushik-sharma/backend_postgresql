@@ -57,7 +57,9 @@ export const initReportPostModel = () => {
       indexes: [{ fields: ["postId"] }, { fields: ["userId"] }],
     }
   );
+};
 
+export const associateReportPostModel = () => {
   ReportPostModel.belongsTo(UserModel, { foreignKey: "userId", as: "user" });
 
   ReportPostModel.belongsTo(PostModel, { foreignKey: "postId", as: "post" });
