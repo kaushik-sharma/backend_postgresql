@@ -30,8 +30,8 @@ import {
 } from "./moderation/report_user_model.js";
 
 export const initModels = () => {
-  initSessionModel();
   initUserModel();
+  initSessionModel();
   initUserDeletionRequestModel();
   initPostModel();
   initCommentModel();
@@ -40,8 +40,8 @@ export const initModels = () => {
   initReportCommentModel();
   initReportUserModel();
 
-  associateSessionModel();
   associateUserModel();
+  associateSessionModel();
   associateUserDeletionRequestModel();
   associatePostModel();
   associateCommentModel();
