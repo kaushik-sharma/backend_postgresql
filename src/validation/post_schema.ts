@@ -10,11 +10,11 @@ export const createPostSchema = z.object({
     .min(1)
     .max(500),
   repostedPostId: z
-    .string({ required_error: "Reposted post Id is required." })
+    .string()
     .trim()
     .nonempty({ message: "Reposted post ID can not be empty." })
     .uuid()
-    .nullable(),
+    .optional(),
 });
 
 export type CreatePostType = z.infer<typeof createPostSchema>;

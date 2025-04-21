@@ -42,7 +42,7 @@ export default class PostController {
 
       const parsedData = req.parsedData! as CreatePostType;
 
-      if (parsedData.repostedPostId !== null) {
+      if (parsedData.repostedPostId !== undefined) {
         const postExists: boolean = await PostDatasource.postExists(
           parsedData.repostedPostId
         );
@@ -66,7 +66,7 @@ export default class PostController {
         userId: userId,
         text: parsedData.text,
         imagePath: imagePath,
-        repostedPostId: parsedData.repostedPostId,
+        repostedPostId: parsedData.repostedPostId ?? null,
         status: EntityStatus.active,
       };
       const postId = await PostDatasource.createPost(postData);
@@ -78,7 +78,7 @@ export default class PostController {
       );
 
       let repostedPostDto: FeedPostDto | null = null;
-      if (parsedData.repostedPostId !== null) {
+      if (parsedData.repostedPostId !== undefined) {
         const repostedPost = createdPostData.repostedPost!;
         const imageUrl =
           repostedPost.imagePath !== null

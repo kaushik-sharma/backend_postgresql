@@ -62,9 +62,7 @@ export default class PostDatasource {
     // If it is a new reaction, then save it
     if (prevReaction === null) {
       await reaction.save();
-    } else if (
-      reactionData.emotionType === prevReaction.toJSON().emotionType
-    ) {
+    } else if (reactionData.emotionType === prevReaction.toJSON().emotionType) {
       // If same reaction as before then delete it
       await ReactionModel.destroy({
         where: {
@@ -245,7 +243,10 @@ export default class PostDatasource {
 
   static readonly #getPosts = async (
     page: number,
-    filterQuery?: Record<string, any>
+    {
+      filterQuery = {},
+      includeRepostedPost = true,
+    }: { filterQuery?: Record<string, any>; includeRepostedPost?: boolean } = {}
   ): Promise<PostAttributes[]> => {
     const whereCondition: Record<string, any> = {
       ...(filterQuery ?? {}),
@@ -269,7 +270,7 @@ export default class PostDatasource {
         required: true,
       },
     ];
-    if (filterQuery === undefined) {
+    if (includeRepostedPost) {
       include.push({
         model: PostModel,
         as: "repostedPost",
@@ -395,13 +396,18 @@ export default class PostDatasource {
     userId: string,
     page: number
   ): Promise<PostAttributes[]> => {
-    return await this.#getPosts(page, { userId: userId });
+    return await this.#getPosts(page, {
+      filterQuery: { userId: userId },
+      includeRepostedPost: false,
+    });
   };
 
   static readonly getPostById = async (
     postId: string
   ): Promise<PostAttributes> => {
-    const result = await this.#getPosts(0, { id: postId });
+    const result = await this.#getPosts(0, {
+      filterQuery: { id: postId },
+    });
     if (result.length === 0) {
       throw new Error("Post not found!");
     }

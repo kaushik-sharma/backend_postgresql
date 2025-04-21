@@ -23,7 +23,14 @@ export default {
           key: "id",
         },
       },
-      repostedPostId: { type: DataTypes.UUID, allowNull: true },
+      repostedPostId: {
+        type: DataTypes.UUID,
+        allowNull: true,
+        references: {
+          model: Tables.posts,
+          key: "id",
+        },
+      },
       text: { type: DataTypes.TEXT, allowNull: false },
       imagePath: { type: DataTypes.STRING, allowNull: true },
       status: {
