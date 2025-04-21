@@ -24,6 +24,7 @@ export default class ProfileDatasource {
     await UserModel.update(
       {
         status: EntityStatus.deleted,
+        deletedAt: new Date(),
       },
       {
         where: { id: userId },

@@ -23,6 +23,8 @@ interface UserAttributes {
   dob?: string;
   profileImagePath?: string | null;
   status: EntityStatus;
+  bannedAt: Date | null;
+  deletedAt: Date | null;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -38,6 +40,8 @@ export class UserModel extends Model<UserAttributes> implements UserAttributes {
   public readonly dob?: string;
   public readonly profileImagePath?: string | null;
   public readonly status!: EntityStatus;
+  public readonly bannedAt!: Date | null;
+  public readonly deletedAt!: Date | null;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 }
@@ -67,6 +71,8 @@ export const initUserModel = () => {
         values: Object.values(EntityStatus),
         allowNull: false,
       },
+      bannedAt: { type: DataTypes.DATE, allowNull: true },
+      deletedAt: { type: DataTypes.DATE, allowNull: true },
     },
     {
       timestamps: true,
@@ -84,6 +90,8 @@ export const initUserModel = () => {
   UserModel.beforeSave((user: UserModel) => {
     if (user.status === EntityStatus.active) {
       user.setDataValue("profileImagePath", null);
+      user.setDataValue("bannedAt", null);
+      user.setDataValue("deletedAt", null);
     }
   });
 };

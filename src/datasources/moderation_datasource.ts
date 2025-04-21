@@ -73,6 +73,7 @@ export default class ModerationDatasource {
     await UserModel.update(
       {
         status: EntityStatus.banned,
+        bannedAt: new Date(),
       },
       {
         where: { id: userId },
