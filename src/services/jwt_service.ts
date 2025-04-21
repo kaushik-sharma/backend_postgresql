@@ -46,7 +46,7 @@ export default class JwtService {
       { transaction: transaction }
     );
     const payload = {
-      sessionId: session.dataValues.id!,
+      sessionId: session.toJSON().id!,
     };
     return this.#generateAuthTokenJwt(payload);
   };
@@ -62,14 +62,12 @@ export default class JwtService {
       throw new CustomError(401, "Invalid auth token.");
     }
 
-    const session = await SessionModel.findByPk(sessionId, {
-      raw: true,
-    });
+    const session = await SessionModel.findByPk(sessionId);
     if (session === null) {
       throw new CustomError(403, "Session not found.");
     }
 
-    const userId = session.dataValues.userId;
+    const userId = session.toJSON().userId;
 
     const userStatus = await AuthDatasource.getUserStatus(userId);
 

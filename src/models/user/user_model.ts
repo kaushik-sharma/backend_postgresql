@@ -70,7 +70,7 @@ export class UserModel extends Model<UserAttributes> {
     );
 
     UserModel.beforeSave((user: UserModel) => {
-      if (user.dataValues.status === EntityStatus.active) {
+      if (user.toJSON().status === EntityStatus.active) {
         user.setDataValue("profileImagePath", null);
         user.setDataValue("bannedAt", null);
         user.setDataValue("deletedAt", null);

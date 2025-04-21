@@ -30,13 +30,12 @@ export default class PostDatasource {
         status: EntityStatus.active,
       },
       attributes: ["userId"],
-      raw: true,
     });
 
     if (post === null) return false;
 
     const isUserActive = await AuthDatasource.isUserActive(
-      post.dataValues.userId
+      post.toJSON().userId
     );
     if (!isUserActive) return false;
 
@@ -58,14 +57,13 @@ export default class PostDatasource {
         postId: reactionData.postId,
         userId: reactionData.userId,
       },
-      raw: true,
     });
 
     // If it is a new reaction, then save it
     if (prevReaction === null) {
       await reaction.save();
     } else if (
-      reactionData.emotionType === prevReaction.dataValues.emotionType
+      reactionData.emotionType === prevReaction.toJSON().emotionType
     ) {
       // If same reaction as before then delete it
       await ReactionModel.destroy({
@@ -104,7 +102,6 @@ export default class PostDatasource {
     const comment = await CommentModel.findOne({
       where: query,
       attributes: ["userId"],
-      raw: true,
     });
     if (comment === null) return false;
 
@@ -127,7 +124,6 @@ export default class PostDatasource {
   static readonly getPostUserId = async (postId: string): Promise<string> => {
     const post = await PostModel.findByPk(postId, {
       attributes: ["userId"],
-      raw: true,
     });
     return post!.toJSON().userId;
   };
@@ -137,7 +133,6 @@ export default class PostDatasource {
   ): Promise<string | null> => {
     const post = await PostModel.findByPk(postId, {
       attributes: ["imagePath"],
-      raw: true,
     });
     return post!.toJSON().imagePath;
   };
@@ -164,7 +159,6 @@ export default class PostDatasource {
   ): Promise<string> => {
     const comment = await CommentModel.findByPk(commentId, {
       attributes: ["userId"],
-      raw: true,
     });
     return comment!.toJSON().userId;
   };
@@ -207,7 +201,6 @@ export default class PostDatasource {
         },
       ],
       order: [["createdAt", "DESC"]],
-      raw: true,
       nest: true,
     };
     if (offset !== undefined) {

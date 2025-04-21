@@ -7,7 +7,7 @@ export default class ProfileDatasource {
   static readonly getUserById = async (
     userId: string
   ): Promise<UserAttributes> => {
-    const user = await UserModel.findByPk(userId, { raw: true });
+    const user = await UserModel.findByPk(userId);
     return user!.toJSON();
   };
 
@@ -16,7 +16,6 @@ export default class ProfileDatasource {
   ): Promise<UserAttributes> => {
     const user = await UserModel.findByPk(userId, {
       attributes: ["firstName", "lastName", "profileImagePath"],
-      raw: true,
     });
     return user!.toJSON();
   };
@@ -59,7 +58,6 @@ export default class ProfileDatasource {
   ): Promise<string | null> => {
     const user = await UserModel.findByPk(userId, {
       attributes: ["profileImagePath"],
-      raw: true,
     });
     const profileImagePath = user!.toJSON().profileImagePath;
     if (profileImagePath === undefined) {
@@ -92,7 +90,6 @@ export default class ProfileDatasource {
         },
       },
       attributes: ["userId"],
-      raw: true,
     });
 
     return result.map((data) => data.toJSON()["userId"]);

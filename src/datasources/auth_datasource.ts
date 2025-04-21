@@ -18,7 +18,6 @@ export default class AuthDatasource {
   static readonly getUserStatus = async (id: string): Promise<EntityStatus> => {
     const user = await UserModel.findByPk(id, {
       attributes: ["status"],
-      raw: true,
     });
     return user!.toJSON().status;
   };
@@ -58,7 +57,6 @@ export default class AuthDatasource {
           [Op.ne]: EntityStatus.deleted,
         },
       },
-      raw: true,
     });
 
     if (result.length === 0) return null;
