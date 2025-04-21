@@ -10,11 +10,11 @@ export const createPostSchema = z.object({
     .min(1)
     .max(500),
   repostedPostId: z
-    .string()
+    .string({ required_error: "Reposted post Id is required." })
     .trim()
     .nonempty({ message: "Reposted post ID can not be empty." })
     .uuid()
-    .optional(),
+    .nullable(),
 });
 
 export type CreatePostType = z.infer<typeof createPostSchema>;
@@ -33,11 +33,11 @@ export const createCommentSchema = z.object({
       message: `Level must be less than ${MAX_COMMENT_LEVEL}.`,
     }),
   parentCommentId: z
-    .string()
+    .string({ required_error: "Parent comment ID is required." })
     .trim()
     .nonempty({ message: "Parent comment ID can not be empty." })
     .uuid()
-    .optional(),
+    .nullable(),
 });
 
 export type CreateCommentType = z.infer<typeof createCommentSchema>;

@@ -1,6 +1,6 @@
 import { Op, Transaction } from "sequelize";
 
-import { UserModel } from "../models/user/user_model.js";
+import { UserAttributes, UserModel } from "../models/user/user_model.js";
 import { EntityStatus } from "../constants/enums.js";
 import { SessionModel } from "../models/session/session_model.js";
 
@@ -20,7 +20,7 @@ export default class AuthDatasource {
       attributes: ["status"],
       raw: true,
     });
-    return user!.status;
+    return user!.toJSON().status;
   };
 
   static readonly findUserByPhoneNumber = async (
@@ -50,7 +50,7 @@ export default class AuthDatasource {
 
   static readonly findUserByEmail = async (
     email: string
-  ): Promise<UserModel | null> => {
+  ): Promise<UserAttributes | null> => {
     const result = await UserModel.findAll({
       where: {
         email: email,
@@ -58,6 +58,7 @@ export default class AuthDatasource {
           [Op.ne]: EntityStatus.deleted,
         },
       },
+      raw: true,
     });
 
     if (result.length === 0) return null;
@@ -66,7 +67,7 @@ export default class AuthDatasource {
       throw new Error("Multiple active users with the given email found!");
     }
 
-    return result[0];
+    return result[0].toJSON();
   };
 
   static readonly canSignUpWithEmail = async (
@@ -121,7 +122,7 @@ export default class AuthDatasource {
     transaction: Transaction
   ): Promise<string> => {
     const createdUser = await user.save({ transaction: transaction });
-    return createdUser.id;
+    return createdUser.toJSON().id!;
   };
 
   static readonly markUserForDeletion = async (

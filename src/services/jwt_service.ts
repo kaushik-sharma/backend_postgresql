@@ -46,7 +46,7 @@ export default class JwtService {
       { transaction: transaction }
     );
     const payload = {
-      sessionId: session.id,
+      sessionId: session.dataValues.id!,
     };
     return this.#generateAuthTokenJwt(payload);
   };
@@ -69,7 +69,7 @@ export default class JwtService {
       throw new CustomError(403, "Session not found.");
     }
 
-    const userId = session.userId;
+    const userId = session.dataValues.userId;
 
     const userStatus = await AuthDatasource.getUserStatus(userId);
 
@@ -118,7 +118,7 @@ export default class JwtService {
 
   static readonly createEmailVerificationToken = (
     hashedEmail: string,
-    hashedCodes: string[],
+    hashedCodes: string[]
   ): string => {
     const payload = {
       hashedEmail: hashedEmail,

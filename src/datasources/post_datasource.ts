@@ -1,15 +1,26 @@
-import { FindOptions, Includeable, literal, Transaction } from "sequelize";
+import { FindOptions, Includeable, literal } from "sequelize";
 import { EntityStatus } from "../constants/enums.js";
 import { COMMENTS_PAGE_SIZE, POSTS_PAGE_SIZE } from "../constants/values.js";
 import { UserModel } from "../models/user/user_model.js";
-import { CommentModel } from "../models/post/comment_model.js";
-import { PostModel } from "../models/post/post_model.js";
-import { EmotionType, ReactionModel } from "../models/post/reaction_model.js";
+import {
+  CommentAttributes,
+  CommentModel,
+} from "../models/post/comment_model.js";
+import { PostAttributes, PostModel } from "../models/post/post_model.js";
+import {
+  EmotionType,
+  ReactionAttributes,
+  ReactionModel,
+} from "../models/post/reaction_model.js";
 import AuthDatasource from "./auth_datasource.js";
 
 export default class PostDatasource {
-  static readonly createPost = async (post: PostModel): Promise<void> => {
-    await post.save();
+  static readonly createPost = async (
+    postData: PostAttributes
+  ): Promise<string> => {
+    const post = new PostModel(postData);
+    const result = await post.save();
+    return result.toJSON().id!;
   };
 
   static readonly postExists = async (id: string): Promise<boolean> => {
@@ -24,20 +35,28 @@ export default class PostDatasource {
 
     if (post === null) return false;
 
-    const isUserActive = await AuthDatasource.isUserActive(post.userId);
+    const isUserActive = await AuthDatasource.isUserActive(
+      post.dataValues.userId
+    );
     if (!isUserActive) return false;
 
     return true;
   };
 
   static readonly createReaction = async (
-    reaction: ReactionModel
+    reactionData: ReactionAttributes
   ): Promise<void> => {
+    const reaction = new ReactionModel({
+      userId: reactionData.userId,
+      postId: reactionData.postId,
+      emotionType: reactionData.emotionType,
+    });
+
     // Check if the user already has a reaction for that post
     const prevReaction = await ReactionModel.findOne({
       where: {
-        postId: reaction.postId,
-        userId: reaction.userId,
+        postId: reactionData.postId,
+        userId: reactionData.userId,
       },
       raw: true,
     });
@@ -45,21 +64,23 @@ export default class PostDatasource {
     // If it is a new reaction, then save it
     if (prevReaction === null) {
       await reaction.save();
-    } else if (reaction.emotionType === prevReaction.emotionType) {
+    } else if (
+      reactionData.emotionType === prevReaction.dataValues.emotionType
+    ) {
       // If same reaction as before then delete it
       await ReactionModel.destroy({
         where: {
-          postId: reaction.postId,
-          userId: reaction.userId,
+          postId: reactionData.postId,
+          userId: reactionData.userId,
         },
       });
     } else {
       // Else update it to the new reaction
       await ReactionModel.update(
         {
-          emotionType: reaction.emotionType,
+          emotionType: reactionData.emotionType,
         },
-        { where: { postId: reaction.postId, userId: reaction.userId } }
+        { where: { postId: reactionData.postId, userId: reactionData.userId } }
       );
     }
   };
@@ -87,17 +108,20 @@ export default class PostDatasource {
     });
     if (comment === null) return false;
 
-    const isUserActive = await AuthDatasource.isUserActive(comment.userId);
+    const isUserActive = await AuthDatasource.isUserActive(
+      comment.toJSON().userId
+    );
     if (!isUserActive) return false;
 
     return true;
   };
 
   static readonly createComment = async (
-    comment: CommentModel
+    commentData: CommentAttributes
   ): Promise<string> => {
+    const comment = new CommentModel(commentData);
     const result = await comment.save();
-    return result.id;
+    return result.toJSON().id!;
   };
 
   static readonly getPostUserId = async (postId: string): Promise<string> => {
@@ -105,7 +129,7 @@ export default class PostDatasource {
       attributes: ["userId"],
       raw: true,
     });
-    return post!.userId;
+    return post!.toJSON().userId;
   };
 
   static readonly getPostImagePath = async (
@@ -115,7 +139,7 @@ export default class PostDatasource {
       attributes: ["imagePath"],
       raw: true,
     });
-    return post!.imagePath;
+    return post!.toJSON().imagePath;
   };
 
   static readonly deletePost = async (
@@ -142,7 +166,7 @@ export default class PostDatasource {
       attributes: ["userId"],
       raw: true,
     });
-    return comment!.userId;
+    return comment!.toJSON().userId;
   };
 
   static readonly deleteComment = async (
@@ -165,7 +189,7 @@ export default class PostDatasource {
   static readonly #getComments = async (
     filterQuery: Record<string, any>,
     offset?: number
-  ): Promise<CommentModel[]> => {
+  ): Promise<CommentAttributes[]> => {
     const options: FindOptions = {
       where: filterQuery,
       include: [
@@ -191,19 +215,21 @@ export default class PostDatasource {
       options.limit = COMMENTS_PAGE_SIZE;
     }
 
-    return await CommentModel.findAll(options);
+    const comments = await CommentModel.findAll(options);
+
+    return comments.map((comment) => comment.toJSON());
   };
 
   static readonly getCommentsByPostId = async (
     postId: string
-  ): Promise<CommentModel[]> => {
+  ): Promise<CommentAttributes[]> => {
     return await this.#getComments({ postId: postId });
   };
 
   static readonly getCommentsByUserId = async (
     userId: string,
     page: number
-  ): Promise<CommentModel[]> => {
+  ): Promise<CommentAttributes[]> => {
     const offset = page * COMMENTS_PAGE_SIZE;
     return await this.#getComments(
       { userId: userId, status: EntityStatus.active },
@@ -213,7 +239,7 @@ export default class PostDatasource {
 
   static readonly getCommentById = async (
     commentId: string
-  ): Promise<CommentModel> => {
+  ): Promise<CommentAttributes> => {
     const result = await this.#getComments({
       id: commentId,
       status: EntityStatus.active,
@@ -227,7 +253,7 @@ export default class PostDatasource {
   static readonly #getPosts = async (
     page: number,
     filterQuery?: Record<string, any>
-  ): Promise<PostModel[]> => {
+  ): Promise<PostAttributes[]> => {
     const whereCondition: Record<string, any> = {
       ...(filterQuery ?? {}),
       status: EntityStatus.active,
@@ -366,18 +392,22 @@ export default class PostDatasource {
     return posts.map((post) => post.toJSON());
   };
 
-  static readonly getPostsFeed = async (page: number): Promise<PostModel[]> => {
+  static readonly getPostsFeed = async (
+    page: number
+  ): Promise<PostAttributes[]> => {
     return await this.#getPosts(page);
   };
 
   static readonly getPostsByUserId = async (
     userId: string,
     page: number
-  ): Promise<PostModel[]> => {
+  ): Promise<PostAttributes[]> => {
     return await this.#getPosts(page, { userId: userId });
   };
 
-  static readonly getPostById = async (postId: string): Promise<PostModel> => {
+  static readonly getPostById = async (
+    postId: string
+  ): Promise<PostAttributes> => {
     const result = await this.#getPosts(0, { id: postId });
     if (result.length === 0) {
       throw new Error("Post not found!");

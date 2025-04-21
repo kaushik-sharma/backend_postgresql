@@ -14,14 +14,13 @@ import { asyncHandler } from "../helpers/async_handler.js";
 import PostDatasource from "../datasources/post_datasource.js";
 import { CustomError } from "../middlewares/error_middlewares.js";
 import AwsS3Service, { AwsS3FileCategory } from "../services/aws_s3_service.js";
-import { PostModel } from "../models/post/post_model.js";
+import { PostAttributes } from "../models/post/post_model.js";
 import { EntityStatus } from "../constants/enums.js";
 import SocketManager from "../socket.js";
 import { successResponseHandler } from "../helpers/success_handler.js";
-import { ReactionModel } from "../models/post/reaction_model.js";
-import { CommentModel } from "../models/post/comment_model.js";
+import { ReactionAttributes } from "../models/post/reaction_model.js";
+import { CommentAttributes } from "../models/post/comment_model.js";
 import { DEFAULT_PROFILE_IMAGE_PATH } from "../constants/values.js";
-import ProfileDatasource from "../datasources/profile_datasource.js";
 import FeedCommentDto from "../dtos/feed_comment_dto.js";
 import UserCommentDto from "../dtos/user_comment_dto.js";
 import FeedPostDto from "../dtos/feed_post_dto.js";
@@ -43,7 +42,7 @@ export default class PostController {
 
       const parsedData = req.parsedData! as CreatePostType;
 
-      if (parsedData.repostedPostId !== undefined) {
+      if (parsedData.repostedPostId !== null) {
         const postExists: boolean = await PostDatasource.postExists(
           parsedData.repostedPostId
         );
@@ -63,78 +62,77 @@ export default class PostController {
         imageUrl = AwsS3Service.getCloudFrontSignedUrl(imagePath);
       }
 
-      const post = new PostModel({
+      const postData: PostAttributes = {
         userId: userId,
         text: parsedData.text,
         imagePath: imagePath,
         repostedPostId: parsedData.repostedPostId,
         status: EntityStatus.active,
-      });
-      await PostDatasource.createPost(post);
+      };
+      const postId = await PostDatasource.createPost(postData);
 
-      SocketManager.io.emit("newPostsAvailable", {
-        message: "New posts added. Refresh the feed.",
-      });
+      const createdPostData = await PostDatasource.getPostById(postId);
 
-      const user = await ProfileDatasource.getPublicUserById(userId);
       const profileImageUrl = AwsS3Service.getCloudFrontSignedUrl(
-        user.profileImagePath ?? DEFAULT_PROFILE_IMAGE_PATH
+        createdPostData.user!.profileImagePath ?? DEFAULT_PROFILE_IMAGE_PATH
       );
 
       let repostedPostDto: FeedPostDto | null = null;
-      if (parsedData.repostedPostId !== undefined) {
-        const repostedPost = await PostDatasource.getPostById(
-          parsedData.repostedPostId
-        );
+      if (parsedData.repostedPostId !== null) {
+        const repostedPost = createdPostData.repostedPost!;
         const imageUrl =
           repostedPost.imagePath !== null
             ? AwsS3Service.getCloudFrontSignedUrl(repostedPost.imagePath)
             : null;
         const profileImageUrl = AwsS3Service.getCloudFrontSignedUrl(
-          repostedPost.user.profileImagePath ?? DEFAULT_PROFILE_IMAGE_PATH
+          repostedPost.user!.profileImagePath ?? DEFAULT_PROFILE_IMAGE_PATH
         );
 
         repostedPostDto = new FeedPostDto({
-          id: repostedPost.id,
+          id: repostedPost.id!,
           text: repostedPost.text,
           imageUrl: imageUrl,
-          likeCount: repostedPost.likeCount,
-          dislikeCount: repostedPost.dislikeCount,
-          commentCount: repostedPost.commentCount,
-          createdAt: repostedPost.createdAt,
+          likeCount: repostedPost.likeCount!,
+          dislikeCount: repostedPost.dislikeCount!,
+          commentCount: repostedPost.commentCount!,
+          createdAt: repostedPost.createdAt!,
           repostedPost: null,
           creator: {
-            id: repostedPost.user.id,
-            firstName: repostedPost.user.firstName!,
-            lastName: repostedPost.user.lastName!,
+            id: repostedPost.user!.id!,
+            firstName: repostedPost.user!.firstName!,
+            lastName: repostedPost.user!.lastName!,
             profileImageUrl: profileImageUrl,
           },
           status: repostedPost.status,
         });
       }
 
-      const createdPost = new FeedPostDto({
-        id: post.id,
-        text: post.text,
+      const createdPostDto = new FeedPostDto({
+        id: createdPostData.id!,
+        text: createdPostData.text,
         imageUrl: imageUrl,
-        likeCount: 0,
-        dislikeCount: 0,
-        commentCount: 0,
-        createdAt: post.createdAt,
+        likeCount: createdPostData.likeCount!,
+        dislikeCount: createdPostData.dislikeCount!,
+        commentCount: createdPostData.commentCount!,
+        createdAt: createdPostData.createdAt!,
         repostedPost: repostedPostDto,
         creator: {
-          id: userId,
-          firstName: user.firstName!,
-          lastName: user.lastName!,
+          id: createdPostData.user!.id!,
+          firstName: createdPostData.user!.firstName!,
+          lastName: createdPostData.user!.lastName!,
           profileImageUrl: profileImageUrl,
         },
-        status: post.status,
+        status: createdPostData.status,
+      });
+
+      SocketManager.io.emit("newPostsAvailable", {
+        message: "New posts added. Refresh the feed.",
       });
 
       successResponseHandler({
         res: res,
         status: 200,
-        data: createdPost,
+        data: createdPostDto,
       });
     }
   );
@@ -165,12 +163,12 @@ export default class PostController {
         throw new CustomError(404, "Post not found!");
       }
 
-      const reaction = new ReactionModel({
-        userId: parsedData.userId,
+      const reactionData: ReactionAttributes = {
+        userId: userId,
         postId: parsedData.postId,
         emotionType: parsedData.emotionType,
-      });
-      await PostDatasource.createReaction(reaction);
+      };
+      await PostDatasource.createReaction(reactionData);
 
       successResponseHandler({
         res: res,
@@ -231,33 +229,34 @@ export default class PostController {
         }
       }
 
-      const comment = new CommentModel({
+      const commentData: CommentAttributes = {
         postId: parsedData.postId,
         userId: parsedData.userId,
         parentCommentId: parsedData.parentCommentId,
         level: parsedData.level,
         text: parsedData.text,
         status: EntityStatus.active,
-      });
-      const commentId = await PostDatasource.createComment(comment);
+      };
+      const commentId = await PostDatasource.createComment(commentData);
 
-      const createdComment = await PostDatasource.getCommentById(commentId);
+      const createdCommentData = await PostDatasource.getCommentById(commentId);
+
       const profileImageUrl = AwsS3Service.getCloudFrontSignedUrl(
-        createdComment.user.profileImagePath ?? DEFAULT_PROFILE_IMAGE_PATH
+        createdCommentData.user!.profileImagePath ?? DEFAULT_PROFILE_IMAGE_PATH
       );
 
       const commentDto = new FeedCommentDto({
-        id: createdComment.id,
-        parentCommentId: createdComment.parentCommentId,
-        text: createdComment.text,
-        createdAt: createdComment.createdAt,
+        id: createdCommentData.id!,
+        parentCommentId: createdCommentData.parentCommentId,
+        text: createdCommentData.text,
+        createdAt: createdCommentData.createdAt!,
         creator: {
-          id: createdComment.user.id,
-          firstName: createdComment.user.firstName!,
-          lastName: createdComment.user.lastName!,
+          id: createdCommentData.user!.id!,
+          firstName: createdCommentData.user!.firstName!,
+          lastName: createdCommentData.user!.lastName!,
           profileImageUrl: profileImageUrl,
         },
-        status: createdComment.status,
+        status: createdCommentData.status,
       });
 
       successResponseHandler({
@@ -289,28 +288,28 @@ export default class PostController {
         throw new CustomError(404, "Post not found!");
       }
 
-      const comments = await PostDatasource.getCommentsByPostId(postId);
+      const commentsData = await PostDatasource.getCommentsByPostId(postId);
 
-      const filteredComments = comments.map((comment) => {
-        const status = getEffectiveStatus(comment.status, comment.user.status);
+      const commentDtos = commentsData.map((comment) => {
+        const status = getEffectiveStatus(comment.status, comment.user!.status);
         const isActive = status === EntityStatus.active;
 
         const profileImageUrl = isActive
           ? AwsS3Service.getCloudFrontSignedUrl(
-              comment.user.profileImagePath ?? DEFAULT_PROFILE_IMAGE_PATH
+              comment.user!.profileImagePath ?? DEFAULT_PROFILE_IMAGE_PATH
             )
           : null;
 
         return new FeedCommentDto({
-          id: comment.id,
+          id: comment.id!,
           parentCommentId: comment.parentCommentId,
           text: isActive ? comment.text : null,
-          createdAt: isActive ? comment.createdAt : null,
+          createdAt: isActive ? comment.createdAt! : null,
           creator: isActive
             ? {
-                id: comment.user.id,
-                firstName: comment.user.firstName!,
-                lastName: comment.user.lastName!,
+                id: comment.user!.id!,
+                firstName: comment.user!.firstName!,
+                lastName: comment.user!.lastName!,
                 profileImageUrl: profileImageUrl!,
               }
             : null,
@@ -318,7 +317,7 @@ export default class PostController {
         });
       });
 
-      const commentsTree = arrayToTree(filteredComments, {
+      const commentsTree = arrayToTree(commentDtos, {
         id: "id",
         parentId: "parentCommentId",
         childrenField: "replies",
@@ -345,19 +344,19 @@ export default class PostController {
 
       const comments = await PostDatasource.getCommentsByUserId(userId, page);
 
-      const filteredComments = comments.map((comment) => {
+      const commentDtos = comments.map((comment) => {
         return new UserCommentDto({
-          id: comment.id,
+          id: comment.id!,
           postId: comment.postId,
           text: comment.text,
-          createdAt: comment.createdAt,
+          createdAt: comment.createdAt!,
         });
       });
 
       successResponseHandler({
         res: res,
         status: 200,
-        data: filteredComments,
+        data: commentDtos,
       });
     }
   );
@@ -430,14 +429,16 @@ export default class PostController {
     }
   );
 
-  static readonly #processFeedPosts = (posts: PostModel[]): FeedPostDto[] => {
+  static readonly #processFeedPosts = (
+    posts: PostAttributes[]
+  ): FeedPostDto[] => {
     return posts.map((post) => {
       const postImageUrl =
         post.imagePath != null
           ? AwsS3Service.getCloudFrontSignedUrl(post.imagePath)
           : null;
       const profileImageUrl = AwsS3Service.getCloudFrontSignedUrl(
-        post.user.profileImagePath ?? DEFAULT_PROFILE_IMAGE_PATH
+        post.user!.profileImagePath ?? DEFAULT_PROFILE_IMAGE_PATH
       );
 
       let repostedPost: FeedPostDto | null = null;
@@ -449,7 +450,7 @@ export default class PostController {
         const repostProfileImageUrl =
           post.repostedPost !== null
             ? AwsS3Service.getCloudFrontSignedUrl(
-                post.repostedPost!.user.profileImagePath ??
+                post.repostedPost!.user!.profileImagePath ??
                   DEFAULT_PROFILE_IMAGE_PATH
               )
             : null;
@@ -465,9 +466,9 @@ export default class PostController {
           creator:
             post.repostedPost !== null
               ? {
-                  id: post.repostedPost!.user.id,
-                  firstName: post.repostedPost!.user.firstName!,
-                  lastName: post.repostedPost!.user.lastName!,
+                  id: post.repostedPost!.user!.id!,
+                  firstName: post.repostedPost!.user!.firstName!,
+                  lastName: post.repostedPost!.user!.lastName!,
                   profileImageUrl: repostProfileImageUrl!,
                 }
               : null,
@@ -476,18 +477,18 @@ export default class PostController {
       }
 
       return new FeedPostDto({
-        id: post.id,
+        id: post.id!,
         text: post.text,
         imageUrl: postImageUrl,
-        likeCount: post.likeCount,
-        dislikeCount: post.dislikeCount,
-        commentCount: post.commentCount,
-        createdAt: post.createdAt,
+        likeCount: post.likeCount!,
+        dislikeCount: post.dislikeCount!,
+        commentCount: post.commentCount!,
+        createdAt: post.createdAt!,
         repostedPost: repostedPost,
         creator: {
-          id: post.user.id,
-          firstName: post.user.firstName!,
-          lastName: post.user.lastName!,
+          id: post.user!.id!,
+          firstName: post.user!.firstName!,
+          lastName: post.user!.lastName!,
           profileImageUrl: profileImageUrl,
         },
         status: post.status,
@@ -495,7 +496,9 @@ export default class PostController {
     });
   };
 
-  static readonly #processUserPosts = (posts: PostModel[]): UserPostDto[] => {
+  static readonly #processUserPosts = (
+    posts: PostAttributes[]
+  ): UserPostDto[] => {
     return posts.map((post) => {
       const postImageUrl =
         post.imagePath != null
@@ -503,13 +506,13 @@ export default class PostController {
           : null;
 
       return new UserPostDto({
-        id: post.id,
+        id: post.id!,
         text: post.text,
         imageUrl: postImageUrl,
-        likeCount: post.likeCount,
-        dislikeCount: post.dislikeCount,
-        commentCount: post.commentCount,
-        createdAt: post.createdAt,
+        likeCount: post.likeCount!,
+        dislikeCount: post.dislikeCount!,
+        commentCount: post.commentCount!,
+        createdAt: post.createdAt!,
       });
     });
   };

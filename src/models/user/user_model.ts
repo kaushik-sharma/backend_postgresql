@@ -11,9 +11,9 @@ import { ReactionModel } from "../post/reaction_model.js";
 import { ReportPostModel } from "../moderation/report_post_model.js";
 import { ReportCommentModel } from "../moderation/report_comment_model.js";
 import { ReportUserModel } from "../moderation/report_user_model.js";
+import BaseAttributes from "../base_attributes.js";
 
-interface UserAttributes {
-  id?: string;
+export interface UserAttributes extends BaseAttributes {
   firstName?: string;
   lastName?: string;
   gender?: Gender;
@@ -25,115 +25,98 @@ interface UserAttributes {
   status: EntityStatus;
   bannedAt: Date | null;
   deletedAt: Date | null;
-  createdAt?: Date;
-  updatedAt?: Date;
 }
 
-export class UserModel extends Model<UserAttributes> implements UserAttributes {
-  public readonly id!: string;
-  public readonly firstName?: string;
-  public readonly lastName?: string;
-  public readonly gender?: Gender;
-  public readonly countryCode?: string;
-  public readonly phoneNumber?: string;
-  public readonly email?: string;
-  public readonly dob?: string;
-  public readonly profileImagePath?: string | null;
-  public readonly status!: EntityStatus;
-  public readonly bannedAt!: Date | null;
-  public readonly deletedAt!: Date | null;
-  public readonly createdAt!: Date;
-  public readonly updatedAt!: Date;
+export class UserModel extends Model<UserAttributes> {
+  static readonly initialize = () => {
+    UserModel.init(
+      {
+        id: {
+          type: DataTypes.UUID,
+          defaultValue: DataTypes.UUIDV4,
+          primaryKey: true,
+        },
+        firstName: { type: DataTypes.STRING(50), allowNull: true },
+        lastName: { type: DataTypes.STRING(50), allowNull: true },
+        gender: {
+          type: DataTypes.ENUM,
+          values: Object.values(Gender),
+          allowNull: true,
+        },
+        countryCode: { type: DataTypes.STRING(4), allowNull: true },
+        phoneNumber: { type: DataTypes.STRING(10), allowNull: true },
+        email: { type: DataTypes.STRING, allowNull: true },
+        dob: { type: DataTypes.STRING, allowNull: true },
+        profileImagePath: { type: DataTypes.STRING, allowNull: true },
+        status: {
+          type: DataTypes.ENUM,
+          values: Object.values(EntityStatus),
+          allowNull: false,
+        },
+        bannedAt: { type: DataTypes.DATE, allowNull: true },
+        deletedAt: { type: DataTypes.DATE, allowNull: true },
+      },
+      {
+        timestamps: true,
+        tableName: Tables.users,
+        modelName: "UserModel",
+        sequelize: SEQUELIZE,
+        indexes: [
+          { fields: ["email"] },
+          { fields: ["countryCode"] },
+          { fields: ["phoneNumber"] },
+        ],
+      }
+    );
+
+    UserModel.beforeSave((user: UserModel) => {
+      if (user.dataValues.status === EntityStatus.active) {
+        user.setDataValue("profileImagePath", null);
+        user.setDataValue("bannedAt", null);
+        user.setDataValue("deletedAt", null);
+      }
+    });
+  };
+
+  static readonly associate = () => {
+    UserModel.hasMany(SessionModel, {
+      foreignKey: "userId",
+      as: "sessions",
+    });
+
+    UserModel.hasOne(UserDeletionRequestModel, {
+      foreignKey: "userId",
+      as: "deletionRequest",
+    });
+
+    UserModel.hasMany(PostModel, {
+      foreignKey: "userId",
+      as: "posts",
+    });
+
+    UserModel.hasMany(CommentModel, {
+      foreignKey: "userId",
+      as: "comments",
+    });
+
+    UserModel.hasMany(ReactionModel, {
+      foreignKey: "userId",
+      as: "reactions",
+    });
+
+    UserModel.hasMany(ReportPostModel, {
+      foreignKey: "userId",
+      as: "reportedPosts",
+    });
+
+    UserModel.hasMany(ReportCommentModel, {
+      foreignKey: "userId",
+      as: "reportedComments",
+    });
+
+    UserModel.hasMany(ReportUserModel, {
+      foreignKey: "userId",
+      as: "reportedUsers",
+    });
+  };
 }
-
-export const initUserModel = () => {
-  UserModel.init(
-    {
-      id: {
-        type: DataTypes.UUID,
-        defaultValue: DataTypes.UUIDV4,
-        primaryKey: true,
-      },
-      firstName: { type: DataTypes.STRING(50), allowNull: true },
-      lastName: { type: DataTypes.STRING(50), allowNull: true },
-      gender: {
-        type: DataTypes.ENUM,
-        values: Object.values(Gender),
-        allowNull: true,
-      },
-      countryCode: { type: DataTypes.STRING(4), allowNull: true },
-      phoneNumber: { type: DataTypes.STRING(10), allowNull: true },
-      email: { type: DataTypes.STRING, allowNull: true },
-      dob: { type: DataTypes.STRING, allowNull: true },
-      profileImagePath: { type: DataTypes.STRING, allowNull: true },
-      status: {
-        type: DataTypes.ENUM,
-        values: Object.values(EntityStatus),
-        allowNull: false,
-      },
-      bannedAt: { type: DataTypes.DATE, allowNull: true },
-      deletedAt: { type: DataTypes.DATE, allowNull: true },
-    },
-    {
-      timestamps: true,
-      tableName: Tables.users,
-      modelName: "UserModel",
-      sequelize: SEQUELIZE,
-      indexes: [
-        { fields: ["email"] },
-        { fields: ["countryCode"] },
-        { fields: ["phoneNumber"] },
-      ],
-    }
-  );
-
-  UserModel.beforeSave((user: UserModel) => {
-    if (user.status === EntityStatus.active) {
-      user.setDataValue("profileImagePath", null);
-      user.setDataValue("bannedAt", null);
-      user.setDataValue("deletedAt", null);
-    }
-  });
-};
-
-export const associateUserModel = () => {
-  UserModel.hasMany(SessionModel, {
-    foreignKey: "userId",
-    as: "sessions",
-  });
-
-  UserModel.hasOne(UserDeletionRequestModel, {
-    foreignKey: "userId",
-    as: "deletionRequest",
-  });
-
-  UserModel.hasMany(PostModel, {
-    foreignKey: "userId",
-    as: "posts",
-  });
-
-  UserModel.hasMany(CommentModel, {
-    foreignKey: "userId",
-    as: "comments",
-  });
-
-  UserModel.hasMany(ReactionModel, {
-    foreignKey: "userId",
-    as: "reactions",
-  });
-
-  UserModel.hasMany(ReportPostModel, {
-    foreignKey: "userId",
-    as: "reportedPosts",
-  });
-
-  UserModel.hasMany(ReportCommentModel, {
-    foreignKey: "userId",
-    as: "reportedComments",
-  });
-
-  UserModel.hasMany(ReportUserModel, {
-    foreignKey: "userId",
-    as: "reportedUsers",
-  });
-};

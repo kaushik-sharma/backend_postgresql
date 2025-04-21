@@ -1,20 +1,24 @@
 import { Op, Transaction } from "sequelize";
 import { EntityStatus } from "../constants/enums.js";
-import { UserModel } from "../models/user/user_model.js";
+import { UserAttributes, UserModel } from "../models/user/user_model.js";
 import { UserDeletionRequestModel } from "../models/profile/user_deletion_request_model.js";
 
 export default class ProfileDatasource {
-  static readonly getUserById = async (userId: string): Promise<UserModel> => {
-    return (await UserModel.findByPk(userId, { raw: true }))!;
+  static readonly getUserById = async (
+    userId: string
+  ): Promise<UserAttributes> => {
+    const user = await UserModel.findByPk(userId, { raw: true });
+    return user!.toJSON();
   };
 
   static readonly getPublicUserById = async (
     userId: string
-  ): Promise<UserModel> => {
-    return (await UserModel.findByPk(userId, {
+  ): Promise<UserAttributes> => {
+    const user = await UserModel.findByPk(userId, {
       attributes: ["firstName", "lastName", "profileImagePath"],
       raw: true,
-    }))!;
+    });
+    return user!.toJSON();
   };
 
   static readonly deleteUser = async (
@@ -53,11 +57,11 @@ export default class ProfileDatasource {
   static readonly getUserProfileImagePath = async (
     userId: string
   ): Promise<string | null> => {
-    const result = await UserModel.findByPk(userId, {
+    const user = await UserModel.findByPk(userId, {
       attributes: ["profileImagePath"],
       raw: true,
     });
-    const profileImagePath = result!.profileImagePath;
+    const profileImagePath = user!.toJSON().profileImagePath;
     if (profileImagePath === undefined) {
       throw new Error("profileImagePath does not exist.");
     }
@@ -80,17 +84,18 @@ export default class ProfileDatasource {
     await model.save({ transaction: transaction });
   };
 
-  static readonly getDueUserDeletions = async (): Promise<
-    UserDeletionRequestModel[]
-  > => {
-    return await UserDeletionRequestModel.findAll({
+  static readonly getDueDeletionUserIds = async (): Promise<string[]> => {
+    const result = await UserDeletionRequestModel.findAll({
       where: {
         deleteAt: {
           [Op.lte]: new Date(),
         },
       },
+      attributes: ["userId"],
       raw: true,
     });
+
+    return result.map((data) => data.toJSON()["userId"]);
   };
 
   static readonly removeDeletionRequest = async (

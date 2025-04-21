@@ -276,7 +276,7 @@ export class AuthController {
       }
 
       if (parsedData.cancelAccountDeletionRequest) {
-        await ProfileDatasource.removeDeletionRequest(user.id);
+        await ProfileDatasource.removeDeletionRequest(user.id!);
       }
 
       // Checking if the user is marked for deletion
@@ -300,7 +300,7 @@ export class AuthController {
               transaction
             );
           }
-          return await JwtService.createAuthToken(user.id, transaction);
+          return await JwtService.createAuthToken(user.id!, transaction);
         }
       );
 
