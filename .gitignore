@@ -17,3 +17,5 @@ cloudfront-prod-private-key.pem
 cloudfront-prod-public-key.pem
 test-app-dev-ec2.pem
 test-app-prod-ec2.pem
+supabase-dev-db-ssl.crt
+supabase-prod-db-ssl.crt
