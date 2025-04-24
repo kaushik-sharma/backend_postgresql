@@ -77,13 +77,14 @@ try {
     },
     app
   );
-  server.listen(port, host, () => {
-    logger.info(`Server running at https://${host}:${port}/`);
-  });
 
   SocketManager.init(server);
   CronService.scheduleDailyEmails();
   CronService.scheduleRequestedUserDeletions();
+
+  server.listen(port, host, () => {
+    logger.info(`Server running at https://${host}:${port}/`);
+  });
 } catch (err: any) {
   console.error(err);
   process.exit(1);
