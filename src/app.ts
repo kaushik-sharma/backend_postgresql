@@ -79,8 +79,7 @@ try {
   );
 
   SocketManager.init(server);
-  CronService.scheduleDailyEmails();
-  CronService.scheduleRequestedUserDeletions();
+  CronService.init();
 
   server.listen(port, host, () => {
     logger.info(`Server running at https://${host}:${port}/`);
