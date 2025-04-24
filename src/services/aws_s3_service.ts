@@ -13,9 +13,9 @@ import {
 } from "@aws-sdk/client-cloudfront";
 import { v4 as uuidv4 } from "uuid";
 import mime from "mime";
-import { addHours } from "date-fns";
+import { DateTime } from "luxon";
 
-import { IMAGE_EXPIRY_DURATION_IN_HOURS } from "../constants/values.js";
+import { IMAGE_EXPIRY_DURATION } from "../constants/values.js";
 
 export enum AwsS3FileCategory {
   profiles = "profiles",
@@ -69,10 +69,7 @@ export default class AwsS3Service {
     );
     return getSignedUrl({
       url: `${process.env.AWS_CLOUDFRONT_DOMAIN_NAME!}/${filePath}`,
-      dateLessThan: addHours(
-        Date.now(),
-        IMAGE_EXPIRY_DURATION_IN_HOURS
-      ).toISOString(),
+      dateLessThan: DateTime.utc().plus(IMAGE_EXPIRY_DURATION).toISO(),
       privateKey: privateKey,
       keyPairId: process.env.AWS_CLOUDFRONT_KEY_PAIR_ID!,
     });

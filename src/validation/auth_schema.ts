@@ -1,7 +1,7 @@
 import { z } from "zod";
+import { DateTime, Interval } from "luxon";
 
 import { Gender } from "../constants/enums.js";
-import { DateUtils } from "../utils/date_utils.js";
 import { MIN_ACCOUNT_OPENING_AGE, MIN_DOB_DATE } from "../constants/values.js";
 import {
   COUNTRY_CODE_REGEX,
@@ -51,33 +51,40 @@ export const dobValidation = z
   .trim()
   .nonempty({ message: "DoB must not be empty." })
   .regex(DOB_DATE_REGEX, {
-    message: "DoB format is invalid. Expected format - 'YYYY-MM-DD'",
+    message: "DoB format is invalid. Expected format - 'yyyy-MM-dd'",
   })
-  .refine(
-    (val) => {
-      const date = new Date(val);
-      const now = new Date();
-      const maxDate = DateUtils.subtractYearsFromDate(
-        now,
-        MIN_ACCOUNT_OPENING_AGE
-      );
-      return date <= maxDate;
-    },
-    {
-      message: `Minimum age to open an account is ${MIN_ACCOUNT_OPENING_AGE} years.`,
+  .superRefine((value, ctx) => {
+    const inputDate = DateTime.fromFormat(value, "yyyy-MM-dd", { zone: "utc" });
+
+    if (!inputDate.isValid) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Date is not parsable.",
+      });
+      return;
     }
-  )
-  .refine(
-    (val) => {
-      const date = new Date(val);
-      return date >= MIN_DOB_DATE;
-    },
-    {
-      message: `Minimum date for DoB: ${
-        MIN_DOB_DATE.toISOString().split("T")[0]
-      }`,
+
+    const now = DateTime.utc();
+    const plusMinAge = inputDate.plus({
+      years: MIN_ACCOUNT_OPENING_AGE,
+    });
+
+    if (plusMinAge > now) {
+      ctx.addIssue({
+        code: "custom",
+        message: `Minimum age to open an account is ${MIN_ACCOUNT_OPENING_AGE} years.`,
+      });
+      return;
     }
-  );
+
+    if (inputDate < MIN_DOB_DATE) {
+      ctx.addIssue({
+        code: "custom",
+        message: `Minimum date for DoB: ${MIN_DOB_DATE.toISODate()}`,
+      });
+      return;
+    }
+  });
 
 export const emailSchema = z.object({
   email: emailValidation,

@@ -1,4 +1,6 @@
 import { Sequelize } from "sequelize";
+import { DateTime, Duration } from "luxon";
+
 import { AwsS3FileCategory } from "../services/aws_s3_service.js";
 import { Env } from "./enums.js";
 
@@ -9,13 +11,15 @@ export let SEQUELIZE: Sequelize;
 export const initSequelize = (sequelize: Sequelize) => (SEQUELIZE = sequelize);
 
 /// Images
-export const IMAGE_EXPIRY_DURATION_IN_HOURS = 48;
+export const IMAGE_EXPIRY_DURATION = Duration.fromObject({ hours: 48 });
 
 /// Users
-export const MIN_DOB_DATE = new Date(Date.UTC(1901, 0, 1));
+export const MIN_DOB_DATE = DateTime.utc(1901, 1, 1);
 export const MIN_ACCOUNT_OPENING_AGE = 18;
 export const DEFAULT_PROFILE_IMAGE_PATH = `${AwsS3FileCategory.static}/default_profile_image.png`;
-export const USER_ACCOUNT_DELETION_BUFFER_DURATION_IN_DAYS = 30;
+export const USER_ACCOUNT_DELETION_BUFFER_DURATION = Duration.fromObject({
+  days: 30,
+});
 
 /// Posts
 export const MAX_COMMENT_LEVEL = 5;
