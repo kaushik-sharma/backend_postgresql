@@ -1,31 +1,35 @@
 import { Router } from "express";
 
 import { requireAuth } from "../middlewares/auth_middlewares.js";
-import { moderationRateLimiter } from "../helpers/rate_limiters.js";
+import { getModerationRateLimiter } from "../helpers/rate_limiters.js";
 import ModerationController from "../controllers/moderation_controller.js";
 
-const router = Router();
+const getModerationRouter = (): Router => {
+  const router = Router();
 
-router.post(
-  "/post/:postId",
-  requireAuth(),
-  moderationRateLimiter,
-  ModerationController.validateReportRequest,
-  ModerationController.reportPost
-);
-router.post(
-  "/comment/:commentId",
-  requireAuth(),
-  moderationRateLimiter,
-  ModerationController.validateReportRequest,
-  ModerationController.reportComment
-);
-router.post(
-  "/user/:reportedUserId",
-  requireAuth(),
-  moderationRateLimiter,
-  ModerationController.validateReportRequest,
-  ModerationController.reportUser
-);
+  router.post(
+    "/post/:postId",
+    requireAuth(),
+    getModerationRateLimiter(),
+    ModerationController.validateReportRequest,
+    ModerationController.reportPost
+  );
+  router.post(
+    "/comment/:commentId",
+    requireAuth(),
+    getModerationRateLimiter(),
+    ModerationController.validateReportRequest,
+    ModerationController.reportComment
+  );
+  router.post(
+    "/user/:reportedUserId",
+    requireAuth(),
+    getModerationRateLimiter(),
+    ModerationController.validateReportRequest,
+    ModerationController.reportUser
+  );
 
-export default router;
+  return router;
+};
+
+export default getModerationRouter;

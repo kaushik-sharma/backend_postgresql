@@ -8,40 +8,47 @@ import {
   REQUEST_EMAIL_CODE_RATE_LIMITER_MAX,
   REQUEST_EMAIL_CODE_RATE_LIMITER_WINDOW_MS,
 } from "../constants/values.js";
+import RedisService from "../services/redis_service.js";
 
-export const defaultRateLimiter = rateLimit({
-  windowMs: DEFAULT_RATE_LIMITER_WINDOW_MS,
-  max: DEFAULT_RATE_LIMITER_MAX,
-  standardHeaders: true,
-  legacyHeaders: false,
-  handler: (req, res) => {
-    res.status(429).json({
-      message: "Too many requests, please try again later.",
-    });
-  },
-});
+export const getDefaultRateLimiter = () =>
+  rateLimit({
+    windowMs: DEFAULT_RATE_LIMITER_WINDOW_MS,
+    max: DEFAULT_RATE_LIMITER_MAX,
+    standardHeaders: true,
+    legacyHeaders: false,
+    store: RedisService.store(),
+    handler: (req, res) => {
+      res.status(429).json({
+        message: "Too many requests, please try again later.",
+      });
+    },
+  });
 
-export const requestEmailCodeRateLimiter = rateLimit({
-  windowMs: REQUEST_EMAIL_CODE_RATE_LIMITER_WINDOW_MS,
-  max: REQUEST_EMAIL_CODE_RATE_LIMITER_MAX,
-  standardHeaders: true,
-  legacyHeaders: false,
-  handler: (req, res) => {
-    res.status(429).json({
-      message: "Too many requests, please try again later.",
-    });
-  },
-});
+export const getRequestEmailCodeRateLimiter = () =>
+  rateLimit({
+    windowMs: REQUEST_EMAIL_CODE_RATE_LIMITER_WINDOW_MS,
+    max: REQUEST_EMAIL_CODE_RATE_LIMITER_MAX,
+    standardHeaders: true,
+    legacyHeaders: false,
+    store: RedisService.store(),
+    handler: (req, res) => {
+      res.status(429).json({
+        message: "Too many requests, please try again later.",
+      });
+    },
+  });
 
-export const moderationRateLimiter = rateLimit({
-  windowMs: MODERATION_RATE_LIMITER_WINDOW_MS,
-  max: MODERATION_RATE_LIMITER_MAX,
-  standardHeaders: true,
-  legacyHeaders: false,
-  keyGenerator: (req, res) => req.user!.userId,
-  handler: (req, res) => {
-    res.status(429).json({
-      message: "Too many requests, please try again later.",
-    });
-  },
-});
+export const getModerationRateLimiter = () =>
+  rateLimit({
+    windowMs: MODERATION_RATE_LIMITER_WINDOW_MS,
+    max: MODERATION_RATE_LIMITER_MAX,
+    standardHeaders: true,
+    legacyHeaders: false,
+    store: RedisService.store(),
+    keyGenerator: (req, res) => req.user!.userId,
+    handler: (req, res) => {
+      res.status(429).json({
+        message: "Too many requests, please try again later.",
+      });
+    },
+  });

@@ -5,11 +5,11 @@ import helmet from "helmet";
 import morgan from "morgan";
 
 import PostgresService from "./services/postgres_service.js";
-import authRouter from "./routes/auth_routes.js";
-import profileRouter from "./routes/profile_routes.js";
-import postRouter from "./routes/post_routes.js";
-import moderationRouter from "./routes/moderation_routes.js";
-import { defaultRateLimiter } from "./helpers/rate_limiters.js";
+import getAuthRouter from "./routes/auth_routes.js";
+import getProfileRouter from "./routes/profile_routes.js";
+import getPostRouter from "./routes/post_routes.js";
+import getModerationRouter from "./routes/moderation_routes.js";
+import { getDefaultRateLimiter } from "./helpers/rate_limiters.js";
 import { errorHandler } from "./middlewares/error_middlewares.js";
 import SocketManager from "./socket.js";
 import logger from "./utils/logger.js";
@@ -17,10 +17,14 @@ import { Env } from "./constants/enums.js";
 import { ENV, initEnv, initSequelize } from "./constants/values.js";
 import CronService from "./services/cron_service.js";
 import { initModels } from "./models/index.js";
+import RedisService from "./services/redis_service.js";
+import { hitCounter } from "./middlewares/hit_counter.js";
 
 initEnv(Env.fromString(process.env.ENV!));
 
 dotenv.config({ path: ENV.filePath });
+
+await RedisService.initClient();
 
 const app = express();
 
@@ -46,12 +50,14 @@ app.use((req, res, next) => {
 
 app.use(express.json({ limit: "100kb" }));
 
-app.use(defaultRateLimiter);
+app.use(hitCounter);
 
-app.use("/api/v1/auth", authRouter);
-app.use("/api/v1/profile", profileRouter);
-app.use("/api/v1/posts", postRouter);
-app.use("/api/v1/moderation", moderationRouter);
+app.use(getDefaultRateLimiter());
+
+app.use("/api/v1/auth", getAuthRouter());
+app.use("/api/v1/profile", getProfileRouter());
+app.use("/api/v1/posts", getPostRouter());
+app.use("/api/v1/moderation", getModerationRouter());
 
 app.use(errorHandler);
 
@@ -84,7 +90,7 @@ try {
   server.listen(port, host, () => {
     logger.info(`Server running at https://${host}:${port}/`);
   });
-} catch (err: any) {
+} catch (err) {
   console.error(err);
   process.exit(1);
 }

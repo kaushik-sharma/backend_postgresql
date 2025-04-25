@@ -27,6 +27,7 @@
     "express": "^5.0.1",
     "express-rate-limit": "^7.5.0",
     "helmet": "^8.1.0",
+    "ioredis": "^5.6.1",
     "jsonwebtoken": "^9.0.2",
     "luxon": "^3.6.1",
     "mime-types": "^3.0.1",
@@ -38,6 +39,7 @@
     "performant-array-to-tree": "^1.11.0",
     "pg": "^8.14.1",
     "pg-native": "^3.3.0",
+    "rate-limit-redis": "^4.2.0",
     "sequelize": "^6.37.7",
     "socket.io": "^4.8.1",
     "uuid": "^11.1.0",
@@ -47,6 +49,7 @@
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
     "@types/express": "^5.0.0",
+    "@types/ioredis": "^4.28.10",
     "@types/jsonwebtoken": "^9.0.7",
     "@types/luxon": "^3.6.2",
     "@types/morgan": "^1.9.9",
