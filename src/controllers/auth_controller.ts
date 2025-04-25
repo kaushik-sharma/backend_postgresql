@@ -13,17 +13,17 @@ import {
   SignUpType,
 } from "../validation/auth_schema.js";
 import { validateModel } from "../helpers/validation_helper.js";
-import AuthDatasource from "../datasources/auth_datasource.js";
 import { successResponseHandler } from "../helpers/success_handler.js";
 import { AuthUserAction, EntityStatus, Env } from "../constants/enums.js";
 import { CustomError } from "../middlewares/error_middlewares.js";
 import JwtService from "../services/jwt_service.js";
 import { UserModel } from "../models/user/user_model.js";
 import { performTransaction } from "../helpers/transaction_helper.js";
-import ProfileDatasource from "../datasources/profile_datasource.js";
 import BcryptService from "../services/bcrypt_service.js";
 import MailService from "../services/mail_service.js";
 import { ENV, DEV_EMAIL_VERIFICATION_WHITELIST } from "../constants/values.js";
+import UserDatasource from "../datasources/user_datasource.js";
+import SessionDatasource from "../datasources/session_datasource.js";
 
 export class AuthController {
   static readonly #generateVerificationCode = (): string => {
@@ -121,7 +121,7 @@ export class AuthController {
     async (req, res, next) => {
       const parsedData = req.parsedData! as EmailType;
 
-      const user = await AuthDatasource.findUserByEmail(parsedData.email);
+      const user = await UserDatasource.findUserByEmail(parsedData.email);
 
       if (user === null) {
         return successResponseHandler({
@@ -184,18 +184,17 @@ export class AuthController {
 
       const parsedData = req.parsedData! as SignUpType;
 
-      const email = parsedData.email;
-      const countryCode = parsedData.countryCode;
-      const phoneNumber = parsedData.phoneNumber;
-
-      const canSignUpWithEmail = await AuthDatasource.canSignUpWithEmail(email);
-      if (!canSignUpWithEmail) {
+      const emailExists = await UserDatasource.userByEmailExists(
+        parsedData.email
+      );
+      if (emailExists) {
         throw new CustomError(409, "Account with this email already exists.");
       }
-
-      const canSignUpWithPhoneNumber =
-        await AuthDatasource.canSignUpWithPhoneNumber(countryCode, phoneNumber);
-      if (!canSignUpWithPhoneNumber) {
+      const phoneNumberExists = await UserDatasource.userByPhoneNumberExists(
+        parsedData.countryCode,
+        parsedData.phoneNumber
+      );
+      if (phoneNumberExists) {
         throw new CustomError(
           409,
           "Account with this phone number already exists."
@@ -208,7 +207,7 @@ export class AuthController {
         parsedData.verificationToken
       );
 
-      const user = new UserModel({
+      const newUser = new UserModel({
         firstName: parsedData.firstName,
         lastName: parsedData.lastName,
         gender: parsedData.gender,
@@ -223,16 +222,16 @@ export class AuthController {
         async (transaction) => {
           /// Delete anonymous user (if exists)
           if (anonymousUserId !== null) {
-            await AuthDatasource.signOutAllSessions(
+            await SessionDatasource.signOutAllSessions(
               anonymousUserId,
               transaction
             );
-            await AuthDatasource.deleteAnonymousUser(
+            await UserDatasource.deleteAnonymousUser(
               anonymousUserId,
               transaction
             );
           }
-          const userId = await AuthDatasource.createUser(user, transaction);
+          const userId = await UserDatasource.createUser(newUser, transaction);
           return await JwtService.createAuthToken(userId, transaction);
         }
       );
@@ -256,7 +255,7 @@ export class AuthController {
 
       const parsedData = req.parsedData! as SignInType;
 
-      const user = await AuthDatasource.findUserByEmail(parsedData.email);
+      const user = await UserDatasource.findUserByEmail(parsedData.email);
 
       if (user === null) {
         throw new CustomError(404, "Account with this email does not exist.");
@@ -276,7 +275,7 @@ export class AuthController {
       }
 
       if (parsedData.cancelAccountDeletionRequest) {
-        await ProfileDatasource.removeDeletionRequest(user.id!);
+        await UserDatasource.removeDeletionRequest(user.id!);
       }
 
       // Checking if the user is marked for deletion
@@ -291,11 +290,11 @@ export class AuthController {
         async (transaction) => {
           /// Delete anonymous user (if exists)
           if (anonymousUserId !== null) {
-            await AuthDatasource.signOutAllSessions(
+            await SessionDatasource.signOutAllSessions(
               anonymousUserId!,
               transaction
             );
-            await AuthDatasource.deleteAnonymousUser(
+            await UserDatasource.deleteAnonymousUser(
               anonymousUserId!,
               transaction
             );
@@ -316,7 +315,7 @@ export class AuthController {
     async (req, res, next) => {
       const { userId, sessionId } = req.user!;
 
-      await AuthDatasource.signOutSession(userId, sessionId);
+      await SessionDatasource.signOutSession(userId, sessionId);
 
       successResponseHandler({
         res: res,
@@ -329,7 +328,7 @@ export class AuthController {
     async (req, res, next) => {
       const userId = req.user!.userId;
 
-      await AuthDatasource.signOutAllSessions(userId);
+      await SessionDatasource.signOutAllSessions(userId);
 
       successResponseHandler({
         res: res,
@@ -360,7 +359,7 @@ export class AuthController {
 
       const authToken = await performTransaction<string>(
         async (transaction) => {
-          const userId = await AuthDatasource.createUser(user, transaction);
+          const userId = await UserDatasource.createUser(user, transaction);
           return await JwtService.createAuthToken(userId, transaction);
         }
       );

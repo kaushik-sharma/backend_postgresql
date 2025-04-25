@@ -3,7 +3,6 @@ import { DateTime } from "luxon";
 
 import { asyncHandler } from "../helpers/async_handler.js";
 import { successResponseHandler } from "../helpers/success_handler.js";
-import ProfileDatasource from "../datasources/profile_datasource.js";
 import AwsS3Service, { AwsS3FileCategory } from "../services/aws_s3_service.js";
 import {
   DEFAULT_PROFILE_IMAGE_PATH,
@@ -16,18 +15,17 @@ import {
   UpdateProfileType,
 } from "../validation/profile_schema.js";
 import { CustomError } from "../middlewares/error_middlewares.js";
-import { UserDeletionRequestModel } from "../models/profile/user_deletion_request_model.js";
-import AuthDatasource from "../datasources/auth_datasource.js";
+import { UserDeletionRequestModel } from "../models/user/user_deletion_request_model.js";
 import { performTransaction } from "../helpers/transaction_helper.js";
 import PublicProfileDto from "../dtos/public_profile_dto.js";
 import { EntityStatus } from "../constants/enums.js";
+import UserDatasource from "../datasources/user_datasource.js";
+import SessionDatasource from "../datasources/session_datasource.js";
 
 export const deleteCustomProfileImage = async (
   userId: string
 ): Promise<void> => {
-  const profileImagePath = await ProfileDatasource.getUserProfileImagePath(
-    userId
-  );
+  const profileImagePath = await UserDatasource.getUserProfileImagePath(userId);
   if (profileImagePath !== null) {
     AwsS3Service.initiateDeleteFile(profileImagePath);
   }
@@ -38,7 +36,7 @@ export default class ProfileController {
     async (req, res, next) => {
       const userId = req.user!.userId;
 
-      const user = await ProfileDatasource.getUserById(userId);
+      const user = await UserDatasource.getUserById(userId);
 
       const profileImageUrl = AwsS3Service.getCloudFrontSignedUrl(
         user.profileImagePath ?? DEFAULT_PROFILE_IMAGE_PATH
@@ -67,12 +65,12 @@ export default class ProfileController {
     async (req, res, next) => {
       const userId = req.params.userId;
 
-      const userExists = await AuthDatasource.isUserActive(userId);
+      const userExists = await UserDatasource.isUserActive(userId);
       if (!userExists) {
         throw new CustomError(404, "User not found!");
       }
 
-      const user = await ProfileDatasource.getPublicUserById(userId);
+      const user = await UserDatasource.getPublicUserById(userId);
 
       const profileImageUrl = AwsS3Service.getCloudFrontSignedUrl(
         user.profileImagePath ?? DEFAULT_PROFILE_IMAGE_PATH
@@ -129,7 +127,7 @@ export default class ProfileController {
         updatedFields["profileImagePath"] = imagePath;
       }
 
-      await ProfileDatasource.updateProfile(userId, updatedFields);
+      await UserDatasource.updateProfile(userId, updatedFields);
 
       const resData: Record<string, any> = {};
       if (imageUrl !== null) {
@@ -149,7 +147,7 @@ export default class ProfileController {
       const userId = req.user!.userId;
 
       await deleteCustomProfileImage(userId);
-      await ProfileDatasource.resetProfileImage(userId);
+      await UserDatasource.resetProfileImage(userId);
 
       const profileImageUrl = AwsS3Service.getCloudFrontSignedUrl(
         DEFAULT_PROFILE_IMAGE_PATH
@@ -170,7 +168,7 @@ export default class ProfileController {
       const userId = req.user!.userId;
 
       // Checking if the user is already marked for deletion
-      const userStatus = await AuthDatasource.getUserStatus(userId);
+      const userStatus = await UserDatasource.getUserStatus(userId);
       if (userStatus === EntityStatus.requestedDeletion) {
         throw new CustomError(
           409,
@@ -188,9 +186,9 @@ export default class ProfileController {
       });
 
       await performTransaction<void>(async (transaction) => {
-        await AuthDatasource.signOutAllSessions(userId, transaction);
-        await AuthDatasource.markUserForDeletion(userId, transaction);
-        await ProfileDatasource.createUserDeletionRequest(model, transaction);
+        await SessionDatasource.signOutAllSessions(userId, transaction);
+        await UserDatasource.markUserForDeletion(userId, transaction);
+        await UserDatasource.createUserDeletionRequest(model, transaction);
       });
 
       successResponseHandler({

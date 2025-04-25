@@ -2,7 +2,7 @@ import { DataTypes, Model } from "sequelize";
 
 import Tables from "../../constants/tables.js";
 import { SEQUELIZE } from "../../constants/values.js";
-import { UserModel } from "../user/user_model.js";
+import { UserModel } from "./user_model.js";
 import BaseAttributes from "../base_attributes.js";
 
 export interface UserDeletionRequestAttributes extends BaseAttributes {

@@ -1,9 +1,115 @@
 import { Op, Transaction } from "sequelize";
-import { EntityStatus } from "../constants/enums.js";
-import { UserAttributes, UserModel } from "../models/user/user_model.js";
-import { UserDeletionRequestModel } from "../models/profile/user_deletion_request_model.js";
 
-export default class ProfileDatasource {
+import { EntityStatus } from "../constants/enums.js";
+import { UserDeletionRequestModel } from "../models/user/user_deletion_request_model.js";
+import { UserModel, UserAttributes } from "../models/user/user_model.js";
+
+export default class UserDatasource {
+  static readonly isUserActive = async (userId: string): Promise<boolean> => {
+    const count = await UserModel.count({
+      where: { id: userId, status: EntityStatus.active },
+    });
+    if (count > 1) {
+      throw new Error("Multiple active users found!");
+    }
+    return count === 1;
+  };
+
+  static readonly getUserStatus = async (
+    userId: string
+  ): Promise<EntityStatus> => {
+    const user = await UserModel.findByPk(userId, {
+      attributes: ["status"],
+    });
+    return user!.toJSON().status;
+  };
+
+  static readonly findUserByEmail = async (
+    email: string
+  ): Promise<UserAttributes | null> => {
+    const user = await UserModel.findOne({
+      where: {
+        email: email,
+        status: {
+          [Op.ne]: EntityStatus.deleted,
+        },
+      },
+      attributes: ["id", "status"],
+    });
+
+    if (user === null) return null;
+
+    return user.toJSON();
+  };
+
+  static readonly userByEmailExists = async (
+    email: string
+  ): Promise<boolean> => {
+    const count = await UserModel.count({
+      where: {
+        email,
+        status: {
+          [Op.ne]: EntityStatus.deleted,
+        },
+      },
+    });
+
+    return count === 1;
+  };
+
+  static readonly userByPhoneNumberExists = async (
+    countryCode: string,
+    phoneNumber: string
+  ): Promise<boolean> => {
+    const count = await UserModel.count({
+      where: {
+        countryCode,
+        phoneNumber,
+        status: {
+          [Op.ne]: EntityStatus.deleted,
+        },
+      },
+    });
+
+    return count === 1;
+  };
+
+  static readonly deleteAnonymousUser = async (
+    userId: string,
+    transaction: Transaction
+  ): Promise<void> => {
+    await UserModel.destroy({
+      where: { id: userId, status: EntityStatus.anonymous },
+      transaction: transaction,
+    });
+  };
+
+  static readonly createUser = async (
+    user: UserModel,
+    transaction: Transaction
+  ): Promise<string> => {
+    const createdUser = await user.save({ transaction: transaction });
+    return createdUser.toJSON().id!;
+  };
+
+  static readonly markUserForDeletion = async (
+    userId: string,
+    transaction: Transaction
+  ) => {
+    await UserModel.update(
+      {
+        status: EntityStatus.requestedDeletion,
+      },
+      {
+        where: {
+          id: userId,
+          status: EntityStatus.active,
+        },
+        transaction: transaction,
+      }
+    );
+  };
+
   static readonly getUserById = async (
     userId: string
   ): Promise<UserAttributes> => {

@@ -4,7 +4,7 @@ import { ReportUserModel } from "./moderation/report_user_model.js";
 import { CommentModel } from "./post/comment_model.js";
 import { PostModel } from "./post/post_model.js";
 import { ReactionModel } from "./post/reaction_model.js";
-import { UserDeletionRequestModel } from "./profile/user_deletion_request_model.js";
+import { UserDeletionRequestModel } from "./user/user_deletion_request_model.js";
 import { SessionModel } from "./session/session_model.js";
 import { UserModel } from "./user/user_model.js";
 

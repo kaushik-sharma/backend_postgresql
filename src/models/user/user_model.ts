@@ -4,7 +4,7 @@ import { EntityStatus, Gender } from "../../constants/enums.js";
 import Tables from "../../constants/tables.js";
 import { SEQUELIZE } from "../../constants/values.js";
 import { SessionModel } from "../session/session_model.js";
-import { UserDeletionRequestModel } from "../profile/user_deletion_request_model.js";
+import { UserDeletionRequestModel } from "./user_deletion_request_model.js";
 import { PostModel } from "../post/post_model.js";
 import { CommentModel } from "../post/comment_model.js";
 import { ReactionModel } from "../post/reaction_model.js";
