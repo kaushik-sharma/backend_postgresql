@@ -85,11 +85,41 @@ export default class UserDatasource {
   };
 
   static readonly createUser = async (
-    user: UserModel,
+    userData: UserAttributes,
     transaction: Transaction
   ): Promise<string> => {
+    const user = new UserModel(userData);
     const createdUser = await user.save({ transaction: transaction });
     return createdUser.toJSON().id!;
+  };
+
+  static readonly anonymousUserExists = async (
+    userId: string
+  ): Promise<boolean> => {
+    const count = await UserModel.count({
+      where: {
+        id: userId,
+        status: EntityStatus.anonymous,
+      },
+    });
+    return count === 1;
+  };
+
+  static readonly convertAnonymousUserToActive = async (
+    anonymousUserId: string,
+    userData: UserAttributes,
+    transaction: Transaction
+  ): Promise<string> => {
+    await UserModel.update(
+      {
+        ...userData,
+      },
+      {
+        where: { id: anonymousUserId, status: EntityStatus.anonymous },
+        transaction: transaction,
+      }
+    );
+    return anonymousUserId;
   };
 
   static readonly markUserForDeletion = async (

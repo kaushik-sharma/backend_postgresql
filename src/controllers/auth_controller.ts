@@ -17,7 +17,7 @@ import { successResponseHandler } from "../helpers/success_handler.js";
 import { AuthUserAction, EntityStatus, Env } from "../constants/enums.js";
 import { CustomError } from "../middlewares/error_middlewares.js";
 import JwtService from "../services/jwt_service.js";
-import { UserModel } from "../models/user/user_model.js";
+import { UserAttributes } from "../models/user/user_model.js";
 import { performTransaction } from "../helpers/transaction_helper.js";
 import BcryptService from "../services/bcrypt_service.js";
 import MailService from "../services/mail_service.js";
@@ -182,6 +182,15 @@ export class AuthController {
     async (req, res, next) => {
       const anonymousUserId = req.user?.userId ?? null;
 
+      if (anonymousUserId !== null) {
+        const anonymousUserExists = await UserDatasource.anonymousUserExists(
+          anonymousUserId
+        );
+        if (!anonymousUserExists) {
+          throw new CustomError(404, "Anonymous user not found!");
+        }
+      }
+
       const parsedData = req.parsedData! as SignUpType;
 
       const emailExists = await UserDatasource.userByEmailExists(
@@ -207,7 +216,7 @@ export class AuthController {
         parsedData.verificationToken
       );
 
-      const newUser = new UserModel({
+      const userData: UserAttributes = {
         firstName: parsedData.firstName,
         lastName: parsedData.lastName,
         gender: parsedData.gender,
@@ -215,23 +224,24 @@ export class AuthController {
         phoneNumber: parsedData.phoneNumber,
         email: parsedData.email,
         dob: parsedData.dob,
+        profileImagePath: null,
         status: EntityStatus.active,
-      });
+        bannedAt: null,
+        deletedAt: null,
+      };
 
       const authToken = await performTransaction<string>(
         async (transaction) => {
-          /// Delete anonymous user (if exists)
+          let userId: string;
           if (anonymousUserId !== null) {
-            await SessionDatasource.signOutAllSessions(
+            userId = await UserDatasource.convertAnonymousUserToActive(
               anonymousUserId,
+              userData,
               transaction
             );
-            await UserDatasource.deleteAnonymousUser(
-              anonymousUserId,
-              transaction
-            );
+          } else {
+            userId = await UserDatasource.createUser(userData, transaction);
           }
-          const userId = await UserDatasource.createUser(newUser, transaction);
           return await JwtService.createAuthToken(userId, transaction);
         }
       );
@@ -252,6 +262,15 @@ export class AuthController {
   static readonly signIn: RequestHandler = asyncHandler(
     async (req, res, next) => {
       const anonymousUserId = req.user?.userId ?? null;
+
+      if (anonymousUserId !== null) {
+        const anonymousUserExists = await UserDatasource.anonymousUserExists(
+          anonymousUserId
+        );
+        if (!anonymousUserExists) {
+          throw new CustomError(404, "Anonymous user not found!");
+        }
+      }
 
       const parsedData = req.parsedData! as SignInType;
 
@@ -353,13 +372,13 @@ export class AuthController {
 
   static readonly anonymousAuth: RequestHandler = asyncHandler(
     async (req, res, next) => {
-      const user = new UserModel({
+      const userData: UserAttributes = {
         status: EntityStatus.anonymous,
-      });
+      };
 
       const authToken = await performTransaction<string>(
         async (transaction) => {
-          const userId = await UserDatasource.createUser(user, transaction);
+          const userId = await UserDatasource.createUser(userData, transaction);
           return await JwtService.createAuthToken(userId, transaction);
         }
       );

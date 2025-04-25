@@ -1,19 +1,19 @@
 import { deleteCustomProfileImage } from "../controllers/profile_controller.js";
-import AuthDatasource from "../datasources/auth_datasource.js";
-import ProfileDatasource from "../datasources/profile_datasource.js";
+import SessionDatasource from "../datasources/session_datasource.js";
+import UserDatasource from "../datasources/user_datasource.js";
 import logger from "../utils/logger.js";
 import { performTransaction } from "./transaction_helper.js";
 
 export const deleteScheduledUserAccounts = async () => {
-  const userIds = await ProfileDatasource.getDueDeletionUserIds();
+  const userIds = await UserDatasource.getDueDeletionUserIds();
 
   for (const userId of userIds) {
     await deleteCustomProfileImage(userId);
 
     await performTransaction<void>(async (transaction) => {
-      await AuthDatasource.signOutAllSessions(userId, transaction);
-      await ProfileDatasource.deleteUser(userId, transaction);
-      await ProfileDatasource.removeDeletionRequest(userId, transaction);
+      await SessionDatasource.signOutAllSessions(userId, transaction);
+      await UserDatasource.deleteUser(userId, transaction);
+      await UserDatasource.removeDeletionRequest(userId, transaction);
     });
   }
 

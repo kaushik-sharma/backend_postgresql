@@ -12,7 +12,7 @@ import {
   ReactionAttributes,
   ReactionModel,
 } from "../models/post/reaction_model.js";
-import AuthDatasource from "./auth_datasource.js";
+import UserDatasource from "./user_datasource.js";
 
 export default class PostDatasource {
   static readonly createPost = async (
@@ -34,7 +34,7 @@ export default class PostDatasource {
 
     if (post === null) return false;
 
-    const isUserActive = await AuthDatasource.isUserActive(
+    const isUserActive = await UserDatasource.isUserActive(
       post.toJSON().userId
     );
     if (!isUserActive) return false;
@@ -103,7 +103,7 @@ export default class PostDatasource {
     });
     if (comment === null) return false;
 
-    const isUserActive = await AuthDatasource.isUserActive(
+    const isUserActive = await UserDatasource.isUserActive(
       comment.toJSON().userId
     );
     if (!isUserActive) return false;

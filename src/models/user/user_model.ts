@@ -23,8 +23,8 @@ export interface UserAttributes extends BaseAttributes {
   dob?: string;
   profileImagePath?: string | null;
   status: EntityStatus;
-  bannedAt: Date | null;
-  deletedAt: Date | null;
+  bannedAt?: Date | null;
+  deletedAt?: Date | null;
 }
 
 export class UserModel extends Model<UserAttributes> {
@@ -69,13 +69,13 @@ export class UserModel extends Model<UserAttributes> {
       }
     );
 
-    UserModel.beforeSave((user: UserModel) => {
-      if (user.toJSON().status === EntityStatus.active) {
-        user.setDataValue("profileImagePath", null);
-        user.setDataValue("bannedAt", null);
-        user.setDataValue("deletedAt", null);
-      }
-    });
+    // UserModel.beforeSave((user: UserModel) => {
+    //   if (user.toJSON().status === EntityStatus.active) {
+    //     user.setDataValue("profileImagePath", null);
+    //     user.setDataValue("bannedAt", null);
+    //     user.setDataValue("deletedAt", null);
+    //   }
+    // });
   };
 
   static readonly associate = () => {

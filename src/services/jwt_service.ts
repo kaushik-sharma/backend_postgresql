@@ -3,7 +3,7 @@ import fs from "fs";
 import { Transaction } from "sequelize";
 
 import { SessionModel } from "../models/session/session_model.js";
-import AuthDatasource from "../datasources/auth_datasource.js";
+import UserDatasource from "../datasources/user_datasource.js";
 import { CustomError } from "../middlewares/error_middlewares.js";
 import { AuthMode, EntityStatus } from "../constants/enums.js";
 
@@ -69,7 +69,7 @@ export default class JwtService {
 
     const userId = session.toJSON().userId;
 
-    const userStatus = await AuthDatasource.getUserStatus(userId);
+    const userStatus = await UserDatasource.getUserStatus(userId);
 
     switch (authMode) {
       case AuthMode.AUTHENTICATED:

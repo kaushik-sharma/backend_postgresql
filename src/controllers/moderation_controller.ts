@@ -14,9 +14,10 @@ import {
 } from "../constants/values.js";
 import { successResponseHandler } from "../helpers/success_handler.js";
 import { ReportCommentModel } from "../models/moderation/report_comment_model.js";
-import AuthDatasource from "../datasources/auth_datasource.js";
 import { ReportUserModel } from "../models/moderation/report_user_model.js";
 import { performTransaction } from "../helpers/transaction_helper.js";
+import UserDatasource from "../datasources/user_datasource.js";
+import SessionDatasource from "../datasources/session_datasource.js";
 
 export default class ModerationController {
   static readonly validateReportRequest: RequestHandler = (req, res, next) => {
@@ -111,7 +112,7 @@ export default class ModerationController {
       const parsedData = req.parsedData! as ReportType;
       const reportedUserId = req.params.reportedUserId;
 
-      const userExists = await AuthDatasource.isUserActive(reportedUserId);
+      const userExists = await UserDatasource.isUserActive(reportedUserId);
       if (!userExists) {
         throw new CustomError(404, "User not found!");
       }
@@ -133,7 +134,7 @@ export default class ModerationController {
       if (userReportedCount >= USER_BAN_THRESHOLD()) {
         await performTransaction<void>(async (transaction) => {
           await ModerationDatasource.banUser(reportedUserId, transaction);
-          await AuthDatasource.signOutAllSessions(reportedUserId, transaction);
+          await SessionDatasource.signOutAllSessions(reportedUserId, transaction);
         });
       }
 
