@@ -4,6 +4,13 @@ import RedisStore from "rate-limit-redis";
 export default class RedisService {
   static #client: Redis;
 
+  static get client(): Redis {
+    if (!this.#client) {
+      throw new Error("Redis client not initialized. Call initClient() first.");
+    }
+    return this.#client;
+  }
+
   static readonly initClient = async (): Promise<void> => {
     if (!this.#client) {
       this.#client = new Redis({
@@ -17,14 +24,7 @@ export default class RedisService {
     }
   };
 
-  static readonly getClient = (): Redis => {
-    if (!this.#client) {
-      throw new Error("Redis client not initialized. Call initClient() first.");
-    }
-    return this.#client;
-  };
-
-  static readonly store = (): RedisStore => {
+  static readonly hitCountStore = (): RedisStore => {
     return new RedisStore({
       // @ts-expect-error - Known issue: the `call` function is not present in @types/ioredis
       sendCommand: (...args: string[]) => this.#client.call(...args),

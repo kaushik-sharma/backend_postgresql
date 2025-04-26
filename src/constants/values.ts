@@ -51,3 +51,8 @@ export const ALLOWED_IMAGE_MIMETYPES = [
 ];
 
 export const DEV_EMAIL_VERIFICATION_WHITELIST = ["gmail.com"];
+
+/// Redis
+export const AUTH_TOKEN_DATA_CACHE_EXPIRY_IN_SEC = Duration.fromObject({
+  days: 7,
+}).as("seconds");

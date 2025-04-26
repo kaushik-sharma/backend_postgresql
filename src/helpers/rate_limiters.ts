@@ -16,7 +16,7 @@ export const getDefaultRateLimiter = () =>
     max: DEFAULT_RATE_LIMITER_MAX,
     standardHeaders: true,
     legacyHeaders: false,
-    store: RedisService.store(),
+    store: RedisService.hitCountStore(),
     handler: (req, res) => {
       res.status(429).json({
         message: "Too many requests, please try again later.",
@@ -30,7 +30,7 @@ export const getRequestEmailCodeRateLimiter = () =>
     max: REQUEST_EMAIL_CODE_RATE_LIMITER_MAX,
     standardHeaders: true,
     legacyHeaders: false,
-    store: RedisService.store(),
+    store: RedisService.hitCountStore(),
     handler: (req, res) => {
       res.status(429).json({
         message: "Too many requests, please try again later.",
@@ -44,7 +44,7 @@ export const getModerationRateLimiter = () =>
     max: MODERATION_RATE_LIMITER_MAX,
     standardHeaders: true,
     legacyHeaders: false,
-    store: RedisService.store(),
+    store: RedisService.hitCountStore(),
     keyGenerator: (req, res) => req.user!.userId,
     handler: (req, res) => {
       res.status(429).json({

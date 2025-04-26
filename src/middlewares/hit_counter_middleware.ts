@@ -9,12 +9,11 @@ export async function hitCounter(
   next: NextFunction
 ) {
   try {
-    const client = RedisService.getClient();
     const key = `hits:${req.method}:${req.path}`;
-    const count = await client.incr(key);
+    const count = await RedisService.client.incr(key);
     if (count === 1) {
       const expireDuration = Duration.fromObject({ days: 7 });
-      await client.expire(key, expireDuration.as("seconds"));
+      await RedisService.client.expire(key, expireDuration.as("seconds"));
     }
   } catch (err) {
     console.warn("Hit counter failed:", err);

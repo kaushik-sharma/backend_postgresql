@@ -11,15 +11,17 @@ function _sortRecordByValueDesc(
 
 export const getAggregatedHitsCount = async () => {
   const data: Record<string, any> = {};
-  const client = RedisService.getClient();
-  const stream = client.scanStream({ match: "hits:*", count: 100 });
+  const stream = RedisService.client.scanStream({
+    match: "hits:*",
+    count: 100,
+  });
 
   const execPromises: Promise<void>[] = [];
 
   await new Promise<void>((resolve, reject) => {
     stream.on("data", (keys: string[]) => {
       if (keys.length > 0) {
-        const pipeline = client.pipeline();
+        const pipeline = RedisService.client.pipeline();
         keys.forEach((k) => pipeline.get(k));
         // Push a promise that resolves when this pipeline finishes
         const promise = pipeline.exec().then((responses) => {

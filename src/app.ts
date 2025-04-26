@@ -18,7 +18,7 @@ import { ENV, initEnv, initSequelize } from "./constants/values.js";
 import CronService from "./services/cron_service.js";
 import { initModels } from "./models/index.js";
 import RedisService from "./services/redis_service.js";
-import { hitCounter } from "./middlewares/hit_counter.js";
+import { hitCounter } from "./middlewares/hit_counter_middleware.js";
 
 initEnv(Env.fromString(process.env.ENV!));
 

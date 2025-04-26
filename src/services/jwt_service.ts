@@ -1,11 +1,14 @@
 import jwt from "jsonwebtoken";
 import fs from "fs";
 import { Transaction } from "sequelize";
+import { $enum } from "ts-enum-util";
 
 import { SessionModel } from "../models/session/session_model.js";
 import UserDatasource from "../datasources/user_datasource.js";
 import { CustomError } from "../middlewares/error_middlewares.js";
 import { AuthMode, EntityStatus } from "../constants/enums.js";
+import RedisService from "./redis_service.js";
+import { AUTH_TOKEN_DATA_CACHE_EXPIRY_IN_SEC } from "../constants/values.js";
 
 export default class JwtService {
   static get #privateKey(): string {
@@ -37,6 +40,48 @@ export default class JwtService {
     }
   };
 
+  static readonly #getUserIdFromSessionId = async (
+    sessionId: string
+  ): Promise<string> => {
+    let userId: string | null = null;
+    userId = await RedisService.client.get(`sessions:${sessionId}`);
+    if (userId === null) {
+      const dbSession = await SessionModel.findByPk(sessionId, {
+        attributes: ["userId"],
+      });
+      if (dbSession === null) {
+        throw new CustomError(403, "Session not found.");
+      }
+      userId = dbSession.toJSON().userId;
+      await RedisService.client.set(
+        `sessions:${sessionId}`,
+        userId,
+        "EX",
+        AUTH_TOKEN_DATA_CACHE_EXPIRY_IN_SEC
+      );
+    }
+    return userId;
+  };
+
+  static readonly #getUserStatusFromUserId = async (
+    userId: string
+  ): Promise<EntityStatus> => {
+    let status: EntityStatus | null = null;
+    const statusStr = await RedisService.client.get(`users:status:${userId}`);
+    if (statusStr !== null) {
+      status = $enum(EntityStatus).asValueOrThrow(statusStr);
+    } else {
+      status = await UserDatasource.getUserStatus(userId);
+      await RedisService.client.set(
+        `users:status:${userId}`,
+        status.toString(),
+        "EX",
+        AUTH_TOKEN_DATA_CACHE_EXPIRY_IN_SEC
+      );
+    }
+    return status;
+  };
+
   static readonly createAuthToken = async (
     userId: string,
     transaction?: Transaction
@@ -45,9 +90,19 @@ export default class JwtService {
       { userId: userId },
       { transaction: transaction }
     );
+    const sessionId = session.toJSON().id!;
+
+    await RedisService.client.set(
+      `sessions:${sessionId}`,
+      userId,
+      "EX",
+      AUTH_TOKEN_DATA_CACHE_EXPIRY_IN_SEC
+    );
+
     const payload = {
-      sessionId: session.toJSON().id!,
+      sessionId: sessionId,
     };
+
     return this.#generateAuthTokenJwt(payload);
   };
 
@@ -62,14 +117,8 @@ export default class JwtService {
       throw new CustomError(401, "Invalid auth token.");
     }
 
-    const session = await SessionModel.findByPk(sessionId);
-    if (session === null) {
-      throw new CustomError(403, "Session not found.");
-    }
-
-    const userId = session.toJSON().userId;
-
-    const userStatus = await UserDatasource.getUserStatus(userId);
+    const userId = await this.#getUserIdFromSessionId(sessionId);
+    const userStatus = await this.#getUserStatusFromUserId(userId);
 
     switch (authMode) {
       case AuthMode.AUTHENTICATED:

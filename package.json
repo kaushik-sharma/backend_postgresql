@@ -42,6 +42,7 @@
     "rate-limit-redis": "^4.2.0",
     "sequelize": "^6.37.7",
     "socket.io": "^4.8.1",
+    "ts-enum-util": "^4.1.0",
     "uuid": "^11.1.0",
     "winston": "^3.17.0",
     "zod": "^3.24.2"
