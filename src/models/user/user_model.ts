@@ -65,6 +65,7 @@ export class UserModel extends Model<UserAttributes> {
           { fields: ["email"] },
           { fields: ["countryCode"] },
           { fields: ["phoneNumber"] },
+          { fields: ["status"] },
         ],
       }
     );

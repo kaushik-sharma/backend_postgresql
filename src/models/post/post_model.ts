@@ -48,7 +48,7 @@ export class PostModel extends Model<PostAttributes> {
         tableName: Tables.posts,
         modelName: "PostModel",
         sequelize: SEQUELIZE,
-        indexes: [{ fields: ["userId"] }],
+        indexes: [{ fields: ["userId"] }, { fields: ["status"] }],
       }
     );
   };

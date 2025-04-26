@@ -45,7 +45,11 @@ export class CommentModel extends Model<CommentAttributes> {
         tableName: Tables.comments,
         modelName: "CommentModel",
         sequelize: SEQUELIZE,
-        indexes: [{ fields: ["postId"] }, { fields: ["userId"] }],
+        indexes: [
+          { fields: ["postId"] },
+          { fields: ["userId"] },
+          { fields: ["status"] },
+        ],
       }
     );
   };
