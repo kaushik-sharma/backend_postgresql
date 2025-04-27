@@ -9,21 +9,21 @@ import {
   PHONE_NUMBER_REGEX,
 } from "../constants/regex.js";
 
-export const emailValidation = z
+const emailValidation = z
   .string({ required_error: "Email is required." })
   .trim()
   .nonempty({ message: "Email must not be empty." })
   .email()
   .transform((value) => value.toLowerCase());
 
-export const verificationCodeValidation = z
+const verificationCodeValidation = z
   .string({ required_error: "Verification code is required." })
   .trim()
   .nonempty({ message: "Verification code can not be empty." })
   .length(6, { message: "Verification code must be 6 characters long." })
   .regex(/^\d{6}$/, { message: "Must contain only digits." });
 
-export const verificationTokenValidation = z
+const verificationTokenValidation = z
   .string({ required_error: "Verification token is required." })
   .trim()
   .nonempty({ message: "Verification token can not be empty." });
