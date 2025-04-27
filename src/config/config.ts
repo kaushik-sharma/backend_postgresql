@@ -5,7 +5,7 @@ dotenv.config({ path: `.env.${process.env.ENV!}` });
 
 export default {
   development: {
-    url: process.env.SUPABASE_CONNECTION_URI!,
+    url: process.env.SUPABASE_SUPER_USER_CONNECTION_URI!,
     dialect: "postgres",
     dialectOptions: {
       ssl: {
@@ -19,7 +19,7 @@ export default {
     },
   },
   production: {
-    url: process.env.SUPABASE_CONNECTION_URI!,
+    url: process.env.SUPABASE_SUPER_USER_CONNECTION_URI!,
     dialect: "postgres",
     dialectOptions: {
       ssl: {

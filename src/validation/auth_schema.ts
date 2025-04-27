@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { DateTime, Interval } from "luxon";
+import { DateTime } from "luxon";
 
-import { Gender } from "../constants/enums.js";
+import { Gender, Platform } from "../constants/enums.js";
 import { MIN_ACCOUNT_OPENING_AGE, MIN_DOB_DATE } from "../constants/values.js";
 import {
   COUNTRY_CODE_REGEX,
@@ -86,6 +86,22 @@ export const dobValidation = z
     }
   });
 
+const deviceIdValidation = z
+  .string({ required_error: "Device ID is required." })
+  .trim()
+  .nonempty({ message: "Device Id can not be empty." })
+  .max(255, { message: "Device Id can not be more than 255 characters." });
+
+const deviceNameValidation = z
+  .string({ required_error: "Device name is required." })
+  .trim()
+  .nonempty({ message: "Device name can not be empty." })
+  .max(255, { message: "Device name can not be more than 255 characters." });
+
+const platformValidation = z.nativeEnum(Platform, {
+  required_error: "Platform is required.",
+});
+
 export const emailSchema = z.object({
   email: emailValidation,
 });
@@ -104,6 +120,9 @@ export const signInSchema = z.object({
   verificationCode: verificationCodeValidation,
   verificationToken: verificationTokenValidation,
   cancelAccountDeletionRequest: z.boolean().optional().default(false),
+  deviceId: deviceIdValidation,
+  deviceName: deviceNameValidation,
+  platform: platformValidation,
 });
 
 export type SignInType = z.infer<typeof signInSchema>;
@@ -126,6 +145,17 @@ export const signUpSchema = z.object({
   email: emailValidation,
   verificationCode: verificationCodeValidation,
   verificationToken: verificationTokenValidation,
+  deviceId: deviceIdValidation,
+  deviceName: deviceNameValidation,
+  platform: platformValidation,
 });
 
 export type SignUpType = z.infer<typeof signUpSchema>;
+
+export const anonymousAuthSchema = z.object({
+  deviceId: deviceIdValidation,
+  deviceName: deviceNameValidation,
+  platform: platformValidation,
+});
+
+export type AnonymousAuthType = z.infer<typeof anonymousAuthSchema>;

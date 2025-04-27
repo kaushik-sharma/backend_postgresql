@@ -52,3 +52,9 @@ export enum ReportReason {
   misleading = "MISLEADING",
   hatefulContent = "HATEFUL_CONTENT",
 }
+
+export enum Platform {
+  android = "ANDROID",
+  ios = "IOS",
+  web = "WEB",
+}

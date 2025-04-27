@@ -4,9 +4,13 @@ import Tables from "../../constants/tables.js";
 import { SEQUELIZE } from "../../constants/values.js";
 import { UserModel } from "../user/user_model.js";
 import BaseAttributes from "../base_attributes.js";
+import { Platform } from "../../constants/enums.js";
 
 export interface SessionAttributes extends BaseAttributes {
   userId: string;
+  deviceId: string;
+  deviceName: string;
+  platform: Platform;
 }
 
 export class SessionModel extends Model<SessionAttributes> {
@@ -20,6 +24,19 @@ export class SessionModel extends Model<SessionAttributes> {
         },
         userId: {
           type: DataTypes.UUID,
+          allowNull: false,
+        },
+        deviceId: {
+          type: DataTypes.STRING,
+          allowNull: false,
+        },
+        deviceName: {
+          type: DataTypes.STRING,
+          allowNull: false,
+        },
+        platform: {
+          type: DataTypes.ENUM,
+          values: Object.values(Platform),
           allowNull: false,
         },
       },

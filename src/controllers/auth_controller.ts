@@ -3,6 +3,8 @@ import { randomInt } from "crypto";
 
 import { asyncHandler } from "../helpers/async_handler.js";
 import {
+  anonymousAuthSchema,
+  AnonymousAuthType,
   emailSchema,
   EmailType,
   requestEmailCodeSchema,
@@ -242,7 +244,13 @@ export class AuthController {
           } else {
             userId = await UserDatasource.createUser(userData, transaction);
           }
-          return await JwtService.createAuthToken(userId, transaction);
+          return await JwtService.createAuthToken(
+            userId,
+            parsedData.deviceId,
+            parsedData.deviceName,
+            parsedData.platform,
+            transaction
+          );
         }
       );
 
@@ -318,7 +326,13 @@ export class AuthController {
               transaction
             );
           }
-          return await JwtService.createAuthToken(user.id!, transaction);
+          return await JwtService.createAuthToken(
+            user.id!,
+            parsedData.deviceId,
+            parsedData.deviceName,
+            parsedData.platform,
+            transaction
+          );
         }
       );
 
@@ -370,8 +384,19 @@ export class AuthController {
     }
   );
 
+  static readonly validateAnonymousAuthRequest: RequestHandler = (
+    req,
+    res,
+    next
+  ) => {
+    req.parsedData = validateModel(anonymousAuthSchema, req.body);
+    next();
+  };
+
   static readonly anonymousAuth: RequestHandler = asyncHandler(
     async (req, res, next) => {
+      const parsedData = req.parsedData! as AnonymousAuthType;
+
       const userData: UserAttributes = {
         status: EntityStatus.anonymous,
       };
@@ -379,7 +404,13 @@ export class AuthController {
       const authToken = await performTransaction<string>(
         async (transaction) => {
           const userId = await UserDatasource.createUser(userData, transaction);
-          return await JwtService.createAuthToken(userId, transaction);
+          return await JwtService.createAuthToken(
+            userId,
+            parsedData.deviceId,
+            parsedData.deviceName,
+            parsedData.platform,
+            transaction
+          );
         }
       );
 

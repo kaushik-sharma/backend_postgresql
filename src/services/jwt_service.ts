@@ -6,7 +6,7 @@ import { $enum } from "ts-enum-util";
 import { SessionModel } from "../models/session/session_model.js";
 import UserDatasource from "../datasources/user_datasource.js";
 import { CustomError } from "../middlewares/error_middlewares.js";
-import { AuthMode, EntityStatus } from "../constants/enums.js";
+import { AuthMode, EntityStatus, Platform } from "../constants/enums.js";
 import RedisService from "./redis_service.js";
 import { AUTH_TOKEN_DATA_CACHE_EXPIRY_IN_SEC } from "../constants/values.js";
 
@@ -84,11 +84,14 @@ export default class JwtService {
 
   static readonly createAuthToken = async (
     userId: string,
+    deviceId: string,
+    deviceName: string,
+    platform: Platform,
     transaction?: Transaction
   ): Promise<string> => {
     const session = await SessionModel.create(
-      { userId: userId },
-      { transaction: transaction }
+      { userId, deviceId, deviceName, platform },
+      { transaction }
     );
     const sessionId = session.toJSON().id!;
 

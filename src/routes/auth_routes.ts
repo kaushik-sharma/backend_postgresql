@@ -31,7 +31,11 @@ const getAuthRouter = (): Router => {
     AuthController.validateSignInRequest,
     AuthController.signIn
   );
-  router.post("/anonymous", AuthController.anonymousAuth);
+  router.post(
+    "/anonymous",
+    AuthController.validateAnonymousAuthRequest,
+    AuthController.anonymousAuth
+  );
   router.post("/signOut", requireAuth(), AuthController.signOut);
   router.post(
     "/signOutAllSessions",
