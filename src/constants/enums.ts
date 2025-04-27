@@ -42,9 +42,9 @@ export enum Gender {
 }
 
 export enum AuthMode {
-  AUTHENTICATED,
-  ANONYMOUS_ONLY,
-  ALLOW_ANONYMOUS,
+  authenticated = "AUTHENTICATED",
+  anonymousOnly = "ANONYMOUS_ONLY",
+  allowAnonymous = "ALLOW_ANONYMOUS",
 }
 
 export enum ReportReason {

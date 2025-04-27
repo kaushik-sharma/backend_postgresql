@@ -44,7 +44,7 @@ const getAuthRouter = (): Router => {
   );
   router.get(
     "/refreshAuthToken",
-    requireAuth({ authMode: AuthMode.ALLOW_ANONYMOUS }),
+    requireAuth({ authMode: AuthMode.allowAnonymous }),
     AuthController.refreshAuthToken
   );
 

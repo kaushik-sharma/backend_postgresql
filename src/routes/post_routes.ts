@@ -29,12 +29,12 @@ const getPostRouter = (): Router => {
   );
   router.get(
     "/:page",
-    requireAuth({ authMode: AuthMode.ALLOW_ANONYMOUS }),
+    requireAuth({ authMode: AuthMode.allowAnonymous }),
     PostController.getPostsFeed
   );
   router.get(
     "/comments/:postId",
-    requireAuth({ authMode: AuthMode.ALLOW_ANONYMOUS }),
+    requireAuth({ authMode: AuthMode.allowAnonymous }),
     PostController.getCommentsByPostId
   );
   router.get("/user/:page", requireAuth(), PostController.getUserPosts);
