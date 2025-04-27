@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import express from "express";
 import helmet from "helmet";
 import morgan from "morgan";
+import { $enum } from "ts-enum-util";
 
 import PostgresService from "./services/postgres_service.js";
 import getAuthRouter from "./routes/auth_routes.js";
@@ -20,9 +21,9 @@ import { initModels } from "./models/index.js";
 import RedisService from "./services/redis_service.js";
 import { hitCounter } from "./middlewares/hit_counter_middleware.js";
 
-initEnv(Env.fromString(process.env.ENV!));
+initEnv($enum(Env).asValueOrThrow(process.env.ENV!));
 
-dotenv.config({ path: ENV.filePath });
+dotenv.config({ path: `.env.${ENV.toLowerCase()}` });
 
 await RedisService.initClient();
 
