@@ -1,16 +1,26 @@
 import { Transaction } from "sequelize";
 import { EntityStatus } from "../constants/enums.js";
 import { UserModel } from "../models/user/user_model.js";
-import { ReportCommentModel } from "../models/moderation/report_comment_model.js";
-import { ReportPostModel } from "../models/moderation/report_post_model.js";
-import { ReportUserModel } from "../models/moderation/report_user_model.js";
+import {
+  ReportCommentAttributes,
+  ReportCommentModel,
+} from "../models/moderation/report_comment_model.js";
+import {
+  ReportPostAttributes,
+  ReportPostModel,
+} from "../models/moderation/report_post_model.js";
+import {
+  ReportUserAttributes,
+  ReportUserModel,
+} from "../models/moderation/report_user_model.js";
 import { CommentModel } from "../models/post/comment_model.js";
 import { PostModel } from "../models/post/post_model.js";
 
 export default class ModerationDatasource {
   static readonly reportPost = async (
-    model: ReportPostModel
+    data: ReportPostAttributes
   ): Promise<void> => {
+    const model = new ReportPostModel(data);
     await model.save();
   };
 
@@ -30,8 +40,9 @@ export default class ModerationDatasource {
   };
 
   static readonly reportComment = async (
-    model: ReportCommentModel
+    data: ReportCommentAttributes
   ): Promise<void> => {
+    const model = new ReportCommentModel(data);
     await model.save();
   };
 
@@ -53,8 +64,9 @@ export default class ModerationDatasource {
   };
 
   static readonly reportUser = async (
-    model: ReportUserModel
+    data: ReportUserAttributes
   ): Promise<void> => {
+    const model = new ReportUserModel(data);
     await model.save();
   };
 

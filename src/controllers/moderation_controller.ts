@@ -6,15 +6,15 @@ import { asyncHandler } from "../helpers/async_handler.js";
 import PostDatasource from "../datasources/post_datasource.js";
 import { CustomError } from "../middlewares/error_middlewares.js";
 import ModerationDatasource from "../datasources/moderation_datasource.js";
-import { ReportPostModel } from "../models/moderation/report_post_model.js";
+import { ReportPostAttributes } from "../models/moderation/report_post_model.js";
 import {
   COMMENT_BAN_THRESHOLD,
   POST_BAN_THRESHOLD,
   USER_BAN_THRESHOLD,
 } from "../constants/values.js";
 import { successResponseHandler } from "../helpers/success_handler.js";
-import { ReportCommentModel } from "../models/moderation/report_comment_model.js";
-import { ReportUserModel } from "../models/moderation/report_user_model.js";
+import { ReportCommentAttributes } from "../models/moderation/report_comment_model.js";
+import { ReportUserAttributes } from "../models/moderation/report_user_model.js";
 import { performTransaction } from "../helpers/transaction_helper.js";
 import UserDatasource from "../datasources/user_datasource.js";
 import SessionDatasource from "../datasources/session_datasource.js";
@@ -42,12 +42,12 @@ export default class ModerationController {
         throw new CustomError(403, "Can not report your own post!");
       }
 
-      const model = new ReportPostModel({
+      const reportData: ReportPostAttributes = {
         postId: postId,
         userId: userId,
         reason: parsedData.reason,
-      });
-      await ModerationDatasource.reportPost(model);
+      };
+      await ModerationDatasource.reportPost(reportData);
 
       const postReportCount = await ModerationDatasource.postReportCount(
         postId
@@ -83,12 +83,12 @@ export default class ModerationController {
         throw new CustomError(403, "Can not report your own comment!");
       }
 
-      const model = new ReportCommentModel({
+      const reportData: ReportCommentAttributes = {
         commentId: commentId,
         userId: userId,
         reason: parsedData.reason,
-      });
-      await ModerationDatasource.reportComment(model);
+      };
+      await ModerationDatasource.reportComment(reportData);
 
       const commentReportCount = await ModerationDatasource.commentReportCount(
         commentId
@@ -121,12 +121,12 @@ export default class ModerationController {
         throw new CustomError(403, "Can not report your own account!");
       }
 
-      const model = new ReportUserModel({
+      const reportData: ReportUserAttributes = {
         reportedUserId: reportedUserId,
         userId: userId,
         reason: parsedData.reason,
-      });
-      await ModerationDatasource.reportUser(model);
+      };
+      await ModerationDatasource.reportUser(reportData);
 
       const userReportedCount = await ModerationDatasource.userReportedCount(
         reportedUserId
@@ -134,7 +134,10 @@ export default class ModerationController {
       if (userReportedCount >= USER_BAN_THRESHOLD()) {
         await performTransaction<void>(async (transaction) => {
           await ModerationDatasource.banUser(reportedUserId, transaction);
-          await SessionDatasource.signOutAllSessions(reportedUserId, transaction);
+          await SessionDatasource.signOutAllSessions(
+            reportedUserId,
+            transaction
+          );
         });
       }
 
