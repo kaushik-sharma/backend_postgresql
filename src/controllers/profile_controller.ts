@@ -21,6 +21,9 @@ import PublicProfileDto from "../dtos/public_profile_dto.js";
 import { EntityStatus } from "../constants/enums.js";
 import UserDatasource from "../datasources/user_datasource.js";
 import SessionDatasource from "../datasources/session_datasource.js";
+import ActiveSessionsOverviewDto, {
+  ActiveSessionParams,
+} from "../dtos/session_dto.js";
 
 export const deleteCustomProfileImage = async (
   userId: string
@@ -190,6 +193,68 @@ export default class ProfileController {
         await UserDatasource.markUserForDeletion(userId, transaction);
         await UserDatasource.createUserDeletionRequest(model, transaction);
       });
+
+      successResponseHandler({
+        res: res,
+        status: 200,
+      });
+    }
+  );
+
+  static readonly getActiveSessions: RequestHandler = asyncHandler(
+    async (req, res, next) => {
+      const userId = req.user!.userId;
+      const currentSessionId = req.user!.sessionId;
+
+      const sessions = await SessionDatasource.getActiveSessions(userId);
+
+      let currentSession: ActiveSessionParams;
+      let otherSessions: ActiveSessionParams[] = [];
+
+      for (const session of sessions) {
+        const data: ActiveSessionParams = {
+          id: session.id!,
+          deviceName: session.deviceName,
+          platform: session.platform,
+          createdAt: session.createdAt!,
+        };
+        if (session.id! === currentSessionId) {
+          currentSession = data;
+        } else {
+          otherSessions.push(data);
+        }
+      }
+
+      const sessionsOverview = new ActiveSessionsOverviewDto({
+        current: currentSession!,
+        others: otherSessions,
+      });
+
+      successResponseHandler({
+        res: res,
+        status: 200,
+        data: sessionsOverview,
+      });
+    }
+  );
+
+  static readonly signOutBySessionId: RequestHandler = asyncHandler(
+    async (req, res, next) => {
+      const userId = req.user!.userId;
+
+      const sessionId = req.params.sessionId;
+
+      const sessionUserId = await SessionDatasource.getUserIdFromSessionId(
+        sessionId
+      );
+      if (sessionUserId === null) {
+        throw new CustomError(404, "Session not found!");
+      }
+      if (sessionUserId !== userId) {
+        throw new CustomError(403, "Session user id mismatch!");
+      }
+
+      await SessionDatasource.signOutSession(userId, sessionId);
 
       successResponseHandler({
         res: res,

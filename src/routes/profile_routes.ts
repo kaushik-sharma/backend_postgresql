@@ -26,6 +26,16 @@ const getProfileRouter = (): Router => {
     requireAuth(),
     ProfileController.requestAccountDeletion
   );
+  router.get(
+    "/activeSessions",
+    requireAuth(),
+    ProfileController.getActiveSessions
+  );
+  router.post(
+    "/signOutSession/:sessionId",
+    requireAuth(),
+    ProfileController.signOutBySessionId
+  );
 
   return router;
 };
