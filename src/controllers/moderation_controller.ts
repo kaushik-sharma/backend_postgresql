@@ -42,6 +42,17 @@ export default class ModerationController {
         throw new CustomError(403, "Can not report your own post!");
       }
 
+      const reportExists = await ModerationDatasource.postReportByUserExists(
+        userId,
+        postId
+      );
+      if (reportExists) {
+        return successResponseHandler({
+          res: res,
+          status: 200,
+        });
+      }
+
       const reportData: ReportPostAttributes = {
         postId: postId,
         userId: userId,
@@ -52,7 +63,6 @@ export default class ModerationController {
       const postReportCount = await ModerationDatasource.postReportCount(
         postId
       );
-
       if (postReportCount >= POST_BAN_THRESHOLD()) {
         await ModerationDatasource.banPost(postId);
       }
@@ -83,6 +93,17 @@ export default class ModerationController {
         throw new CustomError(403, "Can not report your own comment!");
       }
 
+      const reportExists = await ModerationDatasource.commentReportByUserExists(
+        userId,
+        commentId
+      );
+      if (reportExists) {
+        return successResponseHandler({
+          res: res,
+          status: 200,
+        });
+      }
+
       const reportData: ReportCommentAttributes = {
         commentId: commentId,
         userId: userId,
@@ -93,7 +114,6 @@ export default class ModerationController {
       const commentReportCount = await ModerationDatasource.commentReportCount(
         commentId
       );
-
       if (commentReportCount >= COMMENT_BAN_THRESHOLD()) {
         await ModerationDatasource.banComment(commentId);
       }
@@ -119,6 +139,17 @@ export default class ModerationController {
 
       if (userId === reportedUserId) {
         throw new CustomError(403, "Can not report your own account!");
+      }
+
+      const reportExists = await ModerationDatasource.userReportByUserExists(
+        userId,
+        reportedUserId
+      );
+      if (reportExists) {
+        return successResponseHandler({
+          res: res,
+          status: 200,
+        });
       }
 
       const reportData: ReportUserAttributes = {

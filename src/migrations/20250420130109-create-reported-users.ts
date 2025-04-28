@@ -50,6 +50,11 @@ export default {
 
     await queryInterface.addIndex(Tables.reportedUsers, ["reportedUserId"]);
     await queryInterface.addIndex(Tables.reportedUsers, ["userId"]);
+
+    await queryInterface.addConstraint(Tables.reportedUsers, {
+      fields: ["reportedUserId", "userId"],
+      type: "unique",
+    });
   },
 
   async down(queryInterface: QueryInterface): Promise<void> {

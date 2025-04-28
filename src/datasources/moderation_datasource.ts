@@ -93,4 +93,34 @@ export default class ModerationDatasource {
       }
     );
   };
+
+  static readonly postReportByUserExists = async (
+    userId: string,
+    postId: string
+  ): Promise<boolean> => {
+    const count = await ReportPostModel.count({
+      where: { userId, postId },
+    });
+    return count > 0;
+  };
+
+  static readonly commentReportByUserExists = async (
+    userId: string,
+    commentId: string
+  ): Promise<boolean> => {
+    const count = await ReportCommentModel.count({
+      where: { userId, commentId },
+    });
+    return count > 0;
+  };
+
+  static readonly userReportByUserExists = async (
+    userId: string,
+    reportedUserId: string
+  ): Promise<boolean> => {
+    const count = await ReportUserModel.count({
+      where: { userId, reportedUserId },
+    });
+    return count > 0;
+  };
 }

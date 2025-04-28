@@ -50,6 +50,11 @@ export default {
 
     await queryInterface.addIndex(Tables.reportedComments, ["commentId"]);
     await queryInterface.addIndex(Tables.reportedComments, ["userId"]);
+
+    await queryInterface.addConstraint(Tables.reportedComments, {
+      fields: ["commentId", "userId"],
+      type: "unique",
+    });
   },
 
   async down(queryInterface: QueryInterface): Promise<void> {
