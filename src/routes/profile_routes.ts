@@ -21,11 +21,6 @@ const getProfileRouter = (): Router => {
     requireAuth(),
     ProfileController.deleteProfileImage
   );
-  router.delete(
-    "/requestAccountDeletion",
-    requireAuth(),
-    ProfileController.requestAccountDeletion
-  );
   router.get(
     "/activeSessions",
     requireAuth(),
@@ -35,6 +30,17 @@ const getProfileRouter = (): Router => {
     "/signOutSession/:sessionId",
     requireAuth(),
     ProfileController.signOutBySessionId
+  );
+  router.post("/signOut", requireAuth(), ProfileController.signOut);
+  router.post(
+    "/signOutAllSessions",
+    requireAuth(),
+    ProfileController.signOutAllSessions
+  );
+  router.delete(
+    "/requestAccountDeletion",
+    requireAuth(),
+    ProfileController.requestAccountDeletion
   );
 
   return router;

@@ -344,32 +344,6 @@ export class AuthController {
     }
   );
 
-  static readonly signOut: RequestHandler = asyncHandler(
-    async (req, res, next) => {
-      const { userId, sessionId } = req.user!;
-
-      await SessionDatasource.signOutSession(userId, sessionId);
-
-      successResponseHandler({
-        res: res,
-        status: 200,
-      });
-    }
-  );
-
-  static readonly signOutAllSessions: RequestHandler = asyncHandler(
-    async (req, res, next) => {
-      const userId = req.user!.userId;
-
-      await SessionDatasource.signOutAllSessions(userId);
-
-      successResponseHandler({
-        res: res,
-        status: 200,
-      });
-    }
-  );
-
   static readonly refreshAuthToken: RequestHandler = asyncHandler(
     async (req, res, next) => {
       const sessionId = req.user!.sessionId;
