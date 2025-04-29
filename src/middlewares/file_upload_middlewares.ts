@@ -7,9 +7,11 @@ import {
 } from "../constants/values.js";
 import { CustomError } from "./error_middlewares.js";
 
-export const createSingleImageUploadMiddleware = (
-  fieldName: string
-): RequestHandler => {
+export const createSingleImageUploadMiddleware = ({
+  fieldName,
+}: {
+  fieldName: string;
+}): RequestHandler => {
   const uploadImage = multer({
     storage: multer.memoryStorage(),
     limits: {

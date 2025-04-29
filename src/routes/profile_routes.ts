@@ -10,7 +10,7 @@ const getProfileRouter = (): Router => {
   router.get("/user", requireAuth(), ProfileController.getUser);
   router.patch(
     "/updateProfile",
-    createSingleImageUploadMiddleware("profileImage"),
+    createSingleImageUploadMiddleware({ fieldName: "profileImage" }),
     requireAuth(),
     ProfileController.validateUpdateProfileRequest,
     ProfileController.updateProfile

@@ -10,7 +10,7 @@ const getPostRouter = (): Router => {
 
   router.post(
     "/",
-    createSingleImageUploadMiddleware("image"),
+    createSingleImageUploadMiddleware({ fieldName: "image" }),
     requireAuth(),
     PostController.validateCreatePostRequest,
     PostController.createPost
