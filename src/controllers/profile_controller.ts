@@ -20,7 +20,6 @@ import { EntityStatus } from "../constants/enums.js";
 import UserDatasource from "../datasources/user_datasource.js";
 import SessionDatasource from "../datasources/session_datasource.js";
 import { ProfileDto } from "../dtos/profile_dto.js";
-import { PublicProfileDto } from "../dtos/public_profile_dto.js";
 import {
   ActiveSessionParams,
   ActiveSessionsOverviewDto,
@@ -54,35 +53,6 @@ export default class ProfileController {
         phoneNumber: user.phoneNumber!,
         email: user.email!,
         dob: user.dob!,
-        profileImageUrl: profileImageUrl,
-      });
-
-      successResponseHandler({
-        res: res,
-        status: 200,
-        data: profile,
-      });
-    }
-  );
-
-  static readonly getPublicUser: RequestHandler = asyncHandler(
-    async (req, res, next) => {
-      const userId = req.params.userId;
-
-      const userExists = await UserDatasource.isUserActive(userId);
-      if (!userExists) {
-        throw new CustomError(404, "User not found!");
-      }
-
-      const user = await UserDatasource.getPublicUserById(userId);
-
-      const profileImageUrl = AwsS3Service.getCloudFrontSignedUrl(
-        user.profileImagePath ?? DEFAULT_PROFILE_IMAGE_PATH
-      );
-
-      const profile = new PublicProfileDto({
-        firstName: user.firstName!,
-        lastName: user.lastName!,
         profileImageUrl: profileImageUrl,
       });
 

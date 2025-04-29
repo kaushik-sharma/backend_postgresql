@@ -8,7 +8,6 @@ const getProfileRouter = (): Router => {
   const router = Router();
 
   router.get("/user", requireAuth(), ProfileController.getUser);
-  router.get("/user/:userId", requireAuth(), ProfileController.getPublicUser);
   router.patch(
     "/updateProfile",
     createSingleImageUploadMiddleware("profileImage"),
@@ -27,7 +26,7 @@ const getProfileRouter = (): Router => {
     ProfileController.getActiveSessions
   );
   router.post(
-    "/signOutSession/:sessionId",
+    "/signOut/:sessionId",
     requireAuth(),
     ProfileController.signOutBySessionId
   );
