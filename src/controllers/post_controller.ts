@@ -21,10 +21,10 @@ import { successResponseHandler } from "../helpers/success_handler.js";
 import { ReactionAttributes } from "../models/post/reaction_model.js";
 import { CommentAttributes } from "../models/post/comment_model.js";
 import { DEFAULT_PROFILE_IMAGE_PATH } from "../constants/values.js";
-import FeedCommentDto from "../dtos/feed_comment_dto.js";
-import UserCommentDto from "../dtos/user_comment_dto.js";
-import FeedPostDto from "../dtos/feed_post_dto.js";
-import UserPostDto from "../dtos/user_post_dto.js";
+import { FeedPostDto, FeedPostParams } from "../dtos/feed_post_dto.js";
+import { FeedCommentDto } from "../dtos/feed_comment_dto.js";
+import { UserCommentDto } from "../dtos/user_comment_dto.js";
+import { UserPostDto } from "../dtos/user_post_dto.js";
 
 export default class PostController {
   static readonly validateCreatePostRequest: RequestHandler = (
@@ -77,7 +77,7 @@ export default class PostController {
         createdPostData.user!.profileImagePath ?? DEFAULT_PROFILE_IMAGE_PATH
       );
 
-      let repostedPostDto: FeedPostDto | null = null;
+      let repostedPostParams: FeedPostParams | null = null;
       if (parsedData.repostedPostId !== undefined) {
         const repostedPost = createdPostData.repostedPost!;
         const imageUrl =
@@ -88,7 +88,7 @@ export default class PostController {
           repostedPost.user!.profileImagePath ?? DEFAULT_PROFILE_IMAGE_PATH
         );
 
-        repostedPostDto = new FeedPostDto({
+        repostedPostParams = {
           id: repostedPost.id!,
           text: repostedPost.text,
           imageUrl: imageUrl,
@@ -104,7 +104,7 @@ export default class PostController {
             profileImageUrl: profileImageUrl,
           },
           status: repostedPost.status,
-        });
+        };
       }
 
       const createdPostDto = new FeedPostDto({
@@ -115,7 +115,7 @@ export default class PostController {
         dislikeCount: createdPostData.dislikeCount!,
         commentCount: createdPostData.commentCount!,
         createdAt: createdPostData.createdAt!,
-        repostedPost: repostedPostDto,
+        repostedPost: repostedPostParams,
         creator: {
           id: createdPostData.user!.id!,
           firstName: createdPostData.user!.firstName!,
@@ -441,7 +441,7 @@ export default class PostController {
         post.user!.profileImagePath ?? DEFAULT_PROFILE_IMAGE_PATH
       );
 
-      let repostedPost: FeedPostDto | null = null;
+      let repostedPost: FeedPostParams | null = null;
       if (post.repostedPostId !== null) {
         const repostImageUrl =
           post.repostedPost?.imagePath != null
@@ -454,7 +454,7 @@ export default class PostController {
                   DEFAULT_PROFILE_IMAGE_PATH
               )
             : null;
-        repostedPost = new FeedPostDto({
+        repostedPost = {
           id: post.repostedPost?.id ?? null,
           text: post.repostedPost?.text ?? null,
           imageUrl: repostImageUrl,
@@ -473,7 +473,7 @@ export default class PostController {
                 }
               : null,
           status: post.repostedPost?.status ?? EntityStatus.deleted,
-        });
+        };
       }
 
       return new FeedPostDto({

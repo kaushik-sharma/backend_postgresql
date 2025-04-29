@@ -8,7 +8,6 @@ import {
   DEFAULT_PROFILE_IMAGE_PATH,
   USER_ACCOUNT_DELETION_BUFFER_DURATION,
 } from "../constants/values.js";
-import ProfileDto from "../dtos/profile_dto.js";
 import { validateModel } from "../helpers/validation_helper.js";
 import {
   updateProfileSchema,
@@ -17,12 +16,14 @@ import {
 import { CustomError } from "../middlewares/error_middlewares.js";
 import { UserDeletionRequestModel } from "../models/user/user_deletion_request_model.js";
 import { performTransaction } from "../helpers/transaction_helper.js";
-import PublicProfileDto from "../dtos/public_profile_dto.js";
 import { EntityStatus } from "../constants/enums.js";
 import UserDatasource from "../datasources/user_datasource.js";
 import SessionDatasource from "../datasources/session_datasource.js";
-import ActiveSessionsOverviewDto, {
+import { ProfileDto } from "../dtos/profile_dto.js";
+import { PublicProfileDto } from "../dtos/public_profile_dto.js";
+import {
   ActiveSessionParams,
+  ActiveSessionsOverviewDto,
 } from "../dtos/session_dto.js";
 
 export const deleteCustomProfileImage = async (

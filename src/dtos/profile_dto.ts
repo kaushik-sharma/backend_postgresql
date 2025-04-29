@@ -1,4 +1,4 @@
-interface ProfileDtoParams {
+export interface ProfileParams {
   firstName: string;
   lastName: string;
   gender: string;
@@ -9,17 +9,8 @@ interface ProfileDtoParams {
   profileImageUrl: string;
 }
 
-export default class ProfileDto {
-  public readonly firstName!: string;
-  public readonly lastName!: string;
-  public readonly gender!: string;
-  public readonly countryCode!: string;
-  public readonly phoneNumber!: string;
-  public readonly email!: string;
-  public readonly dob!: string;
-  public readonly profileImageUrl!: string;
-
-  constructor(params: ProfileDtoParams) {
+export class ProfileDto {
+  constructor(params: ProfileParams) {
     Object.assign(this, params);
   }
 }

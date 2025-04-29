@@ -1,13 +1,13 @@
 import { EntityStatus } from "../constants/enums.js";
 
-interface CommentCreatorParams {
+export interface CommentCreatorParams {
   id: string;
   firstName: string;
   lastName: string;
   profileImageUrl: string;
 }
 
-interface FeedCommentDtoParams {
+export interface FeedCommentParams {
   id: string;
   parentCommentId: string | null;
   text: string | null;
@@ -16,15 +16,8 @@ interface FeedCommentDtoParams {
   status: EntityStatus;
 }
 
-export default class FeedCommentDto {
-  public readonly id!: string;
-  public readonly parentCommentId!: string | null;
-  public readonly text!: string | null;
-  public readonly createdAt!: Date | null;
-  public readonly creator!: CommentCreatorParams | null;
-  public readonly status!: EntityStatus;
-
-  constructor(params: FeedCommentDtoParams) {
+export class FeedCommentDto {
+  constructor(params: FeedCommentParams) {
     Object.assign(this, params);
   }
 }

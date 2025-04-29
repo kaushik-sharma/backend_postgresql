@@ -1,17 +1,12 @@
-interface UserCommentDtoParams {
+export interface UserCommentParams {
   id: string;
   postId: string;
   text: string;
   createdAt: Date;
 }
 
-export default class UserCommentDto {
-  public readonly id!: string;
-  public readonly postId!: string;
-  public readonly text!: string;
-  public readonly createdAt!: Date;
-
-  constructor(params: UserCommentDtoParams) {
+export class UserCommentDto {
+  constructor(params: UserCommentParams) {
     Object.assign(this, params);
   }
 }

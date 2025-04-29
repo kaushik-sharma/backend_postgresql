@@ -1,4 +1,4 @@
-interface UserPostDtoParams {
+export interface UserPostParams {
   id: string;
   text: string;
   imageUrl: string | null;
@@ -8,16 +8,8 @@ interface UserPostDtoParams {
   createdAt: Date;
 }
 
-export default class UserPostDto {
-  public readonly id!: string;
-  public readonly text!: string;
-  public readonly imageUrl!: string | null;
-  public readonly likeCount!: number;
-  public readonly dislikeCount!: number;
-  public readonly commentCount!: number;
-  public readonly createdAt!: Date;
-
-  constructor(params: UserPostDtoParams) {
+export class UserPostDto {
+  constructor(params: UserPostParams) {
     Object.assign(this, params);
   }
 }

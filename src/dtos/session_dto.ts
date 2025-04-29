@@ -12,7 +12,7 @@ export interface ActiveSessionsOverview {
   others: ActiveSessionParams[];
 }
 
-export default class ActiveSessionsOverviewDto {
+export class ActiveSessionsOverviewDto {
   constructor(params: ActiveSessionsOverview) {
     Object.assign(this, params);
   }
