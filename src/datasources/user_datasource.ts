@@ -231,4 +231,20 @@ export default class UserDatasource {
       transaction: transaction,
     });
   };
+
+  static readonly banUser = async (
+    userId: string,
+    transaction: Transaction
+  ): Promise<void> => {
+    await UserModel.update(
+      {
+        status: EntityStatus.banned,
+        bannedAt: new Date(),
+      },
+      {
+        where: { id: userId },
+        transaction: transaction,
+      }
+    );
+  };
 }

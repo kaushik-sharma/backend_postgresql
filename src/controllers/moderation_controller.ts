@@ -64,7 +64,7 @@ export default class ModerationController {
         postId
       );
       if (postReportCount >= POST_BAN_THRESHOLD()) {
-        await ModerationDatasource.banPost(postId);
+        await PostDatasource.banPost(postId);
       }
 
       successResponseHandler({
@@ -115,7 +115,7 @@ export default class ModerationController {
         commentId
       );
       if (commentReportCount >= COMMENT_BAN_THRESHOLD()) {
-        await ModerationDatasource.banComment(commentId);
+        await PostDatasource.banComment(commentId);
       }
 
       successResponseHandler({
@@ -164,7 +164,7 @@ export default class ModerationController {
       );
       if (userReportedCount >= USER_BAN_THRESHOLD()) {
         await performTransaction<void>(async (transaction) => {
-          await ModerationDatasource.banUser(reportedUserId, transaction);
+          await UserDatasource.banUser(reportedUserId, transaction);
           await SessionDatasource.signOutAllSessions(
             reportedUserId,
             transaction

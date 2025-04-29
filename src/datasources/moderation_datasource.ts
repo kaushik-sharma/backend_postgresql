@@ -1,6 +1,6 @@
 import { Transaction } from "sequelize";
+
 import { EntityStatus } from "../constants/enums.js";
-import { UserModel } from "../models/user/user_model.js";
 import {
   ReportCommentAttributes,
   ReportCommentModel,
@@ -13,8 +13,6 @@ import {
   ReportUserAttributes,
   ReportUserModel,
 } from "../models/moderation/report_user_model.js";
-import { CommentModel } from "../models/post/comment_model.js";
-import { PostModel } from "../models/post/post_model.js";
 
 export default class ModerationDatasource {
   static readonly reportPost = async (
@@ -26,17 +24,6 @@ export default class ModerationDatasource {
 
   static readonly postReportCount = async (postId: string): Promise<number> => {
     return await ReportPostModel.count({ where: { postId: postId } });
-  };
-
-  static readonly banPost = async (postId: string): Promise<void> => {
-    await PostModel.update(
-      {
-        status: EntityStatus.banned,
-      },
-      {
-        where: { id: postId },
-      }
-    );
   };
 
   static readonly reportComment = async (
@@ -52,17 +39,6 @@ export default class ModerationDatasource {
     return await ReportCommentModel.count({ where: { commentId: commentId } });
   };
 
-  static readonly banComment = async (commentId: string): Promise<void> => {
-    await CommentModel.update(
-      {
-        status: EntityStatus.banned,
-      },
-      {
-        where: { id: commentId },
-      }
-    );
-  };
-
   static readonly reportUser = async (
     data: ReportUserAttributes
   ): Promise<void> => {
@@ -76,22 +52,6 @@ export default class ModerationDatasource {
     return await ReportUserModel.count({
       where: { reportedUserId: reportedUserId },
     });
-  };
-
-  static readonly banUser = async (
-    userId: string,
-    transaction: Transaction
-  ): Promise<void> => {
-    await UserModel.update(
-      {
-        status: EntityStatus.banned,
-        bannedAt: new Date(),
-      },
-      {
-        where: { id: userId },
-        transaction: transaction,
-      }
-    );
   };
 
   static readonly postReportByUserExists = async (

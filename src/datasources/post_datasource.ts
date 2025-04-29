@@ -413,4 +413,26 @@ export default class PostDatasource {
     }
     return result[0];
   };
+
+  static readonly banPost = async (postId: string): Promise<void> => {
+    await PostModel.update(
+      {
+        status: EntityStatus.banned,
+      },
+      {
+        where: { id: postId },
+      }
+    );
+  };
+
+  static readonly banComment = async (commentId: string): Promise<void> => {
+    await CommentModel.update(
+      {
+        status: EntityStatus.banned,
+      },
+      {
+        where: { id: commentId },
+      }
+    );
+  };
 }
