@@ -1,0 +1,10 @@
+.DS_Store
+.git
+node_modules
+src
+.sequelizerc
+docker-compose-dev.yaml
+docker-compose-prod.yaml
+Dockerfile
+generate_migration.sh
+tsconfig.json

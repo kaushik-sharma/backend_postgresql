@@ -1,0 +1,15 @@
+services:
+  backend-prod:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    image: testapp-prod:1.0.0
+    container_name: testapp-prod
+    volumes:
+      - .:/app
+      - /app/node_modules
+    expose:
+      - '443'
+    ports:
+      - '443:443'
+    command: npm run start:prod
