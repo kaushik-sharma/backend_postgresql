@@ -6,7 +6,7 @@ import { successResponseHandler } from "../helpers/success_handler.js";
 import AwsS3Service, { AwsS3FileCategory } from "../services/aws_s3_service.js";
 import {
   DEFAULT_PROFILE_IMAGE_PATH,
-  USER_ACCOUNT_DELETION_BUFFER_DURATION,
+  USER_DELETION_GRACE_PERIOD_DURATION,
 } from "../constants/values.js";
 import { validateModel } from "../helpers/validation_helper.js";
 import {
@@ -151,7 +151,7 @@ export default class ProfileController {
       }
 
       const deleteAt = DateTime.utc()
-        .plus(USER_ACCOUNT_DELETION_BUFFER_DURATION)
+        .plus(USER_DELETION_GRACE_PERIOD_DURATION())
         .toJSDate();
 
       const model = new UserDeletionRequestModel({

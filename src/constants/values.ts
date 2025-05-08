@@ -17,9 +17,10 @@ export const IMAGE_EXPIRY_DURATION = Duration.fromObject({ hours: 48 });
 export const MIN_DOB_DATE = DateTime.utc(1901, 1, 1);
 export const MIN_ACCOUNT_OPENING_AGE = 18;
 export const DEFAULT_PROFILE_IMAGE_PATH = `${AwsS3FileCategory.static}/default_profile_image.png`;
-export const USER_ACCOUNT_DELETION_BUFFER_DURATION = Duration.fromObject({
-  days: 30,
-});
+export const USER_DELETION_GRACE_PERIOD_DURATION = () =>
+  ENV === Env.development
+    ? Duration.fromObject({ minutes: 10 })
+    : Duration.fromObject({ days: 30 });
 
 /// Posts
 export const MAX_COMMENT_LEVEL = 5;
