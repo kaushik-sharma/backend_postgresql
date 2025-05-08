@@ -1,7 +1,7 @@
 import { RequestHandler } from "express";
 import { arrayToTree } from "performant-array-to-tree";
 
-import { validateModel } from "../helpers/validation_helper.js";
+import { validateData } from "../helpers/validation_helper.js";
 import {
   createCommentSchema,
   CreateCommentType,
@@ -32,7 +32,7 @@ export default class PostController {
     res,
     next
   ) => {
-    req.parsedData = validateModel(createPostSchema, req.body);
+    req.parsedData = validateData(createPostSchema, req.body);
     next();
   };
 
@@ -142,7 +142,7 @@ export default class PostController {
     res,
     next
   ) => {
-    req.parsedData = validateModel(createReactionSchema, req.body);
+    req.parsedData = validateData(createReactionSchema, req.body);
     next();
   };
 
@@ -182,7 +182,7 @@ export default class PostController {
     res,
     next
   ) => {
-    req.parsedData = validateModel(createCommentSchema, req.body);
+    req.parsedData = validateData(createCommentSchema, req.body);
     next();
   };
 

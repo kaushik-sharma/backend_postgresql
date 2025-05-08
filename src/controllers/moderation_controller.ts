@@ -1,6 +1,6 @@
 import { RequestHandler } from "express";
 
-import { validateModel } from "../helpers/validation_helper.js";
+import { validateData } from "../helpers/validation_helper.js";
 import { reportSchema, ReportType } from "../validation/moderation_schema.js";
 import { asyncHandler } from "../helpers/async_handler.js";
 import PostDatasource from "../datasources/post_datasource.js";
@@ -21,7 +21,7 @@ import SessionDatasource from "../datasources/session_datasource.js";
 
 export default class ModerationController {
   static readonly validateReportRequest: RequestHandler = (req, res, next) => {
-    req.parsedData = validateModel(reportSchema, req.body);
+    req.parsedData = validateData(reportSchema, req.body);
     next();
   };
 

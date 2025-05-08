@@ -8,7 +8,7 @@ import {
   DEFAULT_PROFILE_IMAGE_PATH,
   USER_DELETION_GRACE_PERIOD_DURATION,
 } from "../constants/values.js";
-import { validateModel } from "../helpers/validation_helper.js";
+import { validateData } from "../helpers/validation_helper.js";
 import {
   updateProfileSchema,
   UpdateProfileType,
@@ -69,7 +69,7 @@ export default class ProfileController {
     res,
     next
   ) => {
-    req.parsedData = validateModel(updateProfileSchema, req.body);
+    req.parsedData = validateData(updateProfileSchema, req.body);
     next();
   };
 

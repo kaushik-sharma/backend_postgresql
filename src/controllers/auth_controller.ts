@@ -14,7 +14,7 @@ import {
   signUpSchema,
   SignUpType,
 } from "../validation/auth_schema.js";
-import { validateModel } from "../helpers/validation_helper.js";
+import { validateData } from "../helpers/validation_helper.js";
 import { successResponseHandler } from "../helpers/success_handler.js";
 import { AuthUserAction, EntityStatus, Env } from "../constants/enums.js";
 import { CustomError } from "../middlewares/error_middlewares.js";
@@ -106,7 +106,7 @@ export class AuthController {
   };
 
   static readonly validateEmailRequest: RequestHandler = (req, res, next) => {
-    req.parsedData = validateModel(emailSchema, req.body);
+    req.parsedData = validateData(emailSchema, req.body);
     next();
   };
 
@@ -115,7 +115,7 @@ export class AuthController {
     res,
     next
   ) => {
-    req.parsedData = validateModel(requestEmailCodeSchema, req.body);
+    req.parsedData = validateData(requestEmailCodeSchema, req.body);
     next();
   };
 
@@ -176,7 +176,7 @@ export class AuthController {
   );
 
   static readonly validateSignUpRequest: RequestHandler = (req, res, next) => {
-    req.parsedData = validateModel(signUpSchema, req.body);
+    req.parsedData = validateData(signUpSchema, req.body);
     next();
   };
 
@@ -263,7 +263,7 @@ export class AuthController {
   );
 
   static readonly validateSignInRequest: RequestHandler = (req, res, next) => {
-    req.parsedData = validateModel(signInSchema, req.body);
+    req.parsedData = validateData(signInSchema, req.body);
     next();
   };
 
@@ -363,7 +363,7 @@ export class AuthController {
     res,
     next
   ) => {
-    req.parsedData = validateModel(anonymousAuthSchema, req.body);
+    req.parsedData = validateData(anonymousAuthSchema, req.body);
     next();
   };
 
