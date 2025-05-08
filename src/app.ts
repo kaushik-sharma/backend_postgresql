@@ -75,9 +75,6 @@ try {
   initSequelize(sequelize);
   initModels();
 
-  const port = Number(process.env.PORT!);
-  const host = "0.0.0.0";
-
   const server = http.createServer(
     {
       maxHeaderSize: 8192,
@@ -88,8 +85,11 @@ try {
   SocketManager.init(server);
   CronService.init();
 
+  const port = Number(process.env.PORT!);
+  const host = "0.0.0.0";
+
   server.listen(port, host, () => {
-    logger.info(`Server running at https://${host}:${port}/`);
+    logger.info(`Server running at http://${host}:${port}/`);
   });
 } catch (err) {
   console.error(err);
