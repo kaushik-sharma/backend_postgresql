@@ -15,7 +15,7 @@ import { errorHandler } from "./middlewares/error_middlewares.js";
 import SocketManager from "./socket.js";
 import logger from "./utils/logger.js";
 import { Env } from "./constants/enums.js";
-import { ENV, initEnv, initSequelize } from "./constants/values.js";
+import { ENV, initEnv } from "./constants/values.js";
 import CronService from "./services/cron_service.js";
 import { initModels } from "./models/index.js";
 import RedisService from "./services/redis_service.js";
@@ -25,8 +25,7 @@ initEnv($enum(Env).asValueOrThrow(process.env.ENV!));
 
 dotenv.config({ path: `.env.${ENV.toLowerCase()}` });
 
-const sequelize = await PostgresService.connect();
-initSequelize(sequelize);
+await PostgresService.connect();
 initModels();
 
 await RedisService.initClient();

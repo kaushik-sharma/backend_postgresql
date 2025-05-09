@@ -5,7 +5,16 @@ import { Sequelize } from "sequelize";
 import logger from "../utils/logger.js";
 
 export default class PostgresService {
-  static readonly connect = async (): Promise<Sequelize> => {
+  static #sequelize: Sequelize;
+
+  static get sequelize(): Sequelize {
+    if (!this.#sequelize) {
+      throw new Error("Postgres not connected. Call connect() first.");
+    }
+    return this.#sequelize;
+  }
+
+  static readonly connect = async (): Promise<void> => {
     const caCert = fs.readFileSync(
       process.env.SUPABASE_DB_SSL_CERT_FILE_NAME!,
       "utf8"
@@ -51,6 +60,6 @@ export default class PostgresService {
 
     logger.info("Connected to PostgreSQL successfully.");
 
-    return sequelize;
+    this.#sequelize = sequelize;
   };
 }

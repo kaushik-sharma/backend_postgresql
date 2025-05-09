@@ -2,7 +2,7 @@ import { DataTypes, Model } from "sequelize";
 
 import { EntityStatus, Gender } from "../../constants/enums.js";
 import Tables from "../../constants/tables.js";
-import { SEQUELIZE } from "../../constants/values.js";
+import PostgresService from "../../services/postgres_service.js";
 import { SessionModel } from "../session/session_model.js";
 import { UserDeletionRequestModel } from "./user_deletion_request_model.js";
 import { PostModel } from "../post/post_model.js";
@@ -60,7 +60,7 @@ export class UserModel extends Model<UserAttributes> {
         timestamps: true,
         tableName: Tables.users,
         modelName: "UserModel",
-        sequelize: SEQUELIZE,
+        sequelize: PostgresService.sequelize,
         indexes: [
           { fields: ["email"] },
           { fields: ["countryCode"] },

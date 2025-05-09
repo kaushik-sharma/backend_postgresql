@@ -1,7 +1,7 @@
 import { DataTypes, Model } from "sequelize";
 
 import Tables from "../../constants/tables.js";
-import { SEQUELIZE } from "../../constants/values.js";
+import PostgresService from "../../services/postgres_service.js";
 import { UserModel } from "../user/user_model.js";
 import { PostModel } from "./post_model.js";
 import BaseAttributes from "../base_attributes.js";
@@ -38,7 +38,7 @@ export class ReactionModel extends Model<ReactionAttributes> {
         timestamps: true,
         tableName: Tables.reactions,
         modelName: "ReactionModel",
-        sequelize: SEQUELIZE,
+        sequelize: PostgresService.sequelize,
         indexes: [{ fields: ["userId"] }, { fields: ["postId"] }],
       }
     );

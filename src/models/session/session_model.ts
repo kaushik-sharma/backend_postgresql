@@ -1,7 +1,7 @@
 import { DataTypes, Model } from "sequelize";
 
 import Tables from "../../constants/tables.js";
-import { SEQUELIZE } from "../../constants/values.js";
+import PostgresService from "../../services/postgres_service.js";
 import { UserModel } from "../user/user_model.js";
 import BaseAttributes from "../base_attributes.js";
 import { Platform } from "../../constants/enums.js";
@@ -44,7 +44,7 @@ export class SessionModel extends Model<SessionAttributes> {
         timestamps: true,
         tableName: Tables.sessions,
         modelName: "SessionModel",
-        sequelize: SEQUELIZE,
+        sequelize: PostgresService.sequelize,
         indexes: [{ fields: ["userId"] }],
       }
     );

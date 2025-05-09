@@ -2,7 +2,7 @@ import { DataTypes, Model } from "sequelize";
 
 import { ReportReason } from "../../constants/enums.js";
 import Tables from "../../constants/tables.js";
-import { SEQUELIZE } from "../../constants/values.js";
+import PostgresService from "../../services/postgres_service.js";
 import { UserModel } from "../user/user_model.js";
 import { PostModel } from "../post/post_model.js";
 import BaseAttributes from "../base_attributes.js";
@@ -40,7 +40,7 @@ export class ReportPostModel extends Model<ReportPostAttributes> {
         timestamps: true,
         tableName: Tables.reportedPosts,
         modelName: "ReportPostModel",
-        sequelize: SEQUELIZE,
+        sequelize: PostgresService.sequelize,
         indexes: [{ fields: ["postId"] }, { fields: ["userId"] }],
       }
     );
