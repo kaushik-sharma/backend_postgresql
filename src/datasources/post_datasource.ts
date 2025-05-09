@@ -142,6 +142,7 @@ export default class PostDatasource {
     await PostModel.update(
       {
         status: EntityStatus.deleted,
+        deletedAt: new Date(),
       },
       {
         where: {
@@ -168,6 +169,7 @@ export default class PostDatasource {
     await CommentModel.update(
       {
         status: EntityStatus.deleted,
+        deletedAt: new Date(),
       },
       {
         where: {
@@ -418,6 +420,7 @@ export default class PostDatasource {
     await PostModel.update(
       {
         status: EntityStatus.banned,
+        bannedAt: new Date(),
       },
       {
         where: { id: postId },
@@ -429,6 +432,7 @@ export default class PostDatasource {
     await CommentModel.update(
       {
         status: EntityStatus.banned,
+        bannedAt: new Date(),
       },
       {
         where: { id: commentId },

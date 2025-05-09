@@ -15,6 +15,8 @@ export interface PostAttributes extends BaseAttributes {
   imagePath: string | null;
   repostedPostId: string | null;
   status: EntityStatus;
+  bannedAt?: Date | null;
+  deletedAt?: Date | null;
 
   // Associations
   user?: UserAttributes;
@@ -42,6 +44,8 @@ export class PostModel extends Model<PostAttributes> {
           values: Object.values(EntityStatus),
           allowNull: false,
         },
+        bannedAt: { type: DataTypes.DATE, allowNull: true },
+        deletedAt: { type: DataTypes.DATE, allowNull: true },
       },
       {
         timestamps: true,

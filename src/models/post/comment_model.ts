@@ -15,6 +15,8 @@ export interface CommentAttributes extends BaseAttributes {
   level: number;
   text: string;
   status: EntityStatus;
+  bannedAt?: Date | null;
+  deletedAt?: Date | null;
 
   // Associations
   user?: UserAttributes;
@@ -39,6 +41,8 @@ export class CommentModel extends Model<CommentAttributes> {
           values: Object.values(EntityStatus),
           allowNull: false,
         },
+        bannedAt: { type: DataTypes.DATE, allowNull: true },
+        deletedAt: { type: DataTypes.DATE, allowNull: true },
       },
       {
         timestamps: true,
