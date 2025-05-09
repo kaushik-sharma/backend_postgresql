@@ -25,6 +25,10 @@ initEnv($enum(Env).asValueOrThrow(process.env.ENV!));
 
 dotenv.config({ path: `.env.${ENV.toLowerCase()}` });
 
+const sequelize = await PostgresService.connect();
+initSequelize(sequelize);
+initModels();
+
 await RedisService.initClient();
 
 const app = express();
@@ -70,28 +74,19 @@ process.on("uncaughtException", (error, origin) => {
   console.error(origin);
 });
 
-try {
-  const sequelize = await PostgresService.connect();
-  initSequelize(sequelize);
-  initModels();
+const server = http.createServer(
+  {
+    maxHeaderSize: 8192,
+  },
+  app
+);
 
-  const server = http.createServer(
-    {
-      maxHeaderSize: 8192,
-    },
-    app
-  );
+SocketManager.init(server);
+CronService.init();
 
-  SocketManager.init(server);
-  CronService.init();
+const port = Number(process.env.PORT!);
+const host = "0.0.0.0";
 
-  const port = Number(process.env.PORT!);
-  const host = "0.0.0.0";
-
-  server.listen(port, host, () => {
-    logger.info(`Server running at http://${host}:${port}/`);
-  });
-} catch (err) {
-  console.error(err);
-  process.exit(1);
-}
+server.listen(port, host, () => {
+  logger.info(`Server running at http://${host}:${port}/`);
+});

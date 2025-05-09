@@ -1,6 +1,8 @@
 import Redis from "ioredis";
 import RedisStore from "rate-limit-redis";
 
+import logger from "../utils/logger.js";
+
 export default class RedisService {
   static #client: Redis;
 
@@ -21,6 +23,7 @@ export default class RedisService {
         lazyConnect: true,
       });
       await this.#client.connect();
+      logger.info("Connected to Redis successfully.");
     }
   };
 
