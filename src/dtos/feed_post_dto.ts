@@ -1,6 +1,6 @@
 import { EntityStatus } from "../constants/enums.js";
 
-export interface PostCreatorParams {
+export interface CreatorParams {
   id: string;
   firstName: string;
   lastName: string;
@@ -16,7 +16,7 @@ export interface FeedPostParams {
   commentCount: number | null;
   createdAt: Date | null;
   repostedPost: FeedPostParams | null;
-  creator: PostCreatorParams | null;
+  creator: CreatorParams | null;
   status: EntityStatus;
 }
 

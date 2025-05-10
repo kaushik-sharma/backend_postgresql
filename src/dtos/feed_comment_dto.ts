@@ -1,18 +1,12 @@
 import { EntityStatus } from "../constants/enums.js";
-
-export interface CommentCreatorParams {
-  id: string;
-  firstName: string;
-  lastName: string;
-  profileImageUrl: string;
-}
+import { CreatorParams } from "./feed_post_dto.js";
 
 export interface FeedCommentParams {
   id: string;
   parentCommentId: string | null;
   text: string | null;
   createdAt: Date | null;
-  creator: CommentCreatorParams | null;
+  creator: CreatorParams | null;
   status: EntityStatus;
 }
 
