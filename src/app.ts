@@ -20,6 +20,7 @@ import CronService from "./services/cron_service.js";
 import { initModels } from "./models/index.js";
 import RedisService from "./services/redis_service.js";
 import { hitCounter } from "./middlewares/hit_counter_middleware.js";
+import getConnectionRouter from "./routes/connection_routes.js";
 
 initEnv($enum(Env).asValueOrThrow(process.env.ENV!));
 
@@ -62,6 +63,7 @@ app.use("/api/v1/auth", getAuthRouter());
 app.use("/api/v1/profile", getProfileRouter());
 app.use("/api/v1/posts", getPostRouter());
 app.use("/api/v1/moderation", getModerationRouter());
+app.use("/api/v1/connections", getConnectionRouter());
 
 app.use(errorHandler);
 

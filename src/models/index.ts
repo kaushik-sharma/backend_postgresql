@@ -7,6 +7,7 @@ import { ReactionModel } from "./post/reaction_model.js";
 import { UserDeletionRequestModel } from "./user/user_deletion_request_model.js";
 import { SessionModel } from "./session/session_model.js";
 import { UserModel } from "./user/user_model.js";
+import { ConnectionModel } from "./connections/connections_model.js";
 
 export const initModels = () => {
   UserModel.initialize();
@@ -18,6 +19,7 @@ export const initModels = () => {
   ReportPostModel.initialize();
   ReportCommentModel.initialize();
   ReportUserModel.initialize();
+  ConnectionModel.initialize();
 
   UserModel.associate();
   SessionModel.associate();
@@ -28,4 +30,5 @@ export const initModels = () => {
   ReportPostModel.associate();
   ReportCommentModel.associate();
   ReportUserModel.associate();
+  ConnectionModel.associate();
 };

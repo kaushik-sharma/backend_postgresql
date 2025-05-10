@@ -7,6 +7,11 @@ import { createSingleImageUploadMiddleware } from "../middlewares/file_upload_mi
 const getProfileRouter = (): Router => {
   const router = Router();
 
+  router.get(
+    "/user/:userId",
+    requireAuth(),
+    ProfileController.getPublicProfile
+  );
   router.get("/user", requireAuth(), ProfileController.getUser);
   router.patch(
     "/updateProfile",

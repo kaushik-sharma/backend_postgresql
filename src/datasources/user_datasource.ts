@@ -147,6 +147,19 @@ export default class UserDatasource {
     return user!.toJSON();
   };
 
+  static readonly getPublicUserById = async (
+    userId: string
+  ): Promise<UserAttributes | null> => {
+    const user = await UserModel.findOne({
+      where: {
+        id: userId,
+        status: EntityStatus.active,
+      },
+      attributes: ["firstName", "lastName", "profileImagePath"],
+    });
+    return user?.toJSON() ?? null;
+  };
+
   static readonly deleteUser = async (
     userId: string,
     transaction: Transaction

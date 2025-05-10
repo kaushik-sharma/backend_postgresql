@@ -223,3 +223,27 @@ CREATE POLICY select_policy_app_user
   FOR SELECT
   TO app_user
   USING (true);
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- CONNECTIONS TABLE
+-- ─────────────────────────────────────────────────────────────────────────────
+
+ALTER TABLE public.connections ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY insert_policy_app_user
+  ON public.connections
+  FOR INSERT
+  TO app_user
+  WITH CHECK (true);
+
+CREATE POLICY select_policy_app_user
+  ON public.connections
+  FOR SELECT
+  TO app_user
+  USING (true);
+
+CREATE POLICY delete_policy_app_user
+  ON public.connections
+  FOR DELETE
+  TO app_user
+  USING (true);

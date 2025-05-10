@@ -27,7 +27,7 @@ import { ENV, DEV_EMAIL_VERIFICATION_WHITELIST } from "../constants/values.js";
 import UserDatasource from "../datasources/user_datasource.js";
 import SessionDatasource from "../datasources/session_datasource.js";
 
-export class AuthController {
+export default class AuthController {
   static readonly #generateVerificationCode = (): string => {
     let code = "";
     for (let i = 0; i < 6; i++) {

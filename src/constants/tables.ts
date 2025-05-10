@@ -8,4 +8,5 @@ export default class Tables {
   static readonly reportedComments = "reported_comments";
   static readonly reportedUsers = "reported_users";
   static readonly userDeletionRequests = "user_deletion_requests";
+  static readonly connections = "connections";
 }

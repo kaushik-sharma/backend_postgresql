@@ -19,11 +19,12 @@ import { performTransaction } from "../helpers/transaction_helper.js";
 import { EntityStatus } from "../constants/enums.js";
 import UserDatasource from "../datasources/user_datasource.js";
 import SessionDatasource from "../datasources/session_datasource.js";
-import { ProfileDto } from "../dtos/profile_dto.js";
+import { ProfileDto, PublicProfileDto } from "../dtos/profile_dto.js";
 import {
   ActiveSessionParams,
   ActiveSessionsOverviewDto,
 } from "../dtos/session_dto.js";
+import ConnectionDatasource from "../datasources/connection_datasource.js";
 
 export const deleteCustomProfileImage = async (
   userId: string
@@ -45,6 +46,11 @@ export default class ProfileController {
         user.profileImagePath ?? DEFAULT_PROFILE_IMAGE_PATH
       );
 
+      const followerCount = await ConnectionDatasource.getFollowerCount(userId);
+      const followingCount = await ConnectionDatasource.getFollowingCount(
+        userId
+      );
+
       const profile = new ProfileDto({
         firstName: user.firstName!,
         lastName: user.lastName!,
@@ -54,6 +60,51 @@ export default class ProfileController {
         email: user.email!,
         dob: user.dob!,
         profileImageUrl: profileImageUrl,
+        followerCount: followerCount,
+        followingCount: followingCount,
+      });
+
+      successResponseHandler({
+        res: res,
+        status: 200,
+        data: profile,
+      });
+    }
+  );
+
+  static readonly getPublicProfile: RequestHandler = asyncHandler(
+    async (req, res, next) => {
+      const userId = req.user!.userId;
+      const otherUserId = req.params.userId;
+
+      const user = await UserDatasource.getPublicUserById(otherUserId);
+      if (user === null) {
+        throw new CustomError(404, "User not found!");
+      }
+
+      const profileImageUrl = AwsS3Service.getCloudFrontSignedUrl(
+        user.profileImagePath ?? DEFAULT_PROFILE_IMAGE_PATH
+      );
+
+      const followerCount = await ConnectionDatasource.getFollowerCount(
+        otherUserId
+      );
+      const followingCount = await ConnectionDatasource.getFollowingCount(
+        otherUserId
+      );
+
+      const isFollowee = await ConnectionDatasource.isFollowee(
+        userId,
+        otherUserId
+      );
+
+      const profile = new PublicProfileDto({
+        firstName: user.firstName!,
+        lastName: user.lastName!,
+        profileImageUrl: profileImageUrl,
+        followerCount: followerCount,
+        followingCount: followingCount,
+        isFollowee: isFollowee,
       });
 
       successResponseHandler({
