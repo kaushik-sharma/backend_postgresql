@@ -41,7 +41,6 @@ export class ReportPostModel extends Model<ReportPostAttributes> {
         tableName: Tables.reportedPosts,
         modelName: "ReportPostModel",
         sequelize: PostgresService.sequelize,
-        indexes: [{ fields: ["postId"] }, { fields: ["userId"] }],
       }
     );
   };

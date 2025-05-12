@@ -61,12 +61,6 @@ export class UserModel extends Model<UserAttributes> {
         tableName: Tables.users,
         modelName: "UserModel",
         sequelize: PostgresService.sequelize,
-        indexes: [
-          { fields: ["email"] },
-          { fields: ["countryCode"] },
-          { fields: ["phoneNumber"] },
-          { fields: ["status"] },
-        ],
       }
     );
 

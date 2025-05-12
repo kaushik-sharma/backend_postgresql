@@ -45,7 +45,6 @@ export class SessionModel extends Model<SessionAttributes> {
         tableName: Tables.sessions,
         modelName: "SessionModel",
         sequelize: PostgresService.sequelize,
-        indexes: [{ fields: ["userId"] }],
       }
     );
   };

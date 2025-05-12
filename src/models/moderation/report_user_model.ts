@@ -40,7 +40,6 @@ export class ReportUserModel extends Model<ReportUserAttributes> {
         tableName: Tables.reportedUsers,
         modelName: "ReportUserModel",
         sequelize: PostgresService.sequelize,
-        indexes: [{ fields: ["reportedUserId"] }, { fields: ["userId"] }],
       }
     );
   };

@@ -31,7 +31,6 @@ export class ConnectionModel extends Model<ConnectionAttributes> {
         tableName: Tables.connections,
         modelName: "ConnectionModel",
         sequelize: PostgresService.sequelize,
-        indexes: [{ fields: ["followerId"] }, { fields: ["followeeId"] }],
       }
     );
   };

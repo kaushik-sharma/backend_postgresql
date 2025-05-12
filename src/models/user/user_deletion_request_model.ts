@@ -27,7 +27,6 @@ export class UserDeletionRequestModel extends Model<UserDeletionRequestAttribute
         tableName: Tables.userDeletionRequests,
         modelName: "UserDeletionRequestModel",
         sequelize: PostgresService.sequelize,
-        indexes: [{ fields: ["userId"] }, { fields: ["deleteAt"] }],
       }
     );
   };

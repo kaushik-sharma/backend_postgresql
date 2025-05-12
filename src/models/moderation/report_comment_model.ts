@@ -41,7 +41,6 @@ export class ReportCommentModel extends Model<ReportCommentAttributes> {
         tableName: Tables.reportedComments,
         modelName: "ReportCommentModel",
         sequelize: PostgresService.sequelize,
-        indexes: [{ fields: ["commentId"] }, { fields: ["userId"] }],
       }
     );
   };

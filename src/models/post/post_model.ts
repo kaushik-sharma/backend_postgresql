@@ -52,7 +52,6 @@ export class PostModel extends Model<PostAttributes> {
         tableName: Tables.posts,
         modelName: "PostModel",
         sequelize: PostgresService.sequelize,
-        indexes: [{ fields: ["userId"] }, { fields: ["status"] }],
       }
     );
   };
