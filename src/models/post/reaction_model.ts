@@ -39,6 +39,12 @@ export class ReactionModel extends Model<ReactionAttributes> {
         tableName: Tables.reactions,
         modelName: "ReactionModel",
         sequelize: PostgresService.sequelize,
+        indexes: [
+          {
+            fields: ["userId", "postId"],
+            unique: true,
+          },
+        ],
       }
     );
   };

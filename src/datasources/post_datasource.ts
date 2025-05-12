@@ -45,40 +45,28 @@ export default class PostDatasource {
   static readonly createReaction = async (
     reactionData: ReactionAttributes
   ): Promise<void> => {
-    const reaction = new ReactionModel({
-      userId: reactionData.userId,
-      postId: reactionData.postId,
-      emotionType: reactionData.emotionType,
-    });
-
     // Check if the user already has a reaction for that post
     const prevReaction = await ReactionModel.findOne({
       where: {
         postId: reactionData.postId,
         userId: reactionData.userId,
       },
+      attributes: ["emotionType"],
     });
 
-    // If it is a new reaction, then save it
-    if (prevReaction === null) {
-      await reaction.save();
-    } else if (reactionData.emotionType === prevReaction.toJSON().emotionType) {
-      // If same reaction as before then delete it
+    // If same reaction as before then delete it
+    if (reactionData.emotionType === prevReaction?.toJSON().emotionType) {
       await ReactionModel.destroy({
         where: {
           postId: reactionData.postId,
           userId: reactionData.userId,
         },
       });
-    } else {
-      // Else update it to the new reaction
-      await ReactionModel.update(
-        {
-          emotionType: reactionData.emotionType,
-        },
-        { where: { postId: reactionData.postId, userId: reactionData.userId } }
-      );
+      return;
     }
+
+    // Save new or update the existing reaction
+    await ReactionModel.upsert(reactionData);
   };
 
   static readonly commentExists = async (

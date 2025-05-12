@@ -50,6 +50,11 @@ export default {
 
     await queryInterface.addIndex(Tables.reactions, ["userId"]);
     await queryInterface.addIndex(Tables.reactions, ["postId"]);
+
+    await queryInterface.addConstraint(Tables.reactions, {
+      fields: ["userId", "postId"],
+      type: "unique",
+    });
   },
 
   async down(queryInterface: QueryInterface): Promise<void> {
