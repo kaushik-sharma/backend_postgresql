@@ -1,14 +1,17 @@
 import jwt from "jsonwebtoken";
 import fs from "fs";
 import { Transaction } from "sequelize";
-import { $enum } from "ts-enum-util";
 
 import { SessionModel } from "../models/session/session_model.js";
-import UserDatasource from "../datasources/user_datasource.js";
 import { CustomError } from "../middlewares/error_middlewares.js";
 import { AuthMode, EntityStatus, Platform } from "../constants/enums.js";
 import RedisService from "./redis_service.js";
-import { AUTH_TOKEN_DATA_CACHE_EXPIRY_IN_SEC } from "../constants/values.js";
+import {
+  AUTH_TOKEN_EXPIRY_DURATION_IN_SEC,
+  EMAIL_CODE_EXPIRY_DURATION_IN_SEC,
+  SESSION_CACHE_EXPIRY_DURATION_IN_SEC,
+} from "../constants/values.js";
+import { AuthenticatedUser } from "../@types/custom.js";
 
 export default class JwtService {
   static get #privateKey(): string {
@@ -19,19 +22,31 @@ export default class JwtService {
     return fs.readFileSync(process.env.JWT_PUBLIC_KEY_FILE_NAME!, "utf8");
   }
 
-  static readonly #generateAuthTokenJwt = (
-    payload: Record<string, any>
-  ): string => {
+  static get #authTokenSignOptions(): jwt.SignOptions {
     const options: jwt.SignOptions = {
-      algorithm: "RS512",
-      expiresIn: "30d", // 30 days
+      algorithm: "PS512",
+      expiresIn: AUTH_TOKEN_EXPIRY_DURATION_IN_SEC,
+      keyid: "ps512-v1",
     };
-    return jwt.sign(payload, this.#privateKey, options);
-  };
+    return options;
+  }
+
+  static get #emailTokenSignOptions(): jwt.SignOptions {
+    const options: jwt.SignOptions = {
+      algorithm: "PS512",
+      expiresIn: EMAIL_CODE_EXPIRY_DURATION_IN_SEC,
+      keyid: "ps512-v1",
+    };
+    return options;
+  }
 
   static readonly #verifyJwt = (token: string): jwt.JwtPayload => {
     try {
-      return jwt.verify(token, this.#publicKey) as jwt.JwtPayload;
+      return jwt.verify(
+        token,
+        this.#publicKey,
+        this.#authTokenSignOptions
+      ) as jwt.JwtPayload;
     } catch (err: any) {
       if (err.name === jwt.TokenExpiredError.name) {
         throw new CustomError(401, "Auth token expired.");
@@ -40,54 +55,13 @@ export default class JwtService {
     }
   };
 
-  static readonly #getUserIdFromSessionId = async (
-    sessionId: string
-  ): Promise<string> => {
-    let userId: string | null = null;
-    userId = await RedisService.client.get(`sessions:${sessionId}`);
-    if (userId === null) {
-      const dbSession = await SessionModel.findByPk(sessionId, {
-        attributes: ["userId"],
-      });
-      if (dbSession === null) {
-        throw new CustomError(403, "Session not found.");
-      }
-      userId = dbSession.toJSON().userId;
-      await RedisService.client.set(
-        `sessions:${sessionId}`,
-        userId,
-        "EX",
-        AUTH_TOKEN_DATA_CACHE_EXPIRY_IN_SEC
-      );
-    }
-    return userId;
-  };
-
-  static readonly #getUserStatusFromUserId = async (
-    userId: string
-  ): Promise<EntityStatus> => {
-    let status: EntityStatus | null = null;
-    const statusStr = await RedisService.client.get(`users:status:${userId}`);
-    if (statusStr !== null) {
-      status = $enum(EntityStatus).asValueOrThrow(statusStr);
-    } else {
-      status = await UserDatasource.getUserStatus(userId);
-      await RedisService.client.set(
-        `users:status:${userId}`,
-        status.toString(),
-        "EX",
-        AUTH_TOKEN_DATA_CACHE_EXPIRY_IN_SEC
-      );
-    }
-    return status;
-  };
-
   static readonly createAuthToken = async (
     userId: string,
+    userStatus: EntityStatus,
     deviceId: string,
     deviceName: string,
     platform: Platform,
-    transaction?: Transaction
+    transaction: Transaction
   ): Promise<string> => {
     const session = await SessionModel.create(
       { userId, deviceId, deviceName, platform },
@@ -97,31 +71,53 @@ export default class JwtService {
 
     await RedisService.client.set(
       `sessions:${sessionId}`,
-      userId,
+      JSON.stringify({ userId, userStatus }),
       "EX",
-      AUTH_TOKEN_DATA_CACHE_EXPIRY_IN_SEC
+      SESSION_CACHE_EXPIRY_DURATION_IN_SEC
     );
 
-    const payload = {
-      sessionId: sessionId,
-    };
+    const payload = { sessionId, userId, userStatus, v: 1 };
 
-    return this.#generateAuthTokenJwt(payload);
+    return jwt.sign(payload, this.#privateKey, this.#authTokenSignOptions);
   };
 
   static readonly verifyAuthToken = async (
     token: string,
     { authMode }: { authMode: AuthMode }
-  ): Promise<[string, string]> => {
+  ): Promise<AuthenticatedUser> => {
     const decoded = this.#verifyJwt(token);
 
     const sessionId = decoded.sessionId as string | null | undefined;
-    if (!sessionId) {
+    const userId = decoded.userId as string | null | undefined;
+    const userStatus = decoded.userStatus as EntityStatus | null | undefined;
+
+    if (!sessionId || !userId || !userStatus) {
       throw new CustomError(401, "Invalid auth token.");
     }
 
-    const userId = await this.#getUserIdFromSessionId(sessionId);
-    const userStatus = await this.#getUserStatusFromUserId(userId);
+    const cachedSessionData = await RedisService.client.get(
+      `sessions:${sessionId}`
+    );
+    let dbSessionData: SessionModel | null = null;
+
+    if (cachedSessionData === null) {
+      dbSessionData = await SessionModel.findByPk(sessionId, {
+        attributes: ["userId"],
+      });
+    }
+
+    if (!cachedSessionData && !dbSessionData) {
+      throw new CustomError(404, "Session not found.");
+    }
+
+    const savedUserId =
+      cachedSessionData !== null
+        ? (JSON.parse(cachedSessionData)["userId"] as string)
+        : dbSessionData!.toJSON().userId;
+
+    if (userId !== savedUserId) {
+      throw new CustomError(409, "Wrong user ID in the auth token.");
+    }
 
     switch (authMode) {
       case AuthMode.authenticated:
@@ -156,29 +152,29 @@ export default class JwtService {
         break;
     }
 
-    return [userId, sessionId];
+    if (cachedSessionData === null) {
+      await RedisService.client.set(
+        `sessions:${sessionId}`,
+        JSON.stringify({ userId, userStatus }),
+        "EX",
+        SESSION_CACHE_EXPIRY_DURATION_IN_SEC
+      );
+    }
+
+    return { sessionId, userId, userStatus };
   };
 
-  static readonly getRefreshToken = (sessionId: string): string => {
-    const payload = {
-      sessionId: sessionId,
-    };
-    return this.#generateAuthTokenJwt(payload);
+  static readonly getRefreshToken = (user: AuthenticatedUser): string => {
+    const payload = { ...user, v: 1 };
+    return jwt.sign(payload, this.#privateKey, this.#authTokenSignOptions);
   };
 
   static readonly createEmailVerificationToken = (
     hashedEmail: string,
     hashedCodes: string[]
   ): string => {
-    const payload = {
-      hashedEmail: hashedEmail,
-      hashedCodes: hashedCodes,
-    };
-    const options: jwt.SignOptions = {
-      algorithm: "RS512",
-      expiresIn: 600, // 10 minutes
-    };
-    return jwt.sign(payload, this.#privateKey, options);
+    const payload = { hashedEmail, hashedCodes, v: 1 };
+    return jwt.sign(payload, this.#privateKey, this.#emailTokenSignOptions);
   };
 
   static readonly verifyEmailToken = (token: string): [string, string[]] => {
@@ -186,6 +182,7 @@ export default class JwtService {
 
     const hashedEmail = decoded.hashedEmail as string | null | undefined;
     const hashedCodes = decoded.hashedCodes as string[] | null | undefined;
+
     if (!hashedEmail || !hashedCodes) {
       throw new CustomError(401, "Invalid auth token.");
     }

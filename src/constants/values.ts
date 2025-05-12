@@ -6,6 +6,17 @@ import { Env } from "./enums.js";
 export let ENV: Env;
 export const initEnv = (env: Env) => (ENV = env);
 
+/// Auth Tokens
+export const AUTH_TOKEN_EXPIRY_DURATION_IN_SEC = Duration.fromObject({
+  days: 30,
+}).as("seconds");
+export const EMAIL_CODE_EXPIRY_DURATION_IN_SEC = Duration.fromObject({
+  minutes: 10,
+}).as("seconds");
+export const SESSION_CACHE_EXPIRY_DURATION_IN_SEC = Duration.fromObject({
+  days: 7,
+}).as("seconds");
+
 /// Images
 export const IMAGE_EXPIRY_DURATION = Duration.fromObject({ hours: 48 });
 
@@ -48,8 +59,3 @@ export const ALLOWED_IMAGE_MIMETYPES = [
 ];
 
 export const DEV_EMAIL_VERIFICATION_WHITELIST = ["gmail.com"];
-
-/// Redis
-export const AUTH_TOKEN_DATA_CACHE_EXPIRY_IN_SEC = Duration.fromObject({
-  days: 7,
-}).as("seconds");

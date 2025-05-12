@@ -12,7 +12,6 @@ export default class SessionDatasource {
     sessionId: string
   ): Promise<void> => {
     await RedisService.client.del(`sessions:${sessionId}`);
-    await RedisService.client.del(`users:status:${userId}`);
 
     await SessionModel.destroy({
       where: {
@@ -35,7 +34,6 @@ export default class SessionDatasource {
     for (const sessionId of sessionIds) {
       await RedisService.client.del(`sessions:${sessionId}`);
     }
-    await RedisService.client.del(`users:status:${userId}`);
 
     await SessionModel.destroy({
       where: { userId: userId },

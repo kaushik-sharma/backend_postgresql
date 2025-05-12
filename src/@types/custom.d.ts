@@ -1,8 +1,11 @@
 import { Request } from "express";
 
+import { EntityStatus } from "../constants/enums.js";
+
 interface AuthenticatedUser {
-  userId: string;
   sessionId: string;
+  userId: string;
+  userStatus: EntityStatus;
 }
 
 declare module "express-serve-static-core" {

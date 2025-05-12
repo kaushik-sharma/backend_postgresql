@@ -246,6 +246,7 @@ export default class AuthController {
           }
           return await JwtService.createAuthToken(
             userId,
+            EntityStatus.active,
             parsedData.deviceId,
             parsedData.deviceName,
             parsedData.platform,
@@ -328,6 +329,7 @@ export default class AuthController {
           }
           return await JwtService.createAuthToken(
             user.id!,
+            EntityStatus.active,
             parsedData.deviceId,
             parsedData.deviceName,
             parsedData.platform,
@@ -346,9 +348,7 @@ export default class AuthController {
 
   static readonly refreshAuthToken: RequestHandler = asyncHandler(
     async (req, res, next) => {
-      const sessionId = req.user!.sessionId;
-
-      const refreshToken = JwtService.getRefreshToken(sessionId);
+      const refreshToken = JwtService.getRefreshToken(req.user!);
 
       successResponseHandler({
         res: res,
@@ -380,6 +380,7 @@ export default class AuthController {
           const userId = await UserDatasource.createUser(userData, transaction);
           return await JwtService.createAuthToken(
             userId,
+            EntityStatus.anonymous,
             parsedData.deviceId,
             parsedData.deviceName,
             parsedData.platform,
