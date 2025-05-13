@@ -1,7 +1,7 @@
 import { Router } from "express";
 
 import { requireAuth } from "../middlewares/auth_middlewares.js";
-import { getModerationRateLimiter } from "../helpers/rate_limiters.js";
+import { getModerationRateLimiter } from "../middlewares/rate_limiter_middlewares.js";
 import ModerationController from "../controllers/moderation_controller.js";
 
 const getModerationRouter = (): Router => {

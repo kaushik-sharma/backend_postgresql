@@ -1,12 +1,12 @@
-import { rateLimit } from "express-rate-limit";
+import rateLimit from "express-rate-limit";
 
 import {
-  DEFAULT_RATE_LIMITER_MAX,
   DEFAULT_RATE_LIMITER_WINDOW_MS,
-  MODERATION_RATE_LIMITER_MAX,
-  MODERATION_RATE_LIMITER_WINDOW_MS,
-  REQUEST_EMAIL_CODE_RATE_LIMITER_MAX,
+  DEFAULT_RATE_LIMITER_MAX,
   REQUEST_EMAIL_CODE_RATE_LIMITER_WINDOW_MS,
+  REQUEST_EMAIL_CODE_RATE_LIMITER_MAX,
+  MODERATION_RATE_LIMITER_WINDOW_MS,
+  MODERATION_RATE_LIMITER_MAX,
 } from "../constants/values.js";
 import RedisService from "../services/redis_service.js";
 

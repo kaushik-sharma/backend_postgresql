@@ -3,7 +3,7 @@ import { Router } from "express";
 import AuthController from "../controllers/auth_controller.js";
 import { requireAuth, optionalAuth } from "../middlewares/auth_middlewares.js";
 import { AuthMode } from "../constants/enums.js";
-import { getRequestEmailCodeRateLimiter } from "../helpers/rate_limiters.js";
+import { getRequestEmailCodeRateLimiter } from "../middlewares/rate_limiter_middlewares.js";
 
 const getAuthRouter = (): Router => {
   const router = Router();

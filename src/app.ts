@@ -10,7 +10,7 @@ import getAuthRouter from "./routes/auth_routes.js";
 import getProfileRouter from "./routes/profile_routes.js";
 import getPostRouter from "./routes/post_routes.js";
 import getModerationRouter from "./routes/moderation_routes.js";
-import { getDefaultRateLimiter } from "./helpers/rate_limiters.js";
+import { getDefaultRateLimiter } from "./middlewares/rate_limiter_middlewares.js";
 import { errorHandler } from "./middlewares/error_middlewares.js";
 import SocketManager from "./socket.js";
 import logger from "./utils/logger.js";
@@ -59,7 +59,7 @@ app.use((req, res, next) => {
 
 app.use(express.json({ limit: "100kb" }));
 
-app.use(hitCounter);
+app.use(hitCounter());
 
 app.use(getDefaultRateLimiter());
 
