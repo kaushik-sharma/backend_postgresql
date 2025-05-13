@@ -1,6 +1,3 @@
-import { Transaction } from "sequelize";
-
-import { EntityStatus } from "../constants/enums.js";
 import {
   ReportCommentAttributes,
   ReportCommentModel,
