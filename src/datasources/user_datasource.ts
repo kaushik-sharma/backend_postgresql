@@ -3,6 +3,7 @@ import { Op, Transaction } from "sequelize";
 import { EntityStatus } from "../constants/enums.js";
 import { UserDeletionRequestModel } from "../models/user/user_deletion_request_model.js";
 import { UserModel, UserAttributes } from "../models/user/user_model.js";
+import { CustomError } from "../middlewares/error_middlewares.js";
 
 export default class UserDatasource {
   static readonly isUserActive = async (userId: string): Promise<boolean> => {
@@ -78,10 +79,14 @@ export default class UserDatasource {
     userId: string,
     transaction: Transaction
   ): Promise<void> => {
-    await UserModel.destroy({
+    const count = await UserModel.destroy({
       where: { id: userId, status: EntityStatus.anonymous },
       transaction: transaction,
     });
+
+    if (count === 0) {
+      throw new CustomError(404, "User not found!");
+    }
   };
 
   static readonly createUser = async (
@@ -126,7 +131,7 @@ export default class UserDatasource {
     userId: string,
     transaction: Transaction
   ) => {
-    await UserModel.update(
+    const result = await UserModel.update(
       {
         status: EntityStatus.requestedDeletion,
       },
@@ -138,6 +143,10 @@ export default class UserDatasource {
         transaction: transaction,
       }
     );
+
+    if (result[0] === 0) {
+      throw new CustomError(404, "User not found!");
+    }
   };
 
   static readonly getUserById = async (
@@ -164,7 +173,7 @@ export default class UserDatasource {
     userId: string,
     transaction: Transaction
   ): Promise<void> => {
-    await UserModel.update(
+    const result = await UserModel.update(
       {
         status: EntityStatus.deleted,
         deletedAt: new Date(),
@@ -174,13 +183,17 @@ export default class UserDatasource {
         transaction: transaction,
       }
     );
+
+    if (result[0] === 0) {
+      throw new CustomError(404, "User not found!");
+    }
   };
 
   static readonly updateProfile = async (
     userId: string,
     updatedFields: Record<string, any>
   ): Promise<void> => {
-    await UserModel.update(
+    const result = await UserModel.update(
       {
         ...updatedFields,
       },
@@ -191,6 +204,10 @@ export default class UserDatasource {
         },
       }
     );
+
+    if (result[0] === 0) {
+      throw new CustomError(404, "User not found!");
+    }
   };
 
   static readonly getUserProfileImagePath = async (
@@ -207,12 +224,15 @@ export default class UserDatasource {
   };
 
   static readonly resetProfileImage = async (userId: string) => {
-    await UserModel.update(
+    const result = await UserModel.update(
       {
         profileImagePath: null,
       },
       { where: { id: userId, status: EntityStatus.active } }
     );
+    if (result[0] === 0) {
+      throw new CustomError(404, "User not found!");
+    }
   };
 
   static readonly createUserDeletionRequest = async (
@@ -239,17 +259,20 @@ export default class UserDatasource {
     userId: string,
     transaction?: Transaction
   ): Promise<void> => {
-    await UserDeletionRequestModel.destroy({
+    const count = await UserDeletionRequestModel.destroy({
       where: { userId: userId },
       transaction: transaction,
     });
+    if (count === 0) {
+      throw new CustomError(404, "Deletion request not found!");
+    }
   };
 
   static readonly banUser = async (
     userId: string,
     transaction: Transaction
   ): Promise<void> => {
-    await UserModel.update(
+    const result = await UserModel.update(
       {
         status: EntityStatus.banned,
         bannedAt: new Date(),
@@ -259,5 +282,9 @@ export default class UserDatasource {
         transaction: transaction,
       }
     );
+
+    if (result[0] === 0) {
+      throw new CustomError(404, "User not found!");
+    }
   };
 }

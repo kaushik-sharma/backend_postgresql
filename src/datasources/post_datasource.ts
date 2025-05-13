@@ -13,6 +13,7 @@ import {
   ReactionModel,
 } from "../models/post/reaction_model.js";
 import UserDatasource from "./user_datasource.js";
+import { CustomError } from "../middlewares/error_middlewares.js";
 
 export default class PostDatasource {
   static readonly createPost = async (
@@ -127,7 +128,7 @@ export default class PostDatasource {
     postId: string,
     userId: string
   ): Promise<void> => {
-    await PostModel.update(
+    const result = await PostModel.update(
       {
         status: EntityStatus.deleted,
         deletedAt: new Date(),
@@ -139,6 +140,10 @@ export default class PostDatasource {
         },
       }
     );
+
+    if (result[0] === 0) {
+      throw new CustomError(404, "Post not found!");
+    }
   };
 
   static readonly getCommentUserId = async (
@@ -154,7 +159,7 @@ export default class PostDatasource {
     commentId: string,
     userId: string
   ): Promise<void> => {
-    await CommentModel.update(
+    const result = await CommentModel.update(
       {
         status: EntityStatus.deleted,
         deletedAt: new Date(),
@@ -166,6 +171,10 @@ export default class PostDatasource {
         },
       }
     );
+
+    if (result[0] === 0) {
+      throw new CustomError(404, "Comment not found!");
+    }
   };
 
   static readonly #getComments = async (
@@ -405,7 +414,7 @@ export default class PostDatasource {
   };
 
   static readonly banPost = async (postId: string): Promise<void> => {
-    await PostModel.update(
+    const result = await PostModel.update(
       {
         status: EntityStatus.banned,
         bannedAt: new Date(),
@@ -414,10 +423,14 @@ export default class PostDatasource {
         where: { id: postId },
       }
     );
+
+    if (result[0] === 0) {
+      throw new CustomError(404, "Post not found!");
+    }
   };
 
   static readonly banComment = async (commentId: string): Promise<void> => {
-    await CommentModel.update(
+    const result = await CommentModel.update(
       {
         status: EntityStatus.banned,
         bannedAt: new Date(),
@@ -426,5 +439,9 @@ export default class PostDatasource {
         where: { id: commentId },
       }
     );
+
+    if (result[0] === 0) {
+      throw new CustomError(404, "Comment not found!");
+    }
   };
 }

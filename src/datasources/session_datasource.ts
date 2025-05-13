@@ -5,6 +5,7 @@ import {
   SessionModel,
 } from "../models/session/session_model.js";
 import RedisService from "../services/redis_service.js";
+import { CustomError } from "../middlewares/error_middlewares.js";
 
 export default class SessionDatasource {
   static readonly signOutSession = async (
@@ -13,12 +14,16 @@ export default class SessionDatasource {
   ): Promise<void> => {
     await RedisService.client.del(`sessions:${sessionId}`);
 
-    await SessionModel.destroy({
+    const count = await SessionModel.destroy({
       where: {
         id: sessionId,
         userId: userId,
       },
     });
+
+    if (count === 0) {
+      throw new CustomError(404, "Session not found!");
+    }
   };
 
   static readonly signOutAllSessions = async (
@@ -35,10 +40,14 @@ export default class SessionDatasource {
       await RedisService.client.del(`sessions:${sessionId}`);
     }
 
-    await SessionModel.destroy({
+    const count = await SessionModel.destroy({
       where: { userId: userId },
       transaction: transaction,
     });
+
+    if (count === 0) {
+      throw new CustomError(404, "Sessions not found!");
+    }
   };
 
   static readonly getActiveSessions = async (
