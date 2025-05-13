@@ -25,6 +25,7 @@ import { FeedPostDto, FeedPostParams } from "../dtos/feed_post_dto.js";
 import { FeedCommentDto } from "../dtos/feed_comment_dto.js";
 import { UserCommentDto } from "../dtos/user_comment_dto.js";
 import { UserPostDto } from "../dtos/user_post_dto.js";
+// import KafkaService from "../services/kafka_service.js";
 
 export default class PostController {
   static readonly validateCreatePostRequest: RequestHandler = (
@@ -156,9 +157,7 @@ export default class PostController {
         postId: req.params.postId,
       };
 
-      const postExists: boolean = await PostDatasource.postExists(
-        parsedData.postId
-      );
+      const postExists = await PostDatasource.postExists(parsedData.postId);
       if (!postExists) {
         throw new CustomError(404, "Post not found!");
       }
@@ -169,6 +168,16 @@ export default class PostController {
         emotionType: parsedData.emotionType,
       };
       await PostDatasource.createReaction(reactionData);
+
+      // await KafkaService.producer.send({
+      //   topic: "post-reactions",
+      //   messages: [
+      //     {
+      //       key: `${parsedData.postId}:${userId}`,
+      //       value: JSON.stringify(reactionData),
+      //     },
+      //   ],
+      // });
 
       successResponseHandler({
         res: res,

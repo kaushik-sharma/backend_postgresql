@@ -21,6 +21,7 @@ import { initModels } from "./models/index.js";
 import RedisService from "./services/redis_service.js";
 import { hitCounter } from "./middlewares/hit_counter_middleware.js";
 import getConnectionRouter from "./routes/connection_routes.js";
+// import KafkaService from "./services/kafka_service.js";
 
 initEnv($enum(Env).asValueOrThrow(process.env.ENV!));
 
@@ -30,6 +31,9 @@ await PostgresService.connect();
 initModels();
 
 await RedisService.initClient();
+
+// await KafkaService.setupProducers();
+// await KafkaService.setupConsumers();
 
 const app = express();
 
