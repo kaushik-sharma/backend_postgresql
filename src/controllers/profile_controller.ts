@@ -264,7 +264,7 @@ export default class ProfileController {
     async (req, res, next) => {
       const { userId, sessionId } = req.user!;
 
-      await SessionDatasource.signOutSession(userId, sessionId);
+      await SessionDatasource.signOutSession(sessionId, userId);
 
       successResponseHandler({
         res: res,
@@ -302,7 +302,7 @@ export default class ProfileController {
         throw new CustomError(403, "Session user id mismatch!");
       }
 
-      await SessionDatasource.signOutSession(userId, sessionId);
+      await SessionDatasource.signOutSession(sessionId, userId);
 
       successResponseHandler({
         res: res,
