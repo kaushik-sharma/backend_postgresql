@@ -7,7 +7,7 @@ import { $enum } from "ts-enum-util";
 
 import PostgresService from "./services/postgres_service.js";
 import getAuthRouter from "./routes/auth_routes.js";
-import getProfileRouter from "./routes/profile_routes.js";
+import getUserRouter from "./routes/user_routes.js";
 import getPostRouter from "./routes/post_routes.js";
 import getModerationRouter from "./routes/moderation_routes.js";
 import { getDefaultRateLimiter } from "./middlewares/rate_limiter_middlewares.js";
@@ -64,7 +64,7 @@ app.use(hitCounter());
 app.use(getDefaultRateLimiter());
 
 app.use("/api/v1/auth", getAuthRouter());
-app.use("/api/v1/profile", getProfileRouter());
+app.use("/api/v1/user", getUserRouter());
 app.use("/api/v1/posts", getPostRouter());
 app.use("/api/v1/moderation", getModerationRouter());
 app.use("/api/v1/connections", getConnectionRouter());

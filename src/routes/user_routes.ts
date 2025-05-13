@@ -1,67 +1,67 @@
 import { Router } from "express";
 
 import { requireAuth } from "../middlewares/auth_middlewares.js";
-import ProfileController from "../controllers/profile_controller.js";
+import UserController from "../controllers/user_controller.js";
 import { createSingleImageUploadMiddleware } from "../middlewares/file_upload_middlewares.js";
 
-const getProfileRouter = (): Router => {
+const getUserRouter = (): Router => {
   const router = Router();
 
   router.get(
     "/profile/:userId",
     requireAuth(),
-    ProfileController.getPublicProfile
+    UserController.getPublicProfile
   );
-  router.get("/profile", requireAuth(), ProfileController.getUser);
+  router.get("/profile", requireAuth(), UserController.getUser);
   router.patch(
     "/profile",
     createSingleImageUploadMiddleware({ fieldName: "profileImage" }),
     requireAuth(),
-    ProfileController.validateUpdateProfileRequest,
-    ProfileController.updateProfile
+    UserController.validateUpdateProfileRequest,
+    UserController.updateProfile
   );
   router.delete(
     "/profile/image",
     requireAuth(),
-    ProfileController.deleteProfileImage
+    UserController.deleteProfileImage
   );
   router.delete(
     "/profile",
     requireAuth(),
-    ProfileController.requestAccountDeletion
+    UserController.requestAccountDeletion
   );
 
   router.get(
     "/sessions/active",
     requireAuth(),
-    ProfileController.getActiveSessions
+    UserController.getActiveSessions
   );
   router.delete(
     "/sessions/current",
     requireAuth(),
-    ProfileController.signOutCurrentSession
+    UserController.signOutCurrentSession
   );
   router.delete(
     "/sessions/:sessionId",
     requireAuth(),
-    ProfileController.signOutBySessionId
+    UserController.signOutBySessionId
   );
   router.delete(
     "/sessions",
     requireAuth(),
-    ProfileController.signOutAllSessions
+    UserController.signOutAllSessions
   );
 
-  router.get("/posts", requireAuth(), ProfileController.getUserPosts);
-  router.delete("/posts/:postId", requireAuth(), ProfileController.deletePost);
-  router.get("/comments", requireAuth(), ProfileController.getUserComments);
+  router.get("/posts", requireAuth(), UserController.getUserPosts);
+  router.delete("/posts/:postId", requireAuth(), UserController.deletePost);
+  router.get("/comments", requireAuth(), UserController.getUserComments);
   router.delete(
     "/comments/:commentId",
     requireAuth(),
-    ProfileController.deleteComment
+    UserController.deleteComment
   );
 
   return router;
 };
 
-export default getProfileRouter;
+export default getUserRouter;

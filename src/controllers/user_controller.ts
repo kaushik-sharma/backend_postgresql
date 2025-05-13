@@ -39,7 +39,7 @@ export const deleteCustomProfileImage = async (
   }
 };
 
-export default class ProfileController {
+export default class UserController {
   static readonly getUser: RequestHandler = asyncHandler(
     async (req, res, next) => {
       const userId = req.user!.userId;

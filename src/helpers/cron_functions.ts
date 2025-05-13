@@ -1,4 +1,4 @@
-import { deleteCustomProfileImage } from "../controllers/profile_controller.js";
+import { deleteCustomProfileImage } from "../controllers/user_controller.js";
 import SessionDatasource from "../datasources/session_datasource.js";
 import UserDatasource from "../datasources/user_datasource.js";
 import logger from "../utils/logger.js";
