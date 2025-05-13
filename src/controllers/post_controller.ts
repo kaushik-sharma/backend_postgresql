@@ -23,8 +23,6 @@ import { CommentAttributes } from "../models/post/comment_model.js";
 import { DEFAULT_PROFILE_IMAGE_PATH } from "../constants/values.js";
 import { FeedPostDto, FeedPostParams } from "../dtos/feed_post_dto.js";
 import { FeedCommentDto } from "../dtos/feed_comment_dto.js";
-import { UserCommentDto } from "../dtos/user_comment_dto.js";
-import { UserPostDto } from "../dtos/user_post_dto.js";
 // import KafkaService from "../services/kafka_service.js";
 
 export default class PostController {
@@ -342,102 +340,6 @@ export default class PostController {
     }
   );
 
-  static readonly getUserComments: RequestHandler = asyncHandler(
-    async (req, res, next) => {
-      const userId = req.user!.userId;
-
-      const page = parseInt(req.params.page);
-      if (page < 0) {
-        throw new CustomError(400, "Page can not be less than zero!");
-      }
-
-      const comments = await PostDatasource.getCommentsByUserId(userId, page);
-
-      const commentDtos = comments.map((comment) => {
-        return new UserCommentDto({
-          id: comment.id!,
-          postId: comment.postId,
-          text: comment.text,
-          createdAt: comment.createdAt!,
-        });
-      });
-
-      successResponseHandler({
-        res: res,
-        status: 200,
-        data: commentDtos,
-      });
-    }
-  );
-
-  static readonly deletePost: RequestHandler = asyncHandler(
-    async (req, res, next) => {
-      const userId = req.user!.userId;
-
-      const postId = req.params.postId as string | undefined | null;
-      if (postId === undefined || postId === null) {
-        throw new CustomError(400, "Post ID is required.");
-      }
-
-      const postExists: boolean = await PostDatasource.postExists(postId);
-      if (!postExists) {
-        throw new CustomError(404, "Post not found!");
-      }
-
-      const postUserId: string = await PostDatasource.getPostUserId(postId);
-      if (postUserId !== userId) {
-        throw new CustomError(403, "Can not delete other users' posts!");
-      }
-
-      // Delete the post image if it exists from S3 & CloudFront
-      const imagePath: string | null = await PostDatasource.getPostImagePath(
-        postId
-      );
-      if (imagePath !== null) {
-        AwsS3Service.initiateDeleteFile(imagePath);
-      }
-
-      await PostDatasource.deletePost(postId, userId);
-
-      successResponseHandler({
-        res: res,
-        status: 200,
-      });
-    }
-  );
-
-  static readonly deleteComment: RequestHandler = asyncHandler(
-    async (req, res, next) => {
-      const userId = req.user!.userId;
-
-      const commentId = req.params.commentId as string | undefined | null;
-      if (commentId === undefined || commentId === null) {
-        throw new CustomError(400, "Comment ID is required.");
-      }
-
-      const commentExists: boolean = await PostDatasource.commentExists(
-        commentId
-      );
-      if (!commentExists) {
-        throw new CustomError(404, "Comment not found!");
-      }
-
-      const commentUserId: string = await PostDatasource.getCommentUserId(
-        commentId
-      );
-      if (commentUserId !== userId) {
-        throw new CustomError(403, "Can not delete other users' comments!");
-      }
-
-      await PostDatasource.deleteComment(commentId, userId);
-
-      successResponseHandler({
-        res: res,
-        status: 200,
-      });
-    }
-  );
-
   static readonly #processFeedPosts = (
     posts: PostAttributes[]
   ): FeedPostDto[] => {
@@ -505,56 +407,15 @@ export default class PostController {
     });
   };
 
-  static readonly #processUserPosts = (
-    posts: PostAttributes[]
-  ): UserPostDto[] => {
-    return posts.map((post) => {
-      const postImageUrl =
-        post.imagePath != null
-          ? AwsS3Service.getCloudFrontSignedUrl(post.imagePath)
-          : null;
-
-      return new UserPostDto({
-        id: post.id!,
-        text: post.text,
-        imageUrl: postImageUrl,
-        likeCount: post.likeCount!,
-        dislikeCount: post.dislikeCount!,
-        commentCount: post.commentCount!,
-        createdAt: post.createdAt!,
-      });
-    });
-  };
-
   static readonly getPostsFeed: RequestHandler = asyncHandler(
     async (req, res, next) => {
-      const page = parseInt(req.params.page);
+      const page = parseInt(req.query.page as string);
       if (page < 0) {
         throw new CustomError(400, "Page can not be less than zero!");
       }
 
       const posts = await PostDatasource.getPostsFeed(page);
       const feed = this.#processFeedPosts(posts);
-
-      successResponseHandler({
-        res: res,
-        status: 200,
-        data: feed,
-      });
-    }
-  );
-
-  static readonly getUserPosts: RequestHandler = asyncHandler(
-    async (req, res, next) => {
-      const userId = req.user!.userId;
-
-      const page = parseInt(req.params.page);
-      if (page < 0) {
-        throw new CustomError(400, "Page can not be less than zero!");
-      }
-
-      const posts = await PostDatasource.getPostsByUserId(userId, page);
-      const feed = this.#processUserPosts(posts);
 
       successResponseHandler({
         res: res,

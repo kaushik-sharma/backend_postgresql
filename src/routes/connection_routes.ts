@@ -11,8 +11,8 @@ const getConnectionRouter = (): Router => {
     requireAuth(),
     ConnectionController.followUser
   );
-  router.post(
-    "/unfollow/:followeeId",
+  router.delete(
+    "/follow/:followeeId",
     requireAuth(),
     ConnectionController.unfollowUser
   );

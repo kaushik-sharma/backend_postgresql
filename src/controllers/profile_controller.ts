@@ -25,6 +25,10 @@ import {
   ActiveSessionsOverviewDto,
 } from "../dtos/session_dto.js";
 import ConnectionDatasource from "../datasources/connection_datasource.js";
+import PostDatasource from "../datasources/post_datasource.js";
+import { PostAttributes } from "../models/post/post_model.js";
+import { UserPostDto } from "../dtos/user_post_dto.js";
+import { UserCommentDto } from "../dtos/user_comment_dto.js";
 
 export const deleteCustomProfileImage = async (
   userId: string
@@ -260,7 +264,7 @@ export default class ProfileController {
     }
   );
 
-  static readonly signOut: RequestHandler = asyncHandler(
+  static readonly signOutCurrentSession: RequestHandler = asyncHandler(
     async (req, res, next) => {
       const { userId, sessionId } = req.user!;
 
@@ -303,6 +307,143 @@ export default class ProfileController {
       }
 
       await SessionDatasource.signOutSession(sessionId, userId);
+
+      successResponseHandler({
+        res: res,
+        status: 200,
+      });
+    }
+  );
+
+  static readonly #processUserPosts = (
+    posts: PostAttributes[]
+  ): UserPostDto[] => {
+    return posts.map((post) => {
+      const postImageUrl =
+        post.imagePath != null
+          ? AwsS3Service.getCloudFrontSignedUrl(post.imagePath)
+          : null;
+
+      return new UserPostDto({
+        id: post.id!,
+        text: post.text,
+        imageUrl: postImageUrl,
+        likeCount: post.likeCount!,
+        dislikeCount: post.dislikeCount!,
+        commentCount: post.commentCount!,
+        createdAt: post.createdAt!,
+      });
+    });
+  };
+
+  static readonly getUserPosts: RequestHandler = asyncHandler(
+    async (req, res, next) => {
+      const userId = req.user!.userId;
+
+      const page = parseInt(req.query.page as string);
+      if (page < 0) {
+        throw new CustomError(400, "Page can not be less than zero!");
+      }
+
+      const posts = await PostDatasource.getPostsByUserId(userId, page);
+      const feed = this.#processUserPosts(posts);
+
+      successResponseHandler({
+        res: res,
+        status: 200,
+        data: feed,
+      });
+    }
+  );
+
+  static readonly getUserComments: RequestHandler = asyncHandler(
+    async (req, res, next) => {
+      const userId = req.user!.userId;
+
+      const page = parseInt(req.query.page as string);
+      if (page < 0) {
+        throw new CustomError(400, "Page can not be less than zero!");
+      }
+
+      const comments = await PostDatasource.getCommentsByUserId(userId, page);
+
+      const commentDtos = comments.map((comment) => {
+        return new UserCommentDto({
+          id: comment.id!,
+          postId: comment.postId,
+          text: comment.text,
+          createdAt: comment.createdAt!,
+        });
+      });
+
+      successResponseHandler({
+        res: res,
+        status: 200,
+        data: commentDtos,
+      });
+    }
+  );
+
+  static readonly deletePost: RequestHandler = asyncHandler(
+    async (req, res, next) => {
+      const userId = req.user!.userId;
+
+      const postId = req.params.postId as string | undefined | null;
+      if (postId === undefined || postId === null) {
+        throw new CustomError(400, "Post ID is required.");
+      }
+
+      const postExists: boolean = await PostDatasource.postExists(postId);
+      if (!postExists) {
+        throw new CustomError(404, "Post not found!");
+      }
+
+      const postUserId: string = await PostDatasource.getPostUserId(postId);
+      if (postUserId !== userId) {
+        throw new CustomError(403, "Can not delete other users' posts!");
+      }
+
+      // Delete the post image if it exists from S3 & CloudFront
+      const imagePath: string | null = await PostDatasource.getPostImagePath(
+        postId
+      );
+      if (imagePath !== null) {
+        AwsS3Service.initiateDeleteFile(imagePath);
+      }
+
+      await PostDatasource.deletePost(postId, userId);
+
+      successResponseHandler({
+        res: res,
+        status: 200,
+      });
+    }
+  );
+
+  static readonly deleteComment: RequestHandler = asyncHandler(
+    async (req, res, next) => {
+      const userId = req.user!.userId;
+
+      const commentId = req.params.commentId as string | undefined | null;
+      if (commentId === undefined || commentId === null) {
+        throw new CustomError(400, "Comment ID is required.");
+      }
+
+      const commentExists: boolean = await PostDatasource.commentExists(
+        commentId
+      );
+      if (!commentExists) {
+        throw new CustomError(404, "Comment not found!");
+      }
+
+      const commentUserId: string = await PostDatasource.getCommentUserId(
+        commentId
+      );
+      if (commentUserId !== userId) {
+        throw new CustomError(403, "Can not delete other users' comments!");
+      }
+
+      await PostDatasource.deleteComment(commentId, userId);
 
       successResponseHandler({
         res: res,

@@ -106,20 +106,11 @@ export default class AuthController {
   };
 
   static readonly validateEmailRequest: RequestHandler = (req, res, next) => {
-    req.parsedData = validateData(emailSchema, req.body);
+    req.parsedData = validateData(emailSchema, { email: req.params.email });
     next();
   };
 
-  static readonly validateEmailCodeRequest: RequestHandler = (
-    req,
-    res,
-    next
-  ) => {
-    req.parsedData = validateData(requestEmailCodeSchema, req.body);
-    next();
-  };
-
-  static readonly checkEmail: RequestHandler = asyncHandler(
+  static readonly checkEmailStatus: RequestHandler = asyncHandler(
     async (req, res, next) => {
       const parsedData = req.parsedData! as EmailType;
 
@@ -159,7 +150,16 @@ export default class AuthController {
     }
   );
 
-  static readonly requestEmailCode: RequestHandler = asyncHandler(
+  static readonly validateEmailCodeRequest: RequestHandler = (
+    req,
+    res,
+    next
+  ) => {
+    req.parsedData = validateData(requestEmailCodeSchema, req.body);
+    next();
+  };
+
+  static readonly sendEmailCode: RequestHandler = asyncHandler(
     async (req, res, next) => {
       const parsedData = req.parsedData! as RequestEmailCodeType;
       const token = await this.#sendEmailCode(

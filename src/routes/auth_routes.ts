@@ -9,24 +9,24 @@ const getAuthRouter = (): Router => {
   const router = Router();
 
   router.get(
-    "/checkEmail",
+    "/email/status/:email",
     AuthController.validateEmailRequest,
-    AuthController.checkEmail
+    AuthController.checkEmailStatus
   );
   router.post(
-    "/requestEmailCode",
+    "/email/send-code",
     getRequestEmailCodeRateLimiter(),
     AuthController.validateEmailCodeRequest,
-    AuthController.requestEmailCode
+    AuthController.sendEmailCode
   );
   router.post(
-    "/signUp",
+    "/signup",
     optionalAuth,
     AuthController.validateSignUpRequest,
     AuthController.signUp
   );
   router.post(
-    "/signIn",
+    "/signin",
     optionalAuth,
     AuthController.validateSignInRequest,
     AuthController.signIn
@@ -36,8 +36,8 @@ const getAuthRouter = (): Router => {
     AuthController.validateAnonymousAuthRequest,
     AuthController.anonymousAuth
   );
-  router.get(
-    "/refreshAuthToken",
+  router.post(
+    "/token/refresh",
     requireAuth({ authMode: AuthMode.allowAnonymous }),
     AuthController.refreshAuthToken
   );

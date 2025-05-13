@@ -15,39 +15,29 @@ const getPostRouter = (): Router => {
     PostController.validateCreatePostRequest,
     PostController.createPost
   );
-  router.post(
-    "/reactions/:postId",
-    requireAuth(),
-    PostController.validateCreateReactionRequest,
-    PostController.createReaction
+  router.get(
+    "/",
+    requireAuth({ authMode: AuthMode.allowAnonymous }),
+    PostController.getPostsFeed
   );
+
   router.post(
-    "/comments/:postId",
+    "/:postId/comments",
     requireAuth(),
     PostController.validateCreateCommentRequest,
     PostController.createComment
   );
   router.get(
-    "/:page",
-    requireAuth({ authMode: AuthMode.allowAnonymous }),
-    PostController.getPostsFeed
-  );
-  router.get(
-    "/comments/:postId",
+    "/:postId/comments",
     requireAuth({ authMode: AuthMode.allowAnonymous }),
     PostController.getCommentsByPostId
   );
-  router.get("/user/:page", requireAuth(), PostController.getUserPosts);
-  router.get(
-    "/comments/user/:page",
+
+  router.post(
+    "/:postId/reactions",
     requireAuth(),
-    PostController.getUserComments
-  );
-  router.delete("/:postId", requireAuth(), PostController.deletePost);
-  router.delete(
-    "/comments/:commentId",
-    requireAuth(),
-    PostController.deleteComment
+    PostController.validateCreateReactionRequest,
+    PostController.createReaction
   );
 
   return router;
