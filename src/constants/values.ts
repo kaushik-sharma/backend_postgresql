@@ -41,11 +41,17 @@ export const COMMENT_BAN_THRESHOLD = () =>
 export const USER_BAN_THRESHOLD = () => (ENV === Env.development ? 10 : 1000);
 
 /// Rate Limiter
-export const DEFAULT_RATE_LIMITER_WINDOW_MS = 300000; // 5 minutes
+export const DEFAULT_RATE_LIMITER_WINDOW_MS = Duration.fromObject({
+  minutes: 5,
+}).as("milliseconds");
 export const DEFAULT_RATE_LIMITER_MAX = 100;
-export const MODERATION_RATE_LIMITER_WINDOW_MS = 86400000; // 24 hours
+export const MODERATION_RATE_LIMITER_WINDOW_MS = Duration.fromObject({
+  hours: 24,
+}).as("milliseconds");
 export const MODERATION_RATE_LIMITER_MAX = 100;
-export const REQUEST_EMAIL_CODE_RATE_LIMITER_WINDOW_MS = 3600000; // 1 hour
+export const REQUEST_EMAIL_CODE_RATE_LIMITER_WINDOW_MS = Duration.fromObject({
+  hours: 1,
+}).as("milliseconds");
 export const REQUEST_EMAIL_CODE_RATE_LIMITER_MAX = 5;
 
 /// Files
