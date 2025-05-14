@@ -8,10 +8,8 @@ import { UserDeletionRequestModel } from "./user_deletion_request_model.js";
 import { PostModel } from "../post/post_model.js";
 import { CommentModel } from "../post/comment_model.js";
 import { ReactionModel } from "../post/reaction_model.js";
-import { ReportPostModel } from "../moderation/report_post_model.js";
-import { ReportCommentModel } from "../moderation/report_comment_model.js";
-import { ReportUserModel } from "../moderation/report_user_model.js";
 import BaseAttributes from "../base_attributes.js";
+import { ReportModel } from "../moderation/report_model.js";
 
 export interface UserAttributes extends BaseAttributes {
   firstName?: string;
@@ -99,18 +97,8 @@ export class UserModel extends Model<UserAttributes> {
       as: "reactions",
     });
 
-    UserModel.hasMany(ReportPostModel, {
-      foreignKey: "userId",
-      as: "reportedPosts",
-    });
-
-    UserModel.hasMany(ReportCommentModel, {
-      foreignKey: "userId",
-      as: "reportedComments",
-    });
-
-    UserModel.hasMany(ReportUserModel, {
-      foreignKey: "userId",
+    UserModel.hasMany(ReportModel, {
+      foreignKey: "targetId",
       as: "reportedUsers",
     });
   };

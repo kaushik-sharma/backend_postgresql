@@ -8,25 +8,11 @@ const getModerationRouter = (): Router => {
   const router = Router();
 
   router.post(
-    "/post/:postId",
+    "/reports",
     requireAuth(),
     getModerationRateLimiter(),
     ModerationController.validateReportRequest,
-    ModerationController.reportPost
-  );
-  router.post(
-    "/comment/:commentId",
-    requireAuth(),
-    getModerationRateLimiter(),
-    ModerationController.validateReportRequest,
-    ModerationController.reportComment
-  );
-  router.post(
-    "/user/:reportedUserId",
-    requireAuth(),
-    getModerationRateLimiter(),
-    ModerationController.validateReportRequest,
-    ModerationController.reportUser
+    ModerationController.createReport
   );
 
   return router;

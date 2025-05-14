@@ -30,6 +30,12 @@ export enum AuthMode {
   allowAnonymous = "ALLOW_ANONYMOUS",
 }
 
+export enum ReportTargetType {
+  post = "POST",
+  comment = "COMMENT",
+  user = "USER",
+}
+
 export enum ReportReason {
   spam = "SPAM",
   misleading = "MISLEADING",

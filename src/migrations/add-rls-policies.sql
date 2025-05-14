@@ -171,55 +171,19 @@ CREATE POLICY delete_policy_app_user
   USING (true);
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- REPORTED_POSTS TABLE
+-- REPORTS TABLE
 -- ─────────────────────────────────────────────────────────────────────────────
 
-ALTER TABLE public.reported_posts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.reports ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY insert_policy_app_user
-  ON public.reported_posts
+  ON public.reports
   FOR INSERT
   TO app_user
   WITH CHECK (true);
 
 CREATE POLICY select_policy_app_user
-  ON public.reported_posts
-  FOR SELECT
-  TO app_user
-  USING (true);
-
--- ─────────────────────────────────────────────────────────────────────────────
--- REPORTED_COMMENTS TABLE
--- ─────────────────────────────────────────────────────────────────────────────
-
-ALTER TABLE public.reported_comments ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY insert_policy_app_user
-  ON public.reported_comments
-  FOR INSERT
-  TO app_user
-  WITH CHECK (true);
-
-CREATE POLICY select_policy_app_user
-  ON public.reported_comments
-  FOR SELECT
-  TO app_user
-  USING (true);
-
--- ─────────────────────────────────────────────────────────────────────────────
--- REPORTED_USERS TABLE
--- ─────────────────────────────────────────────────────────────────────────────
-
-ALTER TABLE public.reported_users ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY insert_policy_app_user
-  ON public.reported_users
-  FOR INSERT
-  TO app_user
-  WITH CHECK (true);
-
-CREATE POLICY select_policy_app_user
-  ON public.reported_users
+  ON public.reports
   FOR SELECT
   TO app_user
   USING (true);

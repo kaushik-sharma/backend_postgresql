@@ -1,23 +1,18 @@
 import { RequestHandler } from "express";
 
 import { validateData } from "../helpers/validation_helper.js";
-import { reportSchema, ReportType } from "../validation/moderation_schema.js";
+import { reportSchema, ReportType } from "../validation/report_schema.js";
 import { asyncHandler } from "../helpers/async_handler.js";
 import PostDatasource from "../datasources/post_datasource.js";
 import { CustomError } from "../middlewares/error_middlewares.js";
 import ModerationDatasource from "../datasources/moderation_datasource.js";
-import { ReportPostAttributes } from "../models/moderation/report_post_model.js";
-import {
-  COMMENT_BAN_THRESHOLD,
-  POST_BAN_THRESHOLD,
-  USER_BAN_THRESHOLD,
-} from "../constants/values.js";
+import { CONTENT_MODERATION_THRESHOLD } from "../constants/values.js";
 import { successResponseHandler } from "../helpers/success_handler.js";
-import { ReportCommentAttributes } from "../models/moderation/report_comment_model.js";
-import { ReportUserAttributes } from "../models/moderation/report_user_model.js";
 import { performTransaction } from "../helpers/transaction_helper.js";
 import UserDatasource from "../datasources/user_datasource.js";
 import SessionDatasource from "../datasources/session_datasource.js";
+import { ReportAttributes } from "../models/moderation/report_model.js";
+import { ReportTargetType } from "../constants/enums.js";
 
 export default class ModerationController {
   static readonly validateReportRequest: RequestHandler = (req, res, next) => {
@@ -25,151 +20,73 @@ export default class ModerationController {
     next();
   };
 
-  static readonly reportPost: RequestHandler = asyncHandler(
+  static readonly createReport: RequestHandler = asyncHandler(
     async (req, res, next) => {
       const userId = req.user!.userId;
 
       const parsedData = req.parsedData! as ReportType;
-      const postId = req.params.postId;
 
-      const postExists: boolean = await PostDatasource.postExists(postId);
-      if (!postExists) {
-        throw new CustomError(404, "Post not found!");
-      }
-
-      const postUserId = await PostDatasource.getPostUserId(postId);
-      if (userId === postUserId) {
-        throw new CustomError(403, "Can not report your own post!");
-      }
-
-      const reportExists = await ModerationDatasource.postReportByUserExists(
-        userId,
-        postId
-      );
-      if (reportExists) {
-        return successResponseHandler({
-          res: res,
-          status: 200,
-        });
-      }
-
-      const reportData: ReportPostAttributes = {
-        postId: postId,
-        userId: userId,
-        reason: parsedData.reason,
+      const data: ReportAttributes = {
+        ...parsedData,
+        reporterId: userId,
       };
-      await ModerationDatasource.reportPost(reportData);
 
-      const postReportCount = await ModerationDatasource.postReportCount(
-        postId
-      );
-      if (postReportCount >= POST_BAN_THRESHOLD()) {
-        await PostDatasource.banPost(postId);
-      }
-
-      successResponseHandler({
-        res: res,
-        status: 200,
-      });
-    }
-  );
-
-  static readonly reportComment: RequestHandler = asyncHandler(
-    async (req, res, next) => {
-      const userId = req.user!.userId;
-
-      const parsedData = req.parsedData! as ReportType;
-      const commentId = req.params.commentId;
-
-      const commentExists: boolean = await PostDatasource.commentExists(
-        commentId
-      );
-      if (!commentExists) {
-        throw new CustomError(404, "Comment not found!");
-      }
-
-      const commentUserId = await PostDatasource.getCommentUserId(commentId);
-      if (userId === commentUserId) {
-        throw new CustomError(403, "Can not report your own comment!");
-      }
-
-      const reportExists = await ModerationDatasource.commentReportByUserExists(
-        userId,
-        commentId
-      );
-      if (reportExists) {
-        return successResponseHandler({
-          res: res,
-          status: 200,
-        });
-      }
-
-      const reportData: ReportCommentAttributes = {
-        commentId: commentId,
-        userId: userId,
-        reason: parsedData.reason,
-      };
-      await ModerationDatasource.reportComment(reportData);
-
-      const commentReportCount = await ModerationDatasource.commentReportCount(
-        commentId
-      );
-      if (commentReportCount >= COMMENT_BAN_THRESHOLD()) {
-        await PostDatasource.banComment(commentId);
-      }
-
-      successResponseHandler({
-        res: res,
-        status: 200,
-      });
-    }
-  );
-
-  static readonly reportUser: RequestHandler = asyncHandler(
-    async (req, res, next) => {
-      const userId = req.user!.userId;
-
-      const parsedData = req.parsedData! as ReportType;
-      const reportedUserId = req.params.reportedUserId;
-
-      const userExists = await UserDatasource.isUserActive(reportedUserId);
-      if (!userExists) {
-        throw new CustomError(404, "User not found!");
-      }
-
-      if (userId === reportedUserId) {
-        throw new CustomError(403, "Can not report your own account!");
-      }
-
-      const reportExists = await ModerationDatasource.userReportByUserExists(
-        userId,
-        reportedUserId
-      );
-      if (reportExists) {
-        return successResponseHandler({
-          res: res,
-          status: 200,
-        });
-      }
-
-      const reportData: ReportUserAttributes = {
-        reportedUserId: reportedUserId,
-        userId: userId,
-        reason: parsedData.reason,
-      };
-      await ModerationDatasource.reportUser(reportData);
-
-      const userReportedCount = await ModerationDatasource.userReportedCount(
-        reportedUserId
-      );
-      if (userReportedCount >= USER_BAN_THRESHOLD()) {
-        await performTransaction<void>(async (transaction) => {
-          await UserDatasource.banUser(reportedUserId, transaction);
-          await SessionDatasource.signOutAllSessions(
-            reportedUserId,
-            transaction
+      switch (data.targetType) {
+        case ReportTargetType.post:
+          const postExists = await PostDatasource.postExists(data.targetId);
+          if (!postExists) {
+            throw new CustomError(404, "Post not found!");
+          }
+          const postUserId = await PostDatasource.getPostUserId(data.targetId);
+          if (postUserId === userId) {
+            throw new CustomError(403, "Can not report your own post!");
+          }
+          break;
+        case ReportTargetType.comment:
+          const commentExists = await PostDatasource.commentExists(
+            data.targetId
           );
-        });
+          if (!commentExists) {
+            throw new CustomError(404, "Comment not found!");
+          }
+          const commentUserId = await PostDatasource.getCommentUserId(
+            data.targetId
+          );
+          if (commentUserId === userId) {
+            throw new CustomError(403, "Can not report your own comment!");
+          }
+          break;
+        case ReportTargetType.user:
+          const isUserActive = await UserDatasource.isUserActive(data.targetId);
+          if (!isUserActive) {
+            throw new CustomError(404, "User not found!");
+          }
+          if (data.targetId === userId) {
+            throw new CustomError(403, "Can not report yourself!");
+          }
+          break;
+      }
+
+      await ModerationDatasource.createReport(data);
+
+      const count = await ModerationDatasource.getReportsCount(data.targetType);
+      const threshold = CONTENT_MODERATION_THRESHOLD(data.targetType);
+
+      if (count >= threshold) {
+        switch (data.targetType) {
+          case ReportTargetType.post:
+            await PostDatasource.banPost(data.targetId);
+            break;
+          case ReportTargetType.comment:
+            await PostDatasource.banComment(data.targetId);
+            break;
+          case ReportTargetType.user:
+            await performTransaction<void>(async (tx) => {
+              await UserDatasource.banUser(data.targetId, tx);
+              await SessionDatasource.signOutAllSessions(data.targetId, tx);
+            });
+            break;
+        }
       }
 
       successResponseHandler({

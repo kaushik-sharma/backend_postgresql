@@ -1,7 +1,7 @@
 import { DateTime, Duration } from "luxon";
 
 import { AwsS3FileCategory } from "../services/aws_s3_service.js";
-import { Env } from "./enums.js";
+import { Env, ReportTargetType } from "./enums.js";
 
 export let ENV: Env;
 export const initEnv = (env: Env) => (ENV = env);
@@ -35,10 +35,17 @@ export const POSTS_PAGE_SIZE = 20;
 export const COMMENTS_PAGE_SIZE = 30;
 
 /// Content Moderation
-export const POST_BAN_THRESHOLD = () => (ENV === Env.development ? 20 : 2000);
-export const COMMENT_BAN_THRESHOLD = () =>
-  ENV === Env.development ? 10 : 1000;
-export const USER_BAN_THRESHOLD = () => (ENV === Env.development ? 10 : 1000);
+export const CONTENT_MODERATION_THRESHOLD = (
+  targetType: ReportTargetType
+): number => {
+  const map = {
+    [ReportTargetType.post]: ENV === Env.development ? 20 : 2000,
+    [ReportTargetType.comment]: ENV === Env.development ? 10 : 1000,
+    [ReportTargetType.user]: ENV === Env.development ? 10 : 1000,
+  };
+
+  return map[targetType];
+};
 
 /// Rate Limiter
 export const DEFAULT_RATE_LIMITER_WINDOW_MS = Duration.fromObject({

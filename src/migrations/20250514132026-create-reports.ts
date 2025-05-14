@@ -1,7 +1,7 @@
 import { DataTypes, QueryInterface, Sequelize } from "sequelize";
 
 import Tables from "../constants/tables.js";
-import { ReportReason } from "../constants/enums.js";
+import { ReportTargetType, ReportReason } from "../constants/enums.js";
 
 export default {
   async up(queryInterface: QueryInterface): Promise<void> {
@@ -9,21 +9,22 @@ export default {
       `CREATE EXTENSION IF NOT EXISTS "uuid-ossp";`
     );
 
-    await queryInterface.createTable(Tables.reportedPosts, {
+    await queryInterface.createTable(Tables.reports, {
       id: {
         type: DataTypes.UUID,
         defaultValue: Sequelize.literal("uuid_generate_v4()"),
         primaryKey: true,
       },
-      postId: {
+      targetType: {
+        type: DataTypes.ENUM,
+        values: Object.values(ReportTargetType),
+        allowNull: false,
+      },
+      targetId: {
         type: DataTypes.UUID,
         allowNull: false,
-        references: {
-          model: Tables.posts,
-          key: "id",
-        },
       },
-      userId: {
+      reporterId: {
         type: DataTypes.UUID,
         allowNull: false,
         references: {
@@ -48,11 +49,12 @@ export default {
       },
     });
 
-    await queryInterface.addIndex(Tables.reportedPosts, ["postId"]);
-    await queryInterface.addIndex(Tables.reportedPosts, ["userId"]);
+    await queryInterface.addIndex(Tables.reports, ["targetType"]);
+    await queryInterface.addIndex(Tables.reports, ["targetId"]);
+    await queryInterface.addIndex(Tables.reports, ["reporterId"]);
 
-    await queryInterface.addConstraint(Tables.reportedPosts, {
-      fields: ["postId", "userId"],
+    await queryInterface.addConstraint(Tables.reports, {
+      fields: ["targetId", "reporterId"],
       type: "unique",
     });
   },

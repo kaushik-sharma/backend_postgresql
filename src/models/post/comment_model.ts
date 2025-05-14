@@ -5,7 +5,7 @@ import Tables from "../../constants/tables.js";
 import PostgresService from "../../services/postgres_service.js";
 import { UserAttributes, UserModel } from "../user/user_model.js";
 import { PostModel } from "./post_model.js";
-import { ReportCommentModel } from "../moderation/report_comment_model.js";
+import { ReportModel } from "../moderation/report_model.js";
 import BaseAttributes from "../base_attributes.js";
 
 export interface CommentAttributes extends BaseAttributes {
@@ -58,8 +58,8 @@ export class CommentModel extends Model<CommentAttributes> {
 
     CommentModel.belongsTo(PostModel, { foreignKey: "postId", as: "post" });
 
-    CommentModel.hasMany(ReportCommentModel, {
-      foreignKey: "commentId",
+    CommentModel.hasMany(ReportModel, {
+      foreignKey: "targetId",
       as: "reportedComments",
     });
   };

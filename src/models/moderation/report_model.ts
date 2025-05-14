@@ -1,53 +1,58 @@
 import { DataTypes, Model } from "sequelize";
-
-import { ReportReason } from "../../constants/enums.js";
+import { ReportReason, ReportTargetType } from "../../constants/enums.js";
+import BaseAttributes from "../base_attributes.js";
 import Tables from "../../constants/tables.js";
 import PostgresService from "../../services/postgres_service.js";
 import { UserModel } from "../user/user_model.js";
-import { PostModel } from "../post/post_model.js";
-import BaseAttributes from "../base_attributes.js";
 
-export interface ReportPostAttributes extends BaseAttributes {
-  postId: string;
-  userId: string;
+export interface ReportAttributes extends BaseAttributes {
+  targetType: ReportTargetType;
+  targetId: string;
+  reporterId: string;
   reason: ReportReason;
 }
 
-export class ReportPostModel extends Model<ReportPostAttributes> {
+export class ReportModel extends Model<ReportAttributes> {
   static readonly initialize = () => {
-    ReportPostModel.init(
+    ReportModel.init(
       {
         id: {
           type: DataTypes.UUID,
           defaultValue: DataTypes.UUIDV4,
           primaryKey: true,
         },
-        postId: {
+        targetType: {
+          type: DataTypes.ENUM,
+          values: Object.values(ReportTargetType),
+          allowNull: false,
+        },
+        targetId: {
           type: DataTypes.UUID,
           allowNull: false,
         },
-        userId: {
+        reporterId: {
           type: DataTypes.UUID,
           allowNull: false,
         },
         reason: {
           type: DataTypes.ENUM,
-          allowNull: false,
           values: Object.values(ReportReason),
+          allowNull: false,
         },
       },
       {
         timestamps: true,
-        tableName: Tables.reportedPosts,
-        modelName: "ReportPostModel",
+        tableName: Tables.reports,
+        modelName: "ReportModel",
         sequelize: PostgresService.sequelize,
       }
     );
   };
 
   static readonly associate = () => {
-    ReportPostModel.belongsTo(UserModel, { foreignKey: "userId", as: "user" });
-
-    ReportPostModel.belongsTo(PostModel, { foreignKey: "postId", as: "post" });
+    ReportModel.belongsTo(UserModel, {
+      foreignKey: "reporterId",
+      as: "reporter",
+    });
   };
 }

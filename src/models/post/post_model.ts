@@ -6,7 +6,7 @@ import PostgresService from "../../services/postgres_service.js";
 import { UserAttributes, UserModel } from "../user/user_model.js";
 import { CommentModel } from "./comment_model.js";
 import { ReactionModel } from "./reaction_model.js";
-import { ReportPostModel } from "../moderation/report_post_model.js";
+import { ReportModel } from "../moderation/report_model.js";
 import BaseAttributes from "../base_attributes.js";
 
 export interface PostAttributes extends BaseAttributes {
@@ -74,8 +74,8 @@ export class PostModel extends Model<PostAttributes> {
       as: "reactions",
     });
 
-    PostModel.hasMany(ReportPostModel, {
-      foreignKey: "postId",
+    PostModel.hasMany(ReportModel, {
+      foreignKey: "targetId",
       as: "reportedPosts",
     });
   };
