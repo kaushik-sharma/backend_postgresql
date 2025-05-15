@@ -3,7 +3,7 @@ import { DateTime } from "luxon";
 
 import { asyncHandler } from "../helpers/async_handler.js";
 import { successResponseHandler } from "../helpers/success_handler.js";
-import AwsS3Service, { AwsS3FileCategory } from "../services/aws_s3_service.js";
+import { AwsS3Service, AwsS3FileCategory } from "../services/aws_s3_service.js";
 import {
   DEFAULT_PROFILE_IMAGE_PATH,
   USER_DELETION_GRACE_PERIOD_DURATION,
@@ -17,15 +17,15 @@ import { CustomError } from "../middlewares/error_middlewares.js";
 import { UserDeletionRequestModel } from "../models/user/user_deletion_request_model.js";
 import { performTransaction } from "../helpers/transaction_helper.js";
 import { EntityStatus } from "../constants/enums.js";
-import UserDatasource from "../datasources/user_datasource.js";
-import SessionDatasource from "../datasources/session_datasource.js";
+import { UserDatasource } from "../datasources/user_datasource.js";
+import { SessionDatasource } from "../datasources/session_datasource.js";
 import { ProfileDto, PublicProfileDto } from "../dtos/profile_dto.js";
 import {
   ActiveSessionParams,
   ActiveSessionsOverviewDto,
 } from "../dtos/session_dto.js";
-import ConnectionDatasource from "../datasources/connection_datasource.js";
-import PostDatasource from "../datasources/post_datasource.js";
+import { ConnectionDatasource } from "../datasources/connection_datasource.js";
+import { PostDatasource } from "../datasources/post_datasource.js";
 import { PostAttributes } from "../models/post/post_model.js";
 import { UserPostDto } from "../dtos/user_post_dto.js";
 import { UserCommentDto } from "../dtos/user_comment_dto.js";
@@ -39,7 +39,7 @@ export const deleteCustomProfileImage = async (
   }
 };
 
-export default class UserController {
+export class UserController {
   static readonly getUser: RequestHandler = asyncHandler(
     async (req, res, next) => {
       const userId = req.user!.userId;

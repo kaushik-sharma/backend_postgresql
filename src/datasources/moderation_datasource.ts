@@ -4,7 +4,7 @@ import {
   ReportModel,
 } from "../models/moderation/report_model.js";
 
-export default class ModerationDatasource {
+export class ModerationDatasource {
   static readonly createReport = async (
     data: ReportAttributes
   ): Promise<void> => {

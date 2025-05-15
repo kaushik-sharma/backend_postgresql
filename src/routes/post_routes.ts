@@ -2,10 +2,10 @@ import { Router } from "express";
 
 import { createSingleImageUploadMiddleware } from "../middlewares/file_upload_middlewares.js";
 import { requireAuth } from "../middlewares/auth_middlewares.js";
-import PostController from "../controllers/post_controller.js";
+import { PostController } from "../controllers/post_controller.js";
 import { AuthMode } from "../constants/enums.js";
 
-const getPostRouter = (): Router => {
+export const getPostRouter = (): Router => {
   const router = Router();
 
   router.post(
@@ -42,5 +42,3 @@ const getPostRouter = (): Router => {
 
   return router;
 };
-
-export default getPostRouter;

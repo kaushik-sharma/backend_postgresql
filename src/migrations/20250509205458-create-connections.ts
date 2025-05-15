@@ -1,6 +1,6 @@
 import { DataTypes, QueryInterface, Sequelize } from "sequelize";
 
-import Tables from "../constants/tables.js";
+import { Tables } from "../constants/tables.js";
 
 export default {
   async up(queryInterface: QueryInterface): Promise<void> {

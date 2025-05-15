@@ -11,21 +11,21 @@ import {
   CreateReactionType,
 } from "../validation/post_schema.js";
 import { asyncHandler } from "../helpers/async_handler.js";
-import PostDatasource from "../datasources/post_datasource.js";
+import { PostDatasource } from "../datasources/post_datasource.js";
 import { CustomError } from "../middlewares/error_middlewares.js";
-import AwsS3Service, { AwsS3FileCategory } from "../services/aws_s3_service.js";
+import { AwsS3Service, AwsS3FileCategory } from "../services/aws_s3_service.js";
 import { PostAttributes } from "../models/post/post_model.js";
 import { EntityStatus } from "../constants/enums.js";
-import SocketManager from "../socket.js";
+import { SocketManager } from "../socket.js";
 import { successResponseHandler } from "../helpers/success_handler.js";
 import { ReactionAttributes } from "../models/post/reaction_model.js";
 import { CommentAttributes } from "../models/post/comment_model.js";
 import { DEFAULT_PROFILE_IMAGE_PATH } from "../constants/values.js";
 import { FeedPostDto, FeedPostParams } from "../dtos/feed_post_dto.js";
 import { FeedCommentDto } from "../dtos/feed_comment_dto.js";
-// import KafkaService from "../services/kafka_service.js";
+// import { KafkaService } from "../services/kafka_service.js";
 
-export default class PostController {
+export class PostController {
   static readonly validateCreatePostRequest: RequestHandler = (
     req,
     res,

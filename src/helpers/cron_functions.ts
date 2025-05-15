@@ -1,6 +1,6 @@
 import { deleteCustomProfileImage } from "../controllers/user_controller.js";
-import SessionDatasource from "../datasources/session_datasource.js";
-import UserDatasource from "../datasources/user_datasource.js";
+import { SessionDatasource } from "../datasources/session_datasource.js";
+import { UserDatasource } from "../datasources/user_datasource.js";
 import logger from "../utils/logger.js";
 import { performTransaction } from "./transaction_helper.js";
 

@@ -12,10 +12,10 @@ import {
   ReactionAttributes,
   ReactionModel,
 } from "../models/post/reaction_model.js";
-import UserDatasource from "./user_datasource.js";
+import { UserDatasource } from "./user_datasource.js";
 import { CustomError } from "../middlewares/error_middlewares.js";
 
-export default class PostDatasource {
+export class PostDatasource {
   static readonly createPost = async (
     postData: PostAttributes
   ): Promise<string> => {

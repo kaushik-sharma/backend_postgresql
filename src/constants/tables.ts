@@ -8,5 +8,3 @@ export const Tables = {
   userDeletionRequests: "user_deletion_requests",
   connections: "connections",
 };
-
-export default Tables;

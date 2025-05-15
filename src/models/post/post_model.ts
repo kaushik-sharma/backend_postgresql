@@ -1,13 +1,13 @@
 import { DataTypes, Model } from "sequelize";
 
 import { EntityStatus } from "../../constants/enums.js";
-import Tables from "../../constants/tables.js";
-import PostgresService from "../../services/postgres_service.js";
+import { Tables } from "../../constants/tables.js";
+import { PostgresService } from "../../services/postgres_service.js";
 import { UserAttributes, UserModel } from "../user/user_model.js";
 import { CommentModel } from "./comment_model.js";
 import { ReactionModel } from "./reaction_model.js";
 import { ReportModel } from "../moderation/report_model.js";
-import BaseAttributes from "../base_attributes.js";
+import { BaseAttributes } from "../base_attributes.js";
 
 export interface PostAttributes extends BaseAttributes {
   userId: string;

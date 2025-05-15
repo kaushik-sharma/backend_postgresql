@@ -2,9 +2,9 @@ import { Router } from "express";
 
 import { requireAuth } from "../middlewares/auth_middlewares.js";
 import { getModerationRateLimiter } from "../middlewares/rate_limiter_middlewares.js";
-import ModerationController from "../controllers/moderation_controller.js";
+import { ModerationController } from "../controllers/moderation_controller.js";
 
-const getModerationRouter = (): Router => {
+export const getModerationRouter = (): Router => {
   const router = Router();
 
   router.post(
@@ -17,5 +17,3 @@ const getModerationRouter = (): Router => {
 
   return router;
 };
-
-export default getModerationRouter;

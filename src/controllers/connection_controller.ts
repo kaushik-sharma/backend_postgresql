@@ -1,12 +1,12 @@
 import { RequestHandler } from "express";
 
 import { asyncHandler } from "../helpers/async_handler.js";
-import ConnectionDatasource from "../datasources/connection_datasource.js";
+import { ConnectionDatasource } from "../datasources/connection_datasource.js";
 import { CustomError } from "../middlewares/error_middlewares.js";
 import { successResponseHandler } from "../helpers/success_handler.js";
-import UserDatasource from "../datasources/user_datasource.js";
+import { UserDatasource } from "../datasources/user_datasource.js";
 
-export default class ConnectionController {
+export class ConnectionController {
   static readonly followUser: RequestHandler = asyncHandler(
     async (req, res, next) => {
       const userId = req.user!.userId;

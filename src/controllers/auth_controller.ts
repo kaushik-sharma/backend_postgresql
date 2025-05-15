@@ -18,16 +18,16 @@ import { validateData } from "../helpers/validation_helper.js";
 import { successResponseHandler } from "../helpers/success_handler.js";
 import { AuthUserAction, EntityStatus, Env } from "../constants/enums.js";
 import { CustomError } from "../middlewares/error_middlewares.js";
-import JwtService from "../services/jwt_service.js";
+import { JwtService } from "../services/jwt_service.js";
 import { UserAttributes } from "../models/user/user_model.js";
 import { performTransaction } from "../helpers/transaction_helper.js";
-import BcryptService from "../services/bcrypt_service.js";
-import MailService from "../services/mail_service.js";
+import { BcryptService } from "../services/bcrypt_service.js";
+import { MailService } from "../services/mail_service.js";
 import { ENV, DEV_EMAIL_VERIFICATION_WHITELIST } from "../constants/values.js";
-import UserDatasource from "../datasources/user_datasource.js";
-import SessionDatasource from "../datasources/session_datasource.js";
+import { UserDatasource } from "../datasources/user_datasource.js";
+import { SessionDatasource } from "../datasources/session_datasource.js";
 
-export default class AuthController {
+export class AuthController {
   static readonly #generateVerificationCode = (): string => {
     let code = "";
     for (let i = 0; i < 6; i++) {

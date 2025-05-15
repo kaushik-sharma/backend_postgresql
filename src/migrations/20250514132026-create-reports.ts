@@ -1,6 +1,6 @@
 import { DataTypes, QueryInterface, Sequelize } from "sequelize";
 
-import Tables from "../constants/tables.js";
+import { Tables } from "../constants/tables.js";
 import { ReportTargetType, ReportReason } from "../constants/enums.js";
 
 export default {

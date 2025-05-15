@@ -1,8 +1,8 @@
 import { DataTypes, Model } from "sequelize";
 import { ReportReason, ReportTargetType } from "../../constants/enums.js";
-import BaseAttributes from "../base_attributes.js";
-import Tables from "../../constants/tables.js";
-import PostgresService from "../../services/postgres_service.js";
+import { BaseAttributes } from "../base_attributes.js";
+import { Tables } from "../../constants/tables.js";
+import { PostgresService } from "../../services/postgres_service.js";
 import { UserModel } from "../user/user_model.js";
 
 export interface ReportAttributes extends BaseAttributes {

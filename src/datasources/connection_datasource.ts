@@ -1,7 +1,7 @@
 import { CustomError } from "../middlewares/error_middlewares.js";
 import { ConnectionModel } from "../models/connections/connections_model.js";
 
-export default class ConnectionDatasource {
+export class ConnectionDatasource {
   static readonly followUser = async (
     followerId: string,
     followeeId: string

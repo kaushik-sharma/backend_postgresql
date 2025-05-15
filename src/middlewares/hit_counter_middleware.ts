@@ -1,7 +1,7 @@
 import { RequestHandler } from "express";
 import { Duration } from "luxon";
 
-import RedisService from "../services/redis_service.js";
+import { RedisService } from "../services/redis_service.js";
 
 export const hitCounter = (): RequestHandler => {
   return async (req, res, next) => {

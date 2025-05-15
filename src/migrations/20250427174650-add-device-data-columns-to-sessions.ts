@@ -1,6 +1,6 @@
 import { DataTypes, QueryInterface } from "sequelize";
 
-import Tables from "../constants/tables.js";
+import { Tables } from "../constants/tables.js";
 import { Platform } from "../constants/enums.js";
 
 export default {

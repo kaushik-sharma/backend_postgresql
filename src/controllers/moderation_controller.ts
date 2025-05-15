@@ -3,18 +3,18 @@ import { RequestHandler } from "express";
 import { validateData } from "../helpers/validation_helper.js";
 import { reportSchema, ReportType } from "../validation/report_schema.js";
 import { asyncHandler } from "../helpers/async_handler.js";
-import PostDatasource from "../datasources/post_datasource.js";
+import { PostDatasource } from "../datasources/post_datasource.js";
 import { CustomError } from "../middlewares/error_middlewares.js";
-import ModerationDatasource from "../datasources/moderation_datasource.js";
+import { ModerationDatasource } from "../datasources/moderation_datasource.js";
 import { CONTENT_MODERATION_THRESHOLD } from "../constants/values.js";
 import { successResponseHandler } from "../helpers/success_handler.js";
 import { performTransaction } from "../helpers/transaction_helper.js";
-import UserDatasource from "../datasources/user_datasource.js";
-import SessionDatasource from "../datasources/session_datasource.js";
+import { UserDatasource } from "../datasources/user_datasource.js";
+import { SessionDatasource } from "../datasources/session_datasource.js";
 import { ReportAttributes } from "../models/moderation/report_model.js";
 import { ReportTargetType } from "../constants/enums.js";
 
-export default class ModerationController {
+export class ModerationController {
   static readonly validateReportRequest: RequestHandler = (req, res, next) => {
     req.parsedData = validateData(reportSchema, req.body);
     next();

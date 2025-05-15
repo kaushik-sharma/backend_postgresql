@@ -3,7 +3,7 @@ import RedisStore from "rate-limit-redis";
 
 import logger from "../utils/logger.js";
 
-export default class RedisService {
+export class RedisService {
   static #client: Redis;
 
   static get client(): Redis {

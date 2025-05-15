@@ -1,9 +1,9 @@
 import { DataTypes, Model } from "sequelize";
 
-import Tables from "../../constants/tables.js";
-import PostgresService from "../../services/postgres_service.js";
+import { Tables } from "../../constants/tables.js";
+import { PostgresService } from "../../services/postgres_service.js";
 import { UserModel } from "./user_model.js";
-import BaseAttributes from "../base_attributes.js";
+import { BaseAttributes } from "../base_attributes.js";
 
 export interface UserDeletionRequestAttributes extends BaseAttributes {
   userId: string;

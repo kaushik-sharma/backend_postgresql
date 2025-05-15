@@ -5,7 +5,7 @@ import { UserDeletionRequestModel } from "../models/user/user_deletion_request_m
 import { UserModel, UserAttributes } from "../models/user/user_model.js";
 import { CustomError } from "../middlewares/error_middlewares.js";
 
-export default class UserDatasource {
+export class UserDatasource {
   static readonly isUserActive = async (userId: string): Promise<boolean> => {
     const count = await UserModel.count({
       where: { id: userId, status: EntityStatus.active },

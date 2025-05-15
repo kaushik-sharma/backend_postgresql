@@ -4,10 +4,10 @@ import {
   SessionAttributes,
   SessionModel,
 } from "../models/session/session_model.js";
-import RedisService from "../services/redis_service.js";
+import { RedisService } from "../services/redis_service.js";
 import { CustomError } from "../middlewares/error_middlewares.js";
 
-export default class SessionDatasource {
+export class SessionDatasource {
   static readonly signOutSession = async (
     sessionId: string,
     userId: string

@@ -4,7 +4,7 @@ import { Sequelize } from "sequelize";
 
 import logger from "../utils/logger.js";
 
-export default class PostgresService {
+export class PostgresService {
   static #sequelize: Sequelize;
 
   static get sequelize(): Sequelize {

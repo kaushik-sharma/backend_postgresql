@@ -5,7 +5,7 @@ import { Transaction } from "sequelize";
 import { SessionModel } from "../models/session/session_model.js";
 import { CustomError } from "../middlewares/error_middlewares.js";
 import { AuthMode, EntityStatus, Platform } from "../constants/enums.js";
-import RedisService from "./redis_service.js";
+import { RedisService } from "./redis_service.js";
 import {
   AUTH_TOKEN_EXPIRY_DURATION_IN_SEC,
   EMAIL_CODE_EXPIRY_DURATION_IN_SEC,
@@ -13,7 +13,7 @@ import {
 } from "../constants/values.js";
 import { AuthenticatedUser } from "../@types/custom.js";
 
-export default class JwtService {
+export class JwtService {
   static get #privateKey(): string {
     return fs.readFileSync(process.env.JWT_PRIVATE_KEY_FILE_NAME!, "utf8");
   }

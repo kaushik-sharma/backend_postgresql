@@ -1,6 +1,6 @@
 import { DataTypes, QueryInterface, Sequelize } from "sequelize";
 
-import Tables from "../constants/tables.js";
+import { Tables } from "../constants/tables.js";
 import { EmotionType } from "../models/post/reaction_model.js";
 
 export default {

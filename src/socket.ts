@@ -3,7 +3,7 @@ import { Server as SocketIO } from "socket.io";
 
 import logger from "./utils/logger.js";
 
-export default class SocketManager {
+export class SocketManager {
   static #io: SocketIO;
 
   static get io(): SocketIO {

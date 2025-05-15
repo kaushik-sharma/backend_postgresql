@@ -1,8 +1,8 @@
 import { DataTypes, Model } from "sequelize";
-import BaseAttributes from "../base_attributes.js";
+import { BaseAttributes } from "../base_attributes.js";
 import { UserAttributes, UserModel } from "../user/user_model.js";
-import Tables from "../../constants/tables.js";
-import PostgresService from "../../services/postgres_service.js";
+import { Tables } from "../../constants/tables.js";
+import { PostgresService } from "../../services/postgres_service.js";
 import { EntityStatus } from "../../constants/enums.js";
 
 export interface ConnectionAttributes extends BaseAttributes {

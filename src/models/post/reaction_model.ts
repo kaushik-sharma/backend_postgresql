@@ -1,10 +1,10 @@
 import { DataTypes, Model } from "sequelize";
 
-import Tables from "../../constants/tables.js";
-import PostgresService from "../../services/postgres_service.js";
+import { Tables } from "../../constants/tables.js";
+import { PostgresService } from "../../services/postgres_service.js";
 import { UserModel } from "../user/user_model.js";
 import { PostModel } from "./post_model.js";
-import BaseAttributes from "../base_attributes.js";
+import { BaseAttributes } from "../base_attributes.js";
 
 export enum EmotionType {
   like = "LIKE",

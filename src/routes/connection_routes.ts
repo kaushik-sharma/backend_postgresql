@@ -1,9 +1,9 @@
 import { Router } from "express";
 
 import { requireAuth } from "../middlewares/auth_middlewares.js";
-import ConnectionController from "../controllers/connection_controller.js";
+import { ConnectionController } from "../controllers/connection_controller.js";
 
-const getConnectionRouter = (): Router => {
+export const getConnectionRouter = (): Router => {
   const router = Router();
 
   router.post(
@@ -19,5 +19,3 @@ const getConnectionRouter = (): Router => {
 
   return router;
 };
-
-export default getConnectionRouter;

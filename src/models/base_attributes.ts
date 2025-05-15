@@ -1,4 +1,4 @@
-export default interface BaseAttributes {
+export interface BaseAttributes {
   id?: string;
   createdAt?: Date;
   updatedAt?: Date;

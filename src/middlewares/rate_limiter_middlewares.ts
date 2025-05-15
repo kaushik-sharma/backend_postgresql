@@ -8,7 +8,7 @@ import {
   MODERATION_RATE_LIMITER_WINDOW_MS,
   MODERATION_RATE_LIMITER_MAX,
 } from "../constants/values.js";
-import RedisService from "../services/redis_service.js";
+import { RedisService } from "../services/redis_service.js";
 
 export const getDefaultRateLimiter = () =>
   rateLimit({

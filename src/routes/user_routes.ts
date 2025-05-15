@@ -1,10 +1,10 @@
 import { Router } from "express";
 
 import { requireAuth } from "../middlewares/auth_middlewares.js";
-import UserController from "../controllers/user_controller.js";
+import { UserController } from "../controllers/user_controller.js";
 import { createSingleImageUploadMiddleware } from "../middlewares/file_upload_middlewares.js";
 
-const getUserRouter = (): Router => {
+export const getUserRouter = (): Router => {
   const router = Router();
 
   router.get(
@@ -46,11 +46,7 @@ const getUserRouter = (): Router => {
     requireAuth(),
     UserController.signOutBySessionId
   );
-  router.delete(
-    "/sessions",
-    requireAuth(),
-    UserController.signOutAllSessions
-  );
+  router.delete("/sessions", requireAuth(), UserController.signOutAllSessions);
 
   router.get("/posts", requireAuth(), UserController.getUserPosts);
   router.delete("/posts/:postId", requireAuth(), UserController.deletePost);
@@ -63,5 +59,3 @@ const getUserRouter = (): Router => {
 
   return router;
 };
-
-export default getUserRouter;

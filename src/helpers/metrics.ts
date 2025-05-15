@@ -1,4 +1,4 @@
-import RedisService from "../services/redis_service.js";
+import { RedisService } from "../services/redis_service.js";
 
 function _sortRecordByValueDesc(
   input: Record<string, number>

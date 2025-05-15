@@ -23,7 +23,7 @@ export enum AwsS3FileCategory {
   static = "static",
 }
 
-export default class AwsS3Service {
+export class AwsS3Service {
   static get #s3Client(): S3Client {
     return new S3Client({
       region: process.env.AWS_REGION!,

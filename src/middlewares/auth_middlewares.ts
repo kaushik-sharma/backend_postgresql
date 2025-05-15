@@ -1,6 +1,6 @@
 import { RequestHandler } from "express";
 
-import JwtService from "../services/jwt_service.js";
+import { JwtService } from "../services/jwt_service.js";
 import { AuthMode } from "../constants/enums.js";
 
 export const requireAuth = ({

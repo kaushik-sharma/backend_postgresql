@@ -8,7 +8,7 @@
 // import PostgresService from "./postgres_service.js";
 // import logger from "../utils/logger.js";
 
-// export default class KafkaService {
+// export class KafkaService {
 //   static readonly #postKafka = new Kafka({
 //     clientId: "post-consumer",
 //     brokers: ["localhost:9092"],

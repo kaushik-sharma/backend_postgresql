@@ -3,7 +3,7 @@ import cron from "node-cron";
 import { deleteScheduledUserAccounts } from "../helpers/cron_functions.js";
 import logger from "../utils/logger.js";
 
-export default class CronService {
+export class CronService {
   static readonly init = () => {
     this.#scheduleDailyEmails();
     this.#scheduleRequestedUserDeletions();

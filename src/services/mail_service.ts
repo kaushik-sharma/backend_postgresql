@@ -1,7 +1,7 @@
 import { createTransport } from "nodemailer";
 import sendgridTransport from "nodemailer-sendgrid-transport";
 
-export default class MailService {
+export class MailService {
   static get #transporter() {
     return createTransport(
       sendgridTransport({
