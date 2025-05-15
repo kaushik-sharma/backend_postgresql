@@ -3,72 +3,80 @@ import { DateTime, Duration } from "luxon";
 import { AwsS3FileCategory } from "../services/aws_s3_service.js";
 import { Env, ReportTargetType } from "./enums.js";
 
-export let ENV: Env;
-export const initEnv = (env: Env) => (ENV = env);
+export class Constants {
+  static env: Env;
 
-/// Auth Tokens
-export const AUTH_TOKEN_EXPIRY_DURATION_IN_SEC = Duration.fromObject({
-  days: 30,
-}).as("seconds");
-export const EMAIL_CODE_EXPIRY_DURATION_IN_SEC = Duration.fromObject({
-  minutes: 10,
-}).as("seconds");
-export const SESSION_CACHE_EXPIRY_DURATION_IN_SEC = Duration.fromObject({
-  days: 7,
-}).as("seconds");
+  // Auth Tokens
+  static readonly authTokenExpiryDurationInSec = Duration.fromObject({
+    days: 30,
+  }).as("seconds");
+  static readonly emailCodeExpiryDurationInSec = Duration.fromObject({
+    minutes: 10,
+  }).as("seconds");
+  static readonly sessionCacheExpiryDurationInSec = Duration.fromObject({
+    days: 7,
+  }).as("seconds");
 
-/// Images
-export const IMAGE_EXPIRY_DURATION = Duration.fromObject({ hours: 48 });
+  // Images
+  static readonly imageExpiryDuration = Duration.fromObject({ hours: 48 });
 
-/// Users
-export const MIN_DOB_DATE = DateTime.utc(1901, 1, 1);
-export const MIN_ACCOUNT_OPENING_AGE = 18;
-export const DEFAULT_PROFILE_IMAGE_PATH = `${AwsS3FileCategory.static}/default_profile_image.png`;
-export const USER_DELETION_GRACE_PERIOD_DURATION = () =>
-  ENV === Env.development
-    ? Duration.fromObject({ minutes: 10 })
-    : Duration.fromObject({ days: 30 });
+  // Users
+  static readonly minDobDate = DateTime.utc(1901, 1, 1);
+  static readonly minAccountOpeningAge = 18;
+  static readonly defaultProfileImagePath = `${AwsS3FileCategory.static}/default_profile_image.png`;
+  static get userDeletionGracePeriodDuration(): Duration {
+    return this.env === Env.development
+      ? Duration.fromObject({ minutes: 10 })
+      : Duration.fromObject({ days: 30 });
+  }
 
-/// Posts
-export const MAX_COMMENT_LEVEL = 5;
-export const POSTS_PAGE_SIZE = 20;
-export const COMMENTS_PAGE_SIZE = 30;
+  // Posts
+  static readonly maxCommentLevel = 5;
+  static readonly postsPageSize = 20;
+  static readonly commentsPageSize = 30;
 
-/// Content Moderation
-export const CONTENT_MODERATION_THRESHOLD = (
-  targetType: ReportTargetType
-): number => {
-  const map = {
-    [ReportTargetType.post]: ENV === Env.development ? 20 : 2000,
-    [ReportTargetType.comment]: ENV === Env.development ? 10 : 1000,
-    [ReportTargetType.user]: ENV === Env.development ? 10 : 1000,
+  // Content Moderation
+  static readonly #devModerationThreshold = {
+    [ReportTargetType.post]: 20,
+    [ReportTargetType.comment]: 10,
+    [ReportTargetType.user]: 10,
+  };
+  static readonly #prodModerationThreshold = {
+    [ReportTargetType.post]: 2000,
+    [ReportTargetType.comment]: 1000,
+    [ReportTargetType.user]: 1000,
+  };
+  static readonly contentModerationThreshold = (
+    targetType: ReportTargetType
+  ): number => {
+    return this.env === Env.development
+      ? this.#devModerationThreshold[targetType]
+      : this.#prodModerationThreshold[targetType];
   };
 
-  return map[targetType];
-};
+  // Rate Limiter
+  static readonly defaultRateLimiterWindowMs = Duration.fromObject({
+    minutes: 5,
+  }).as("milliseconds");
+  static readonly defaultRateLimiterMax = 100;
+  static readonly moderationRateLimiterWindowMs = Duration.fromObject({
+    hours: 24,
+  }).as("milliseconds");
+  static readonly moderationRateLimiterMax = 100;
+  static readonly requestEmailCodeRateLimiterWindowMs = Duration.fromObject({
+    hours: 1,
+  }).as("milliseconds");
+  static readonly requestEmailCodeRateLimiterMax = 5;
 
-/// Rate Limiter
-export const DEFAULT_RATE_LIMITER_WINDOW_MS = Duration.fromObject({
-  minutes: 5,
-}).as("milliseconds");
-export const DEFAULT_RATE_LIMITER_MAX = 100;
-export const MODERATION_RATE_LIMITER_WINDOW_MS = Duration.fromObject({
-  hours: 24,
-}).as("milliseconds");
-export const MODERATION_RATE_LIMITER_MAX = 100;
-export const REQUEST_EMAIL_CODE_RATE_LIMITER_WINDOW_MS = Duration.fromObject({
-  hours: 1,
-}).as("milliseconds");
-export const REQUEST_EMAIL_CODE_RATE_LIMITER_MAX = 5;
+  // Files
+  static readonly maxImageFileSizeInBytes = 3145728; // 3 MB
+  static readonly allowedImageMimetypes = [
+    "image/jpg",
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "image/gif",
+  ];
 
-/// Files
-export const MAX_IMAGE_FILE_SIZE_IN_BYTES = 3145728; // 3 MB
-export const ALLOWED_IMAGE_MIMETYPES = [
-  "image/jpg",
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/gif",
-];
-
-export const DEV_EMAIL_VERIFICATION_WHITELIST = ["gmail.com"];
+  static readonly devEmailVerificationWhitelist = ["gmail.com"];
+}

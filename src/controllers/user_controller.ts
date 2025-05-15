@@ -4,10 +4,7 @@ import { DateTime } from "luxon";
 import { asyncHandler } from "../helpers/async_handler.js";
 import { successResponseHandler } from "../helpers/success_handler.js";
 import { AwsS3Service, AwsS3FileCategory } from "../services/aws_s3_service.js";
-import {
-  DEFAULT_PROFILE_IMAGE_PATH,
-  USER_DELETION_GRACE_PERIOD_DURATION,
-} from "../constants/values.js";
+import { Constants } from "../constants/values.js";
 import { validateData } from "../helpers/validation_helper.js";
 import {
   updateProfileSchema,
@@ -47,7 +44,7 @@ export class UserController {
       const user = await UserDatasource.getUserById(userId);
 
       const profileImageUrl = AwsS3Service.getCloudFrontSignedUrl(
-        user.profileImagePath ?? DEFAULT_PROFILE_IMAGE_PATH
+        user.profileImagePath ?? Constants.defaultProfileImagePath
       );
 
       const followerCount = await ConnectionDatasource.getFollowerCount(userId);
@@ -87,7 +84,7 @@ export class UserController {
       }
 
       const profileImageUrl = AwsS3Service.getCloudFrontSignedUrl(
-        user.profileImagePath ?? DEFAULT_PROFILE_IMAGE_PATH
+        user.profileImagePath ?? Constants.defaultProfileImagePath
       );
 
       const followerCount = await ConnectionDatasource.getFollowerCount(
@@ -179,7 +176,7 @@ export class UserController {
       await UserDatasource.resetProfileImage(userId);
 
       const profileImageUrl = AwsS3Service.getCloudFrontSignedUrl(
-        DEFAULT_PROFILE_IMAGE_PATH
+        Constants.defaultProfileImagePath
       );
 
       successResponseHandler({
@@ -206,7 +203,7 @@ export class UserController {
       }
 
       const deleteAt = DateTime.utc()
-        .plus(USER_DELETION_GRACE_PERIOD_DURATION())
+        .plus(Constants.userDeletionGracePeriodDuration)
         .toJSDate();
 
       const model = new UserDeletionRequestModel({

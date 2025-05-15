@@ -23,7 +23,7 @@ import { UserAttributes } from "../models/user/user_model.js";
 import { performTransaction } from "../helpers/transaction_helper.js";
 import { BcryptService } from "../services/bcrypt_service.js";
 import { MailService } from "../services/mail_service.js";
-import { ENV, DEV_EMAIL_VERIFICATION_WHITELIST } from "../constants/values.js";
+import { Constants } from "../constants/values.js";
 import { UserDatasource } from "../datasources/user_datasource.js";
 import { SessionDatasource } from "../datasources/session_datasource.js";
 
@@ -37,10 +37,10 @@ export class AuthController {
   };
 
   static readonly #requiresEmailVerification = (email: string): boolean => {
-    if (ENV === Env.production) return true;
+    if (Constants.env === Env.production) return true;
 
     const domain = email.split("@")[1];
-    return DEV_EMAIL_VERIFICATION_WHITELIST.includes(domain);
+    return Constants.devEmailVerificationWhitelist.includes(domain);
   };
 
   static readonly #sendEmailCode = async (

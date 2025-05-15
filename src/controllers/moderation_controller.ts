@@ -6,7 +6,7 @@ import { asyncHandler } from "../helpers/async_handler.js";
 import { PostDatasource } from "../datasources/post_datasource.js";
 import { CustomError } from "../middlewares/error_middlewares.js";
 import { ModerationDatasource } from "../datasources/moderation_datasource.js";
-import { CONTENT_MODERATION_THRESHOLD } from "../constants/values.js";
+import { Constants } from "../constants/values.js";
 import { successResponseHandler } from "../helpers/success_handler.js";
 import { performTransaction } from "../helpers/transaction_helper.js";
 import { UserDatasource } from "../datasources/user_datasource.js";
@@ -70,7 +70,7 @@ export class ModerationController {
       await ModerationDatasource.createReport(data);
 
       const count = await ModerationDatasource.getReportsCount(data.targetType);
-      const threshold = CONTENT_MODERATION_THRESHOLD(data.targetType);
+      const threshold = Constants.contentModerationThreshold(data.targetType);
 
       if (count >= threshold) {
         switch (data.targetType) {

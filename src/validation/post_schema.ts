@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { MAX_COMMENT_LEVEL } from "../constants/values.js";
+import { Constants } from "../constants/values.js";
 import { EmotionType } from "../models/post/reaction_model.js";
 
 export const createPostSchema = z.object({
@@ -29,8 +29,8 @@ export const createCommentSchema = z.object({
   level: z
     .number({ required_error: "Level is required." })
     .min(0, { message: "Level must be equal to or greater than 0." })
-    .max(MAX_COMMENT_LEVEL - 1, {
-      message: `Level must be less than ${MAX_COMMENT_LEVEL}.`,
+    .max(Constants.maxCommentLevel - 1, {
+      message: `Level must be less than ${Constants.maxCommentLevel}.`,
     }),
   parentCommentId: z
     .string({ required_error: "Parent comment ID is required." })

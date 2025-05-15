@@ -20,7 +20,7 @@ import { SocketManager } from "../socket.js";
 import { successResponseHandler } from "../helpers/success_handler.js";
 import { ReactionAttributes } from "../models/post/reaction_model.js";
 import { CommentAttributes } from "../models/post/comment_model.js";
-import { DEFAULT_PROFILE_IMAGE_PATH } from "../constants/values.js";
+import { Constants } from "../constants/values.js";
 import { FeedPostDto, FeedPostParams } from "../dtos/feed_post_dto.js";
 import { FeedCommentDto } from "../dtos/feed_comment_dto.js";
 // import { KafkaService } from "../services/kafka_service.js";
@@ -73,7 +73,7 @@ export class PostController {
       const createdPostData = await PostDatasource.getPostById(postId);
 
       const profileImageUrl = AwsS3Service.getCloudFrontSignedUrl(
-        createdPostData.user!.profileImagePath ?? DEFAULT_PROFILE_IMAGE_PATH
+        createdPostData.user!.profileImagePath ?? Constants.defaultProfileImagePath
       );
 
       let repostedPostParams: FeedPostParams | null = null;
@@ -84,7 +84,7 @@ export class PostController {
             ? AwsS3Service.getCloudFrontSignedUrl(repostedPost.imagePath)
             : null;
         const profileImageUrl = AwsS3Service.getCloudFrontSignedUrl(
-          repostedPost.user!.profileImagePath ?? DEFAULT_PROFILE_IMAGE_PATH
+          repostedPost.user!.profileImagePath ?? Constants.defaultProfileImagePath
         );
 
         repostedPostParams = {
@@ -249,7 +249,7 @@ export class PostController {
       const createdCommentData = await PostDatasource.getCommentById(commentId);
 
       const profileImageUrl = AwsS3Service.getCloudFrontSignedUrl(
-        createdCommentData.user!.profileImagePath ?? DEFAULT_PROFILE_IMAGE_PATH
+        createdCommentData.user!.profileImagePath ?? Constants.defaultProfileImagePath
       );
 
       const commentDto = new FeedCommentDto({
@@ -303,7 +303,7 @@ export class PostController {
 
         const profileImageUrl = isActive
           ? AwsS3Service.getCloudFrontSignedUrl(
-              comment.user!.profileImagePath ?? DEFAULT_PROFILE_IMAGE_PATH
+              comment.user!.profileImagePath ?? Constants.defaultProfileImagePath
             )
           : null;
 
@@ -349,7 +349,7 @@ export class PostController {
           ? AwsS3Service.getCloudFrontSignedUrl(post.imagePath)
           : null;
       const profileImageUrl = AwsS3Service.getCloudFrontSignedUrl(
-        post.user!.profileImagePath ?? DEFAULT_PROFILE_IMAGE_PATH
+        post.user!.profileImagePath ?? Constants.defaultProfileImagePath
       );
 
       let repostedPost: FeedPostParams | null = null;
@@ -362,7 +362,7 @@ export class PostController {
           post.repostedPost !== null
             ? AwsS3Service.getCloudFrontSignedUrl(
                 post.repostedPost!.user!.profileImagePath ??
-                  DEFAULT_PROFILE_IMAGE_PATH
+                  Constants.defaultProfileImagePath
               )
             : null;
         repostedPost = {

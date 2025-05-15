@@ -1,6 +1,6 @@
 import { FindOptions, Includeable, literal } from "sequelize";
 import { EntityStatus } from "../constants/enums.js";
-import { COMMENTS_PAGE_SIZE, POSTS_PAGE_SIZE } from "../constants/values.js";
+import { Constants } from "../constants/values.js";
 import { UserModel } from "../models/user/user_model.js";
 import {
   CommentAttributes,
@@ -202,7 +202,7 @@ export class PostDatasource {
     };
     if (offset !== undefined) {
       options.offset = offset;
-      options.limit = COMMENTS_PAGE_SIZE;
+      options.limit = Constants.commentsPageSize;
     }
 
     const comments = await CommentModel.findAll(options);
@@ -220,7 +220,7 @@ export class PostDatasource {
     userId: string,
     page: number
   ): Promise<CommentAttributes[]> => {
-    const offset = page * COMMENTS_PAGE_SIZE;
+    const offset = page * Constants.commentsPageSize;
     return await this.#getComments(
       { userId: userId, status: EntityStatus.active },
       offset
@@ -252,7 +252,7 @@ export class PostDatasource {
       status: EntityStatus.active,
     };
 
-    const offset = page * POSTS_PAGE_SIZE;
+    const offset = page * Constants.postsPageSize;
 
     const include: Includeable[] = [
       {
@@ -378,7 +378,7 @@ export class PostDatasource {
       include: include,
       order: [["createdAt", "DESC"]],
       offset: offset,
-      limit: POSTS_PAGE_SIZE,
+      limit: Constants.postsPageSize,
       nest: true,
     });
 

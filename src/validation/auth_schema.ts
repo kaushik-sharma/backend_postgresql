@@ -2,7 +2,7 @@ import { z } from "zod";
 import { DateTime } from "luxon";
 
 import { Gender, Platform } from "../constants/enums.js";
-import { MIN_ACCOUNT_OPENING_AGE, MIN_DOB_DATE } from "../constants/values.js";
+import { Constants } from "../constants/values.js";
 import {
   COUNTRY_CODE_REGEX,
   DOB_DATE_REGEX,
@@ -66,21 +66,21 @@ export const dobValidation = z
 
     const now = DateTime.utc();
     const plusMinAge = inputDate.plus({
-      years: MIN_ACCOUNT_OPENING_AGE,
+      years: Constants.minAccountOpeningAge,
     });
 
     if (plusMinAge > now) {
       ctx.addIssue({
         code: "custom",
-        message: `Minimum age to open an account is ${MIN_ACCOUNT_OPENING_AGE} years.`,
+        message: `Minimum age to open an account is ${Constants.minAccountOpeningAge} years.`,
       });
       return;
     }
 
-    if (inputDate < MIN_DOB_DATE) {
+    if (inputDate < Constants.minDobDate) {
       ctx.addIssue({
         code: "custom",
-        message: `Minimum date for DoB: ${MIN_DOB_DATE.toISODate()}`,
+        message: `Minimum date for DoB: ${Constants.minDobDate.toISODate()}`,
       });
       return;
     }

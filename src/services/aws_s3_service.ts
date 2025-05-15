@@ -15,7 +15,7 @@ import { v4 as uuidv4 } from "uuid";
 import mime from "mime";
 import { DateTime } from "luxon";
 
-import { IMAGE_EXPIRY_DURATION } from "../constants/values.js";
+import { Constants } from "../constants/values.js";
 
 export enum AwsS3FileCategory {
   profiles = "profiles",
@@ -69,7 +69,7 @@ export class AwsS3Service {
     );
     return getSignedUrl({
       url: `${process.env.AWS_CLOUDFRONT_DOMAIN_NAME!}/${filePath}`,
-      dateLessThan: DateTime.utc().plus(IMAGE_EXPIRY_DURATION).toISO(),
+      dateLessThan: DateTime.utc().plus(Constants.imageExpiryDuration).toISO(),
       privateKey: privateKey,
       keyPairId: process.env.AWS_CLOUDFRONT_KEY_PAIR_ID!,
     });

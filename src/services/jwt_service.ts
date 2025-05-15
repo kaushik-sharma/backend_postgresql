@@ -6,11 +6,7 @@ import { SessionModel } from "../models/session/session_model.js";
 import { CustomError } from "../middlewares/error_middlewares.js";
 import { AuthMode, EntityStatus, Platform } from "../constants/enums.js";
 import { RedisService } from "./redis_service.js";
-import {
-  AUTH_TOKEN_EXPIRY_DURATION_IN_SEC,
-  EMAIL_CODE_EXPIRY_DURATION_IN_SEC,
-  SESSION_CACHE_EXPIRY_DURATION_IN_SEC,
-} from "../constants/values.js";
+import { Constants } from "../constants/values.js";
 import { AuthenticatedUser } from "../@types/custom.js";
 
 export class JwtService {
@@ -25,7 +21,7 @@ export class JwtService {
   static get #authTokenSignOptions(): jwt.SignOptions {
     const options: jwt.SignOptions = {
       algorithm: "PS512",
-      expiresIn: AUTH_TOKEN_EXPIRY_DURATION_IN_SEC,
+      expiresIn: Constants.authTokenExpiryDurationInSec,
       keyid: "ps512-v1",
     };
     return options;
@@ -34,7 +30,7 @@ export class JwtService {
   static get #emailTokenSignOptions(): jwt.SignOptions {
     const options: jwt.SignOptions = {
       algorithm: "PS512",
-      expiresIn: EMAIL_CODE_EXPIRY_DURATION_IN_SEC,
+      expiresIn: Constants.emailCodeExpiryDurationInSec,
       keyid: "ps512-v1",
     };
     return options;
@@ -73,7 +69,7 @@ export class JwtService {
       `sessions:${sessionId}`,
       JSON.stringify({ userId, userStatus }),
       "EX",
-      SESSION_CACHE_EXPIRY_DURATION_IN_SEC
+      Constants.sessionCacheExpiryDurationInSec
     );
 
     const payload = { sessionId, userId, userStatus, v: 1 };
@@ -157,7 +153,7 @@ export class JwtService {
         `sessions:${sessionId}`,
         JSON.stringify({ userId, userStatus }),
         "EX",
-        SESSION_CACHE_EXPIRY_DURATION_IN_SEC
+        Constants.sessionCacheExpiryDurationInSec
       );
     }
 

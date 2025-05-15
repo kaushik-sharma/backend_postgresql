@@ -1,10 +1,7 @@
 import { RequestHandler } from "express";
 import multer from "multer";
 
-import {
-  MAX_IMAGE_FILE_SIZE_IN_BYTES,
-  ALLOWED_IMAGE_MIMETYPES,
-} from "../constants/values.js";
+import { Constants } from "../constants/values.js";
 import { CustomError } from "./error_middlewares.js";
 
 export const createSingleImageUploadMiddleware = ({
@@ -15,10 +12,10 @@ export const createSingleImageUploadMiddleware = ({
   const uploadImage = multer({
     storage: multer.memoryStorage(),
     limits: {
-      fileSize: MAX_IMAGE_FILE_SIZE_IN_BYTES,
+      fileSize: Constants.maxImageFileSizeInBytes,
     },
     fileFilter: (req, file, callback) => {
-      const isAllowed = ALLOWED_IMAGE_MIMETYPES.includes(file.mimetype);
+      const isAllowed = Constants.allowedImageMimetypes.includes(file.mimetype);
       if (isAllowed) {
         return callback(null, true);
       } else {
