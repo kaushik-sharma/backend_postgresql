@@ -1,10 +1,12 @@
-export default class Tables {
-  static readonly users = "users";
-  static readonly sessions = "sessions";
-  static readonly posts = "posts";
-  static readonly reactions = "reactions";
-  static readonly comments = "comments";
-  static readonly reports = "reports";
-  static readonly userDeletionRequests = "user_deletion_requests";
-  static readonly connections = "connections";
-}
+export const Tables = {
+  users: "users",
+  sessions: "sessions",
+  posts: "posts",
+  reactions: "reactions",
+  comments: "comments",
+  reports: "reports",
+  userDeletionRequests: "user_deletion_requests",
+  connections: "connections",
+};
+
+export default Tables;
