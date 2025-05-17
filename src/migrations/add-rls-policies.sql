@@ -41,6 +41,12 @@ CREATE POLICY update_policy_app_user
   USING (true)
   WITH CHECK (true);
 
+CREATE POLICY delete_policy_app_user
+  ON public.users
+  FOR DELETE
+  TO app_user
+  USING (true);
+
 -- ─────────────────────────────────────────────────────────────────────────────
 -- USER_DELETION_REQUESTS TABLE
 -- ─────────────────────────────────────────────────────────────────────────────
