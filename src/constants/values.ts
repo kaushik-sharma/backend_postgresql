@@ -25,9 +25,9 @@ export class Constants {
   static readonly minAccountOpeningAge = 18;
   static readonly defaultProfileImagePath = `${AwsS3FileCategory.static}/default_profile_image.png`;
   static get userDeletionGracePeriodDuration(): Duration {
-    return this.env === Env.development
-      ? Duration.fromObject({ minutes: 10 })
-      : Duration.fromObject({ days: 30 });
+    return this.env === Env.production
+      ? Duration.fromObject({ days: 30 })
+      : Duration.fromObject({ minutes: 5 });
   }
 
   // Posts
