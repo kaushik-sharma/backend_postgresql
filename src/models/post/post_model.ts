@@ -78,5 +78,16 @@ export class PostModel extends Model<PostAttributes> {
       foreignKey: "targetId",
       as: "reportedPosts",
     });
+
+    PostModel.addScope("withActiveUser", {
+      include: [
+        {
+          model: UserModel,
+          as: "user",
+          where: { status: EntityStatus.active },
+          required: true,
+        },
+      ],
+    });
   };
 }

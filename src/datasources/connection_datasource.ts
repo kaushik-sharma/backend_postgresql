@@ -31,39 +31,4 @@ export class ConnectionDatasource {
       throw new CustomError(404, "Connection not found!");
     }
   };
-
-  static readonly getFollowerCount = async (
-    userId: string
-  ): Promise<number> => {
-    const count = await ConnectionModel.scope("withActiveFollower").count({
-      where: {
-        followeeId: userId,
-      },
-    });
-    return count;
-  };
-
-  static readonly getFollowingCount = async (
-    userId: string
-  ): Promise<number> => {
-    const count = await ConnectionModel.scope("withActiveFollowee").count({
-      where: {
-        followerId: userId,
-      },
-    });
-    return count;
-  };
-
-  static readonly isFollowee = async (
-    followerId: string,
-    followeeId: string
-  ): Promise<boolean> => {
-    const count = await ConnectionModel.count({
-      where: {
-        followerId,
-        followeeId,
-      },
-    });
-    return count > 0;
-  };
 }

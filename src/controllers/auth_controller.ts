@@ -124,16 +124,7 @@ export class AuthController {
         });
       }
 
-      // Checking if the user is marked for deletion
-      if (user.status === EntityStatus.requestedDeletion) {
-        return successResponseHandler({
-          res: res,
-          status: 200,
-          data: { userAction: AuthUserAction.requestedDeletion },
-        });
-      }
-
-      switch (user!.status!) {
+      switch (user.status) {
         case EntityStatus.active:
           return successResponseHandler({
             res: res,
@@ -145,6 +136,12 @@ export class AuthController {
             res: res,
             status: 200,
             data: { userAction: AuthUserAction.banned },
+          });
+        case EntityStatus.requestedDeletion:
+          return successResponseHandler({
+            res: res,
+            status: 200,
+            data: { userAction: AuthUserAction.requestedDeletion },
           });
       }
     }
@@ -162,6 +159,7 @@ export class AuthController {
   static readonly sendEmailCode: RequestHandler = asyncHandler(
     async (req, res, next) => {
       const parsedData = req.parsedData! as RequestEmailCodeType;
+
       const token = await this.#sendEmailCode(
         parsedData.email,
         parsedData.previousToken
@@ -184,6 +182,14 @@ export class AuthController {
     async (req, res, next) => {
       const anonymousUserId = req.user?.userId ?? null;
 
+      const parsedData = req.parsedData! as SignUpType;
+
+      await this.#verifyEmailTokenCredentials(
+        parsedData.email,
+        parsedData.verificationCode,
+        parsedData.verificationToken
+      );
+
       if (anonymousUserId !== null) {
         const anonymousUserExists = await UserDatasource.anonymousUserExists(
           anonymousUserId
@@ -192,8 +198,6 @@ export class AuthController {
           throw new CustomError(404, "Anonymous user not found!");
         }
       }
-
-      const parsedData = req.parsedData! as SignUpType;
 
       const emailExists = await UserDatasource.userByEmailExists(
         parsedData.email
@@ -212,12 +216,6 @@ export class AuthController {
         );
       }
 
-      await this.#verifyEmailTokenCredentials(
-        parsedData.email,
-        parsedData.verificationCode,
-        parsedData.verificationToken
-      );
-
       const userData: UserAttributes = {
         firstName: parsedData.firstName,
         lastName: parsedData.lastName,
@@ -232,28 +230,26 @@ export class AuthController {
         deletedAt: null,
       };
 
-      const authToken = await performTransaction<string>(
-        async (transaction) => {
-          let userId: string;
-          if (anonymousUserId !== null) {
-            userId = await UserDatasource.convertAnonymousUserToActive(
-              anonymousUserId,
-              userData,
-              transaction
-            );
-          } else {
-            userId = await UserDatasource.createUser(userData, transaction);
-          }
-          return await JwtService.createAuthToken(
-            userId,
-            EntityStatus.active,
-            parsedData.deviceId,
-            parsedData.deviceName,
-            parsedData.platform,
-            transaction
+      const authToken = await performTransaction<string>(async (tx) => {
+        let userId: string;
+        if (anonymousUserId !== null) {
+          userId = await UserDatasource.convertAnonymousUserToActive(
+            anonymousUserId,
+            userData,
+            tx
           );
+        } else {
+          userId = await UserDatasource.createUser(userData, tx);
         }
-      );
+        return await JwtService.createAuthToken(
+          userId,
+          EntityStatus.active,
+          parsedData.deviceId,
+          parsedData.deviceName,
+          parsedData.platform,
+          tx
+        );
+      });
 
       successResponseHandler({
         res: res,
@@ -272,6 +268,14 @@ export class AuthController {
     async (req, res, next) => {
       const anonymousUserId = req.user?.userId ?? null;
 
+      const parsedData = req.parsedData! as SignInType;
+
+      await this.#verifyEmailTokenCredentials(
+        parsedData.email,
+        parsedData.verificationCode,
+        parsedData.verificationToken
+      );
+
       if (anonymousUserId !== null) {
         const anonymousUserExists = await UserDatasource.anonymousUserExists(
           anonymousUserId
@@ -281,19 +285,10 @@ export class AuthController {
         }
       }
 
-      const parsedData = req.parsedData! as SignInType;
-
       const user = await UserDatasource.findUserByEmail(parsedData.email);
-
       if (user === null) {
-        throw new CustomError(404, "Account with this email does not exist.");
+        throw new CustomError(404, "Account with this email not found.");
       }
-
-      await this.#verifyEmailTokenCredentials(
-        parsedData.email,
-        parsedData.verificationCode,
-        parsedData.verificationToken
-      );
 
       if (user.status === EntityStatus.banned) {
         throw new CustomError(
@@ -314,29 +309,21 @@ export class AuthController {
         );
       }
 
-      const authToken = await performTransaction<string>(
-        async (transaction) => {
-          /// Delete anonymous user (if exists)
-          if (anonymousUserId !== null) {
-            await SessionDatasource.signOutAllSessions(
-              anonymousUserId!,
-              transaction
-            );
-            await UserDatasource.deleteAnonymousUser(
-              anonymousUserId!,
-              transaction
-            );
-          }
-          return await JwtService.createAuthToken(
-            user.id!,
-            EntityStatus.active,
-            parsedData.deviceId,
-            parsedData.deviceName,
-            parsedData.platform,
-            transaction
-          );
+      const authToken = await performTransaction<string>(async (tx) => {
+        /// Delete anonymous user (if exists)
+        if (anonymousUserId !== null) {
+          await SessionDatasource.signOutAllSessions(anonymousUserId!, tx);
+          await UserDatasource.deleteAnonymousUser(anonymousUserId!, tx);
         }
-      );
+        return await JwtService.createAuthToken(
+          user.id!,
+          EntityStatus.active,
+          parsedData.deviceId,
+          parsedData.deviceName,
+          parsedData.platform,
+          tx
+        );
+      });
 
       successResponseHandler({
         res: res,
@@ -375,19 +362,17 @@ export class AuthController {
         status: EntityStatus.anonymous,
       };
 
-      const authToken = await performTransaction<string>(
-        async (transaction) => {
-          const userId = await UserDatasource.createUser(userData, transaction);
-          return await JwtService.createAuthToken(
-            userId,
-            EntityStatus.anonymous,
-            parsedData.deviceId,
-            parsedData.deviceName,
-            parsedData.platform,
-            transaction
-          );
-        }
-      );
+      const authToken = await performTransaction<string>(async (tx) => {
+        const userId = await UserDatasource.createUser(userData, tx);
+        return await JwtService.createAuthToken(
+          userId,
+          EntityStatus.anonymous,
+          parsedData.deviceId,
+          parsedData.deviceName,
+          parsedData.platform,
+          tx
+        );
+      });
 
       successResponseHandler({
         res: res,

@@ -73,7 +73,8 @@ export class PostController {
       const createdPostData = await PostDatasource.getPostById(postId);
 
       const profileImageUrl = AwsS3Service.getCloudFrontSignedUrl(
-        createdPostData.user!.profileImagePath ?? Constants.defaultProfileImagePath
+        createdPostData.user!.profileImagePath ??
+          Constants.defaultProfileImagePath
       );
 
       let repostedPostParams: FeedPostParams | null = null;
@@ -84,7 +85,8 @@ export class PostController {
             ? AwsS3Service.getCloudFrontSignedUrl(repostedPost.imagePath)
             : null;
         const profileImageUrl = AwsS3Service.getCloudFrontSignedUrl(
-          repostedPost.user!.profileImagePath ?? Constants.defaultProfileImagePath
+          repostedPost.user!.profileImagePath ??
+            Constants.defaultProfileImagePath
         );
 
         repostedPostParams = {
@@ -203,30 +205,20 @@ export class PostController {
         postId: req.params.postId,
       };
 
-      if (
-        parsedData.level === 0 &&
-        parsedData.parentCommentId !== undefined &&
-        parsedData.parentCommentId !== null
-      ) {
+      if (parsedData.level === 0 && parsedData.parentCommentId) {
         throw new CustomError(400, "parentCommentId must be null if level = 0");
       }
-      if (
-        parsedData.level > 0 &&
-        (parsedData.parentCommentId === undefined ||
-          parsedData.parentCommentId === null)
-      ) {
+      if (parsedData.level > 0 && !parsedData.parentCommentId) {
         throw new CustomError(400, "parentCommentId required if level > 0");
       }
 
-      const postExists: boolean = await PostDatasource.postExists(
-        parsedData.postId
-      );
+      const postExists = await PostDatasource.postExists(parsedData.postId);
       if (!postExists) {
         throw new CustomError(404, "Post not found!");
       }
 
       if (parsedData.level > 0) {
-        const parentCommentExists: boolean = await PostDatasource.commentExists(
+        const parentCommentExists = await PostDatasource.commentExists(
           parsedData.parentCommentId!,
           parsedData.level - 1,
           parsedData.postId
@@ -249,7 +241,8 @@ export class PostController {
       const createdCommentData = await PostDatasource.getCommentById(commentId);
 
       const profileImageUrl = AwsS3Service.getCloudFrontSignedUrl(
-        createdCommentData.user!.profileImagePath ?? Constants.defaultProfileImagePath
+        createdCommentData.user!.profileImagePath ??
+          Constants.defaultProfileImagePath
       );
 
       const commentDto = new FeedCommentDto({
@@ -303,7 +296,8 @@ export class PostController {
 
         const profileImageUrl = isActive
           ? AwsS3Service.getCloudFrontSignedUrl(
-              comment.user!.profileImagePath ?? Constants.defaultProfileImagePath
+              comment.user!.profileImagePath ??
+                Constants.defaultProfileImagePath
             )
           : null;
 

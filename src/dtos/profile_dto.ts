@@ -8,7 +8,7 @@ export interface ProfileParams {
   dob: string;
   profileImageUrl: string;
   followerCount: number;
-  followingCount: number;
+  followeeCount: number;
 }
 
 export class ProfileDto {
@@ -22,7 +22,7 @@ export interface PublicProfileParams {
   lastName: string;
   profileImageUrl: string;
   followerCount: number;
-  followingCount: number;
+  followeeCount: number;
   isFollowee: boolean;
 }
 

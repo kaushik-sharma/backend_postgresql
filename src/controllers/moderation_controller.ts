@@ -33,25 +33,21 @@ export class ModerationController {
 
       switch (data.targetType) {
         case ReportTargetType.post:
-          const postExists = await PostDatasource.postExists(data.targetId);
-          if (!postExists) {
+          const postUserId = await PostDatasource.getPostUserId(data.targetId);
+          if (!postUserId) {
             throw new CustomError(404, "Post not found!");
           }
-          const postUserId = await PostDatasource.getPostUserId(data.targetId);
           if (postUserId === userId) {
             throw new CustomError(403, "Can not report your own post!");
           }
           break;
         case ReportTargetType.comment:
-          const commentExists = await PostDatasource.commentExists(
-            data.targetId
-          );
-          if (!commentExists) {
-            throw new CustomError(404, "Comment not found!");
-          }
           const commentUserId = await PostDatasource.getCommentUserId(
             data.targetId
           );
+          if (!commentUserId) {
+            throw new CustomError(404, "Comment not found!");
+          }
           if (commentUserId === userId) {
             throw new CustomError(403, "Can not report your own comment!");
           }
@@ -82,8 +78,8 @@ export class ModerationController {
             break;
           case ReportTargetType.user:
             await performTransaction<void>(async (tx) => {
-              await UserDatasource.banUser(data.targetId, tx);
               await SessionDatasource.signOutAllSessions(data.targetId, tx);
+              await UserDatasource.banUser(data.targetId, tx);
             });
             break;
         }

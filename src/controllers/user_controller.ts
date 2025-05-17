@@ -2,7 +2,10 @@ import { RequestHandler } from "express";
 import { DateTime } from "luxon";
 
 import { asyncHandler } from "../helpers/async_handler.js";
-import { successResponseHandler } from "../helpers/success_handler.js";
+import {
+  successResponseHandler,
+  SuccessResponseHandlerParams,
+} from "../helpers/success_handler.js";
 import { AwsS3Service, AwsS3FileCategory } from "../services/aws_s3_service.js";
 import { Constants } from "../constants/values.js";
 import { validateData } from "../helpers/validation_helper.js";
@@ -11,9 +14,8 @@ import {
   UpdateProfileType,
 } from "../validation/profile_schema.js";
 import { CustomError } from "../middlewares/error_middlewares.js";
-import { UserDeletionRequestModel } from "../models/user/user_deletion_request_model.js";
+import { UserDeletionRequestAttributes } from "../models/user/user_deletion_request_model.js";
 import { performTransaction } from "../helpers/transaction_helper.js";
-import { EntityStatus } from "../constants/enums.js";
 import { UserDatasource } from "../datasources/user_datasource.js";
 import { SessionDatasource } from "../datasources/session_datasource.js";
 import { ProfileDto, PublicProfileDto } from "../dtos/profile_dto.js";
@@ -21,35 +23,29 @@ import {
   ActiveSessionParams,
   ActiveSessionsOverviewDto,
 } from "../dtos/session_dto.js";
-import { ConnectionDatasource } from "../datasources/connection_datasource.js";
 import { PostDatasource } from "../datasources/post_datasource.js";
 import { PostAttributes } from "../models/post/post_model.js";
 import { UserPostDto } from "../dtos/user_post_dto.js";
 import { UserCommentDto } from "../dtos/user_comment_dto.js";
-
-export const deleteCustomProfileImage = async (
-  userId: string
-): Promise<void> => {
-  const profileImagePath = await UserDatasource.getUserProfileImagePath(userId);
-  if (profileImagePath !== null) {
-    AwsS3Service.initiateDeleteFile(profileImagePath);
-  }
-};
 
 export class UserController {
   static readonly getUser: RequestHandler = asyncHandler(
     async (req, res, next) => {
       const userId = req.user!.userId;
 
-      const user = await UserDatasource.getUserById(userId);
+      const user = (await UserDatasource.getUserById(userId, [
+        "firstName",
+        "lastName",
+        "gender",
+        "countryCode",
+        "phoneNumber",
+        "email",
+        "dob",
+        "profileImagePath",
+      ]))!;
 
       const profileImageUrl = AwsS3Service.getCloudFrontSignedUrl(
         user.profileImagePath ?? Constants.defaultProfileImagePath
-      );
-
-      const followerCount = await ConnectionDatasource.getFollowerCount(userId);
-      const followingCount = await ConnectionDatasource.getFollowingCount(
-        userId
       );
 
       const profile = new ProfileDto({
@@ -61,8 +57,8 @@ export class UserController {
         email: user.email!,
         dob: user.dob!,
         profileImageUrl: profileImageUrl,
-        followerCount: followerCount,
-        followingCount: followingCount,
+        followerCount: user.followerCount!,
+        followeeCount: user.followeeCount!,
       });
 
       successResponseHandler({
@@ -78,7 +74,11 @@ export class UserController {
       const userId = req.user!.userId;
       const otherUserId = req.params.userId;
 
-      const user = await UserDatasource.getPublicUserById(otherUserId);
+      const user = await UserDatasource.getUserById(
+        otherUserId,
+        ["firstName", "lastName", "profileImagePath"],
+        userId
+      );
       if (user === null) {
         throw new CustomError(404, "User not found!");
       }
@@ -87,25 +87,13 @@ export class UserController {
         user.profileImagePath ?? Constants.defaultProfileImagePath
       );
 
-      const followerCount = await ConnectionDatasource.getFollowerCount(
-        otherUserId
-      );
-      const followingCount = await ConnectionDatasource.getFollowingCount(
-        otherUserId
-      );
-
-      const isFollowee = await ConnectionDatasource.isFollowee(
-        userId,
-        otherUserId
-      );
-
       const profile = new PublicProfileDto({
         firstName: user.firstName!,
         lastName: user.lastName!,
         profileImageUrl: profileImageUrl,
-        followerCount: followerCount,
-        followingCount: followingCount,
-        isFollowee: isFollowee,
+        followerCount: user.followerCount!,
+        followeeCount: user.followeeCount!,
+        isFollowee: user.isFollowee!,
       });
 
       successResponseHandler({
@@ -132,12 +120,12 @@ export class UserController {
       const parsedData = req.parsedData! as UpdateProfileType;
 
       // If the image file is passed, then deleting the old image from S3 (if exists),
-      // And then adding the new one.
+      // Then adding the new image.
       let imagePath: string | null = null;
       let imageUrl: string | null = null;
       const imageFile = req.file as Express.Multer.File | undefined;
       if (imageFile !== undefined) {
-        await deleteCustomProfileImage(userId);
+        await this.deleteCustomProfileImage(userId);
 
         imagePath = await AwsS3Service.uploadFile(
           imageFile,
@@ -155,16 +143,15 @@ export class UserController {
 
       await UserDatasource.updateProfile(userId, updatedFields);
 
-      const resData: Record<string, any> = {};
-      if (imageUrl !== null) {
-        resData["profileImageUrl"] = imageUrl;
-      }
-
-      successResponseHandler({
+      const resData: SuccessResponseHandlerParams = {
         res: res,
         status: 200,
-        data: resData,
-      });
+      };
+      if (imageUrl) {
+        resData.data = { profileImageUrl: imageUrl };
+      }
+
+      successResponseHandler(resData);
     }
   );
 
@@ -172,7 +159,7 @@ export class UserController {
     async (req, res, next) => {
       const userId = req.user!.userId;
 
-      await deleteCustomProfileImage(userId);
+      await this.deleteCustomProfileImage(userId);
       await UserDatasource.resetProfileImage(userId);
 
       const profileImageUrl = AwsS3Service.getCloudFrontSignedUrl(
@@ -193,28 +180,16 @@ export class UserController {
     async (req, res, next) => {
       const userId = req.user!.userId;
 
-      // Checking if the user is already marked for deletion
-      const userStatus = await UserDatasource.getUserStatus(userId);
-      if (userStatus === EntityStatus.requestedDeletion) {
-        throw new CustomError(
-          409,
-          "A deletion request already exists for this account. Can not initiate a duplicate one."
-        );
-      }
-
       const deleteAt = DateTime.utc()
         .plus(Constants.userDeletionGracePeriodDuration)
         .toJSDate();
 
-      const model = new UserDeletionRequestModel({
-        userId: userId,
-        deleteAt: deleteAt,
-      });
+      const requestData: UserDeletionRequestAttributes = { userId, deleteAt };
 
-      await performTransaction<void>(async (transaction) => {
-        await SessionDatasource.signOutAllSessions(userId, transaction);
-        await UserDatasource.markUserForDeletion(userId, transaction);
-        await UserDatasource.createUserDeletionRequest(model, transaction);
+      await performTransaction<void>(async (tx) => {
+        await SessionDatasource.signOutAllSessions(userId, tx);
+        await UserDatasource.markUserForDeletion(userId, tx);
+        await UserDatasource.createUserDeletionRequest(requestData, tx);
       });
 
       successResponseHandler({
@@ -300,7 +275,7 @@ export class UserController {
         throw new CustomError(404, "Session not found!");
       }
       if (sessionUserId !== userId) {
-        throw new CustomError(403, "Session user id mismatch!");
+        throw new CustomError(403, "Session user ID mismatch!");
       }
 
       await SessionDatasource.signOutSession(sessionId, userId);
@@ -343,12 +318,12 @@ export class UserController {
       }
 
       const posts = await PostDatasource.getPostsByUserId(userId, page);
-      const feed = this.#processUserPosts(posts);
+      const postDtos = this.#processUserPosts(posts);
 
       successResponseHandler({
         res: res,
         status: 200,
-        data: feed,
+        data: postDtos,
       });
     }
   );
@@ -363,7 +338,6 @@ export class UserController {
       }
 
       const comments = await PostDatasource.getCommentsByUserId(userId, page);
-
       const commentDtos = comments.map((comment) => {
         return new UserCommentDto({
           id: comment.id!,
@@ -385,17 +359,15 @@ export class UserController {
     async (req, res, next) => {
       const userId = req.user!.userId;
 
-      const postId = req.params.postId as string | undefined | null;
-      if (postId === undefined || postId === null) {
+      const postId = req.params.postId;
+      if (!postId) {
         throw new CustomError(400, "Post ID is required.");
       }
 
-      const postExists: boolean = await PostDatasource.postExists(postId);
-      if (!postExists) {
+      const postUserId = await PostDatasource.getPostUserId(postId);
+      if (!postUserId) {
         throw new CustomError(404, "Post not found!");
       }
-
-      const postUserId: string = await PostDatasource.getPostUserId(postId);
       if (postUserId !== userId) {
         throw new CustomError(403, "Can not delete other users' posts!");
       }
@@ -421,21 +393,15 @@ export class UserController {
     async (req, res, next) => {
       const userId = req.user!.userId;
 
-      const commentId = req.params.commentId as string | undefined | null;
-      if (commentId === undefined || commentId === null) {
+      const commentId = req.params.commentId;
+      if (!commentId) {
         throw new CustomError(400, "Comment ID is required.");
       }
 
-      const commentExists: boolean = await PostDatasource.commentExists(
-        commentId
-      );
-      if (!commentExists) {
+      const commentUserId = await PostDatasource.getCommentUserId(commentId);
+      if (!commentUserId) {
         throw new CustomError(404, "Comment not found!");
       }
-
-      const commentUserId: string = await PostDatasource.getCommentUserId(
-        commentId
-      );
       if (commentUserId !== userId) {
         throw new CustomError(403, "Can not delete other users' comments!");
       }
@@ -448,4 +414,15 @@ export class UserController {
       });
     }
   );
+
+  static readonly deleteCustomProfileImage = async (
+    userId: string
+  ): Promise<void> => {
+    const profileImagePath = await UserDatasource.getUserProfileImagePath(
+      userId
+    );
+    if (profileImagePath !== null) {
+      AwsS3Service.initiateDeleteFile(profileImagePath);
+    }
+  };
 }

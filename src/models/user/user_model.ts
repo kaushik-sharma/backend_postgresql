@@ -10,6 +10,7 @@ import { CommentModel } from "../post/comment_model.js";
 import { ReactionModel } from "../post/reaction_model.js";
 import { BaseAttributes } from "../base_attributes.js";
 import { ReportModel } from "../moderation/report_model.js";
+import { ConnectionModel } from "../connections/connections_model.js";
 
 export interface UserAttributes extends BaseAttributes {
   firstName?: string;
@@ -23,6 +24,11 @@ export interface UserAttributes extends BaseAttributes {
   status: EntityStatus;
   bannedAt?: Date | null;
   deletedAt?: Date | null;
+
+  // Associations
+  followerCount?: number;
+  followeeCount?: number;
+  isFollowee?: boolean;
 }
 
 export class UserModel extends Model<UserAttributes> {
@@ -100,6 +106,16 @@ export class UserModel extends Model<UserAttributes> {
     UserModel.hasMany(ReportModel, {
       foreignKey: "targetId",
       as: "reportedUsers",
+    });
+
+    UserModel.hasMany(ConnectionModel, {
+      foreignKey: "followeeId",
+      as: "followees",
+    });
+
+    UserModel.hasMany(ConnectionModel, {
+      foreignKey: "followerId",
+      as: "followers",
     });
   };
 }

@@ -62,5 +62,16 @@ export class CommentModel extends Model<CommentAttributes> {
       foreignKey: "targetId",
       as: "reportedComments",
     });
+
+    CommentModel.addScope("withActiveUser", {
+      include: [
+        {
+          model: UserModel,
+          as: "user",
+          where: { status: EntityStatus.active },
+          required: true,
+        },
+      ],
+    });
   };
 }

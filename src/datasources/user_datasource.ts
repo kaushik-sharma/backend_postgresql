@@ -1,7 +1,16 @@
-import { Op, Transaction } from "sequelize";
+import {
+  cast,
+  FindAttributeOptions,
+  literal,
+  Op,
+  Transaction,
+} from "sequelize";
 
 import { EntityStatus } from "../constants/enums.js";
-import { UserDeletionRequestModel } from "../models/user/user_deletion_request_model.js";
+import {
+  UserDeletionRequestAttributes,
+  UserDeletionRequestModel,
+} from "../models/user/user_deletion_request_model.js";
 import { UserModel, UserAttributes } from "../models/user/user_model.js";
 import { CustomError } from "../middlewares/error_middlewares.js";
 
@@ -14,15 +23,6 @@ export class UserDatasource {
       throw new Error("Multiple active users found!");
     }
     return count === 1;
-  };
-
-  static readonly getUserStatus = async (
-    userId: string
-  ): Promise<EntityStatus> => {
-    const user = await UserModel.findByPk(userId, {
-      attributes: ["status"],
-    });
-    return user!.toJSON().status;
   };
 
   static readonly findUserByEmail = async (
@@ -38,9 +38,7 @@ export class UserDatasource {
       attributes: ["id", "status"],
     });
 
-    if (user === null) return null;
-
-    return user.toJSON();
+    return user?.toJSON() ?? null;
   };
 
   static readonly userByEmailExists = async (
@@ -55,7 +53,7 @@ export class UserDatasource {
       },
     });
 
-    return count === 1;
+    return count > 0;
   };
 
   static readonly userByPhoneNumberExists = async (
@@ -72,7 +70,7 @@ export class UserDatasource {
       },
     });
 
-    return count === 1;
+    return count > 0;
   };
 
   static readonly deleteAnonymousUser = async (
@@ -107,7 +105,7 @@ export class UserDatasource {
         status: EntityStatus.anonymous,
       },
     });
-    return count === 1;
+    return count > 0;
   };
 
   static readonly convertAnonymousUserToActive = async (
@@ -150,22 +148,67 @@ export class UserDatasource {
   };
 
   static readonly getUserById = async (
-    userId: string
-  ): Promise<UserAttributes> => {
-    const user = await UserModel.findByPk(userId);
-    return user!.toJSON();
-  };
-
-  static readonly getPublicUserById = async (
-    userId: string
+    userId: string,
+    fields: string[],
+    currentUserId?: string
   ): Promise<UserAttributes | null> => {
+    const attributes: FindAttributeOptions = [
+      ...fields,
+      [
+        cast(
+          literal(`(
+            SELECT COUNT(*)
+            FROM "connections" AS c
+            JOIN "users" AS u
+              ON u."id" = c."followerId"
+            WHERE
+              c."followeeId" = "UserModel"."id"
+              AND u."status" = '${EntityStatus.active}'
+          )`),
+          "integer"
+        ),
+        "followerCount",
+      ],
+      [
+        cast(
+          literal(`(
+            SELECT COUNT(*)
+            FROM "connections" AS c
+            JOIN "users" AS u
+              ON u."id" = c."followeeId"
+            WHERE
+              c."followerId" = "UserModel"."id"
+              AND u."status" = '${EntityStatus.active}'
+          )`),
+          "integer"
+        ),
+        "followeeCount",
+      ],
+    ];
+
+    if (currentUserId) {
+      attributes.push([
+        literal(`
+          EXISTS(
+            SELECT 1
+            FROM "connections" AS c
+            WHERE
+              c."followerId" = '${currentUserId}'
+              AND c."followeeId" = "UserModel"."id"
+          )
+        `),
+        "isFollowee",
+      ]);
+    }
+
     const user = await UserModel.findOne({
       where: {
         id: userId,
         status: EntityStatus.active,
       },
-      attributes: ["firstName", "lastName", "profileImagePath"],
+      attributes: attributes,
     });
+
     return user?.toJSON() ?? null;
   };
 
@@ -236,10 +279,10 @@ export class UserDatasource {
   };
 
   static readonly createUserDeletionRequest = async (
-    model: UserDeletionRequestModel,
+    data: UserDeletionRequestAttributes,
     transaction: Transaction
   ): Promise<void> => {
-    await model.save({ transaction: transaction });
+    await UserDeletionRequestModel.create(data, { transaction });
   };
 
   static readonly getDueDeletionUserIds = async (): Promise<string[]> => {

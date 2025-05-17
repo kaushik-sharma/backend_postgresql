@@ -12,7 +12,6 @@ import {
   ReactionAttributes,
   ReactionModel,
 } from "../models/post/reaction_model.js";
-import { UserDatasource } from "./user_datasource.js";
 import { CustomError } from "../middlewares/error_middlewares.js";
 
 export class PostDatasource {
@@ -25,22 +24,13 @@ export class PostDatasource {
   };
 
   static readonly postExists = async (id: string): Promise<boolean> => {
-    const post = await PostModel.findOne({
+    const count = await PostModel.scope("withActiveUser").count({
       where: {
         id: id,
         status: EntityStatus.active,
       },
-      attributes: ["userId"],
     });
-
-    if (post === null) return false;
-
-    const isUserActive = await UserDatasource.isUserActive(
-      post.toJSON().userId
-    );
-    if (!isUserActive) return false;
-
-    return true;
+    return count > 0;
   };
 
   static readonly createReaction = async (
@@ -86,18 +76,10 @@ export class PostDatasource {
       query.postId = postId;
     }
 
-    const comment = await CommentModel.findOne({
+    const count = await CommentModel.scope("withActiveUser").count({
       where: query,
-      attributes: ["userId"],
     });
-    if (comment === null) return false;
-
-    const isUserActive = await UserDatasource.isUserActive(
-      comment.toJSON().userId
-    );
-    if (!isUserActive) return false;
-
-    return true;
+    return count > 0;
   };
 
   static readonly createComment = async (
@@ -108,11 +90,14 @@ export class PostDatasource {
     return result.toJSON().id!;
   };
 
-  static readonly getPostUserId = async (postId: string): Promise<string> => {
-    const post = await PostModel.findByPk(postId, {
+  static readonly getPostUserId = async (
+    postId: string
+  ): Promise<string | null> => {
+    const post = await PostModel.scope("withActiveUser").findOne({
+      where: { id: postId, status: EntityStatus.active },
       attributes: ["userId"],
     });
-    return post!.toJSON().userId;
+    return post?.toJSON().userId ?? null;
   };
 
   static readonly getPostImagePath = async (
@@ -148,11 +133,12 @@ export class PostDatasource {
 
   static readonly getCommentUserId = async (
     commentId: string
-  ): Promise<string> => {
-    const comment = await CommentModel.findByPk(commentId, {
+  ): Promise<string | null> => {
+    const comment = await CommentModel.scope("withActiveUser").findOne({
+      where: { id: commentId, status: EntityStatus.active },
       attributes: ["userId"],
     });
-    return comment!.toJSON().userId;
+    return comment?.toJSON().userId ?? null;
   };
 
   static readonly deleteComment = async (
