@@ -1,5 +1,9 @@
 import { DataTypes, Model } from "sequelize";
-import { ReportReason, ReportTargetType } from "../../constants/enums.js";
+import {
+  ReportReason,
+  ReportStatus,
+  ReportTargetType,
+} from "../../constants/enums.js";
 import { BaseAttributes } from "../base_attributes.js";
 import { Tables } from "../../constants/tables.js";
 import { PostgresService } from "../../services/postgres_service.js";
@@ -10,6 +14,7 @@ export interface ReportAttributes extends BaseAttributes {
   targetId: string;
   reporterId: string;
   reason: ReportReason;
+  status: ReportStatus;
 }
 
 export class ReportModel extends Model<ReportAttributes> {
@@ -37,6 +42,11 @@ export class ReportModel extends Model<ReportAttributes> {
         reason: {
           type: DataTypes.ENUM,
           values: Object.values(ReportReason),
+          allowNull: false,
+        },
+        status: {
+          type: DataTypes.ENUM,
+          values: Object.values(ReportStatus),
           allowNull: false,
         },
       },

@@ -194,6 +194,13 @@ CREATE POLICY select_policy_app_user
   TO app_user
   USING (true);
 
+CREATE POLICY update_policy_app_user
+  ON public.reports
+  FOR UPDATE
+  TO app_user
+  USING (true)
+  WITH CHECK (true);
+
 -- ─────────────────────────────────────────────────────────────────────────────
 -- CONNECTIONS TABLE
 -- ─────────────────────────────────────────────────────────────────────────────

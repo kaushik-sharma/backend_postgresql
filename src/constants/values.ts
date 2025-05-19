@@ -37,7 +37,7 @@ export class Constants {
 
   // Content Moderation
   static readonly #devModerationThreshold = {
-    [ReportTargetType.post]: 20,
+    [ReportTargetType.post]: 10,
     [ReportTargetType.comment]: 10,
     [ReportTargetType.user]: 10,
   };
@@ -49,9 +49,9 @@ export class Constants {
   static readonly contentModerationThreshold = (
     targetType: ReportTargetType
   ): number => {
-    return this.env === Env.development
-      ? this.#devModerationThreshold[targetType]
-      : this.#prodModerationThreshold[targetType];
+    return this.env === Env.production
+      ? this.#prodModerationThreshold[targetType]
+      : this.#devModerationThreshold[targetType];
   };
 
   // Rate Limiter

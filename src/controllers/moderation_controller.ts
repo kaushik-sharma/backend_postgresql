@@ -6,13 +6,10 @@ import { asyncHandler } from "../helpers/async_handler.js";
 import { PostDatasource } from "../datasources/post_datasource.js";
 import { CustomError } from "../middlewares/error_middlewares.js";
 import { ModerationDatasource } from "../datasources/moderation_datasource.js";
-import { Constants } from "../constants/values.js";
 import { successResponseHandler } from "../helpers/success_handler.js";
-import { performTransaction } from "../helpers/transaction_helper.js";
 import { UserDatasource } from "../datasources/user_datasource.js";
-import { SessionDatasource } from "../datasources/session_datasource.js";
 import { ReportAttributes } from "../models/moderation/report_model.js";
-import { ReportTargetType } from "../constants/enums.js";
+import { ReportStatus, ReportTargetType } from "../constants/enums.js";
 
 export class ModerationController {
   static readonly validateReportRequest: RequestHandler = (req, res, next) => {
@@ -29,6 +26,7 @@ export class ModerationController {
       const data: ReportAttributes = {
         ...parsedData,
         reporterId: userId,
+        status: ReportStatus.active,
       };
 
       switch (data.targetType) {
@@ -64,26 +62,6 @@ export class ModerationController {
       }
 
       await ModerationDatasource.createReport(data);
-
-      const count = await ModerationDatasource.getReportsCount(data.targetType);
-      const threshold = Constants.contentModerationThreshold(data.targetType);
-
-      if (count >= threshold) {
-        switch (data.targetType) {
-          case ReportTargetType.post:
-            await PostDatasource.banPost(data.targetId);
-            break;
-          case ReportTargetType.comment:
-            await PostDatasource.banComment(data.targetId);
-            break;
-          case ReportTargetType.user:
-            await performTransaction<void>(async (tx) => {
-              await SessionDatasource.signOutAllSessions(data.targetId, tx);
-              await UserDatasource.banUser(data.targetId, tx);
-            });
-            break;
-        }
-      }
 
       successResponseHandler({
         res: res,

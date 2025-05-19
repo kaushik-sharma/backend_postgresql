@@ -47,3 +47,8 @@ export enum Platform {
   ios = "IOS",
   web = "WEB",
 }
+
+export enum ReportStatus {
+  active = "ACTIVE",
+  resolved = "RESOLVED",
+}

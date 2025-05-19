@@ -1,4 +1,4 @@
-import { FindOptions, Includeable, literal } from "sequelize";
+import { FindOptions, Includeable, literal, Transaction } from "sequelize";
 import { EntityStatus } from "../constants/enums.js";
 import { Constants } from "../constants/values.js";
 import { UserModel } from "../models/user/user_model.js";
@@ -399,7 +399,10 @@ export class PostDatasource {
     return result[0];
   };
 
-  static readonly banPost = async (postId: string): Promise<void> => {
+  static readonly banPost = async (
+    postId: string,
+    transaction: Transaction
+  ): Promise<void> => {
     const result = await PostModel.update(
       {
         status: EntityStatus.banned,
@@ -407,6 +410,7 @@ export class PostDatasource {
       },
       {
         where: { id: postId },
+        transaction,
       }
     );
 
@@ -415,7 +419,10 @@ export class PostDatasource {
     }
   };
 
-  static readonly banComment = async (commentId: string): Promise<void> => {
+  static readonly banComment = async (
+    commentId: string,
+    transaction: Transaction
+  ): Promise<void> => {
     const result = await CommentModel.update(
       {
         status: EntityStatus.banned,
@@ -423,6 +430,7 @@ export class PostDatasource {
       },
       {
         where: { id: commentId },
+        transaction,
       }
     );
 
