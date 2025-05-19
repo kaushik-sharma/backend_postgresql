@@ -10,6 +10,9 @@ import { successResponseHandler } from "../helpers/success_handler.js";
 import { UserDatasource } from "../datasources/user_datasource.js";
 import { ReportAttributes } from "../models/moderation/report_model.js";
 import { ReportStatus, ReportTargetType } from "../constants/enums.js";
+import { performTransaction } from "../helpers/transaction_helper.js";
+import { SessionDatasource } from "../datasources/session_datasource.js";
+import logger from "../utils/logger.js";
 
 export class ModerationController {
   static readonly validateReportRequest: RequestHandler = (req, res, next) => {
@@ -69,4 +72,51 @@ export class ModerationController {
       });
     }
   );
+
+  static readonly performModerationCheckup = async () => {
+    const checkReportTarget = async (targetType: ReportTargetType) => {
+      try {
+        await performTransaction(async (tx) => {
+          const targetIds = await ModerationDatasource.fetchOverThresholdIds(
+            targetType
+          );
+
+          for (const id of targetIds) {
+            switch (targetType) {
+              case ReportTargetType.post:
+                const postExists = await PostDatasource.postExists(id);
+                if (postExists) {
+                  await PostDatasource.banPost(id, tx);
+                }
+                break;
+              case ReportTargetType.comment:
+                const commentExists = await PostDatasource.commentExists(id);
+                if (commentExists) {
+                  await PostDatasource.banComment(id, tx);
+                }
+                break;
+              case ReportTargetType.user:
+                const userExists = await UserDatasource.isUserActive(id);
+                if (userExists) {
+                  await SessionDatasource.signOutAllSessions(id, tx);
+                  await UserDatasource.banUser(id, tx);
+                }
+                break;
+            }
+          }
+
+          if (targetIds.length > 0) {
+            await ModerationDatasource.markAsResolved(targetIds, tx);
+          }
+        });
+      } catch (err) {
+        logger.error(err);
+      }
+    };
+
+    const targetTypes = Object.values<ReportTargetType>(ReportTargetType);
+    for (const targetType of targetTypes) {
+      await checkReportTarget(targetType);
+    }
+  };
 }

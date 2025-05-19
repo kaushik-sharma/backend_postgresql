@@ -27,6 +27,7 @@ import { PostDatasource } from "../datasources/post_datasource.js";
 import { PostAttributes } from "../models/post/post_model.js";
 import { UserPostDto } from "../dtos/user_post_dto.js";
 import { UserCommentDto } from "../dtos/user_comment_dto.js";
+import logger from "../utils/logger.js";
 
 export class UserController {
   static readonly getUser: RequestHandler = asyncHandler(
@@ -423,6 +424,26 @@ export class UserController {
     );
     if (profileImagePath !== null) {
       AwsS3Service.initiateDeleteFile(profileImagePath);
+    }
+  };
+
+  static readonly deleteScheduledUserAccounts = async () => {
+    try {
+      const userIds = await UserDatasource.getDueDeletionUserIds();
+
+      for (const userId of userIds) {
+        await UserController.deleteCustomProfileImage(userId);
+
+        await performTransaction<void>(async (transaction) => {
+          await SessionDatasource.signOutAllSessions(userId, transaction);
+          await UserDatasource.deleteUser(userId, transaction);
+          await UserDatasource.removeDeletionRequest(userId, transaction);
+        });
+      }
+
+      logger.info(`Deleted ${userIds.length} scheduled user deletions.`);
+    } catch (err) {
+      logger.error(err);
     }
   };
 }
