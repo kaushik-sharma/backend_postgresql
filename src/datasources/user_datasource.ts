@@ -234,7 +234,8 @@ export class UserDatasource {
 
   static readonly updateProfile = async (
     userId: string,
-    updatedFields: Record<string, any>
+    updatedFields: Record<string, any>,
+    transaction: Transaction
   ): Promise<void> => {
     const result = await UserModel.update(
       {
@@ -245,6 +246,7 @@ export class UserDatasource {
           id: userId,
           status: EntityStatus.active,
         },
+        transaction,
       }
     );
 
@@ -266,12 +268,23 @@ export class UserDatasource {
     return profileImagePath;
   };
 
-  static readonly resetProfileImage = async (userId: string) => {
+  static readonly deleteProfileImage = async (
+    userId: string,
+    transaction?: Transaction
+  ) => {
     const result = await UserModel.update(
       {
         profileImagePath: null,
       },
-      { where: { id: userId, status: EntityStatus.active } }
+      {
+        where: {
+          id: userId,
+          status: {
+            [Op.in]: [EntityStatus.active, EntityStatus.requestedDeletion],
+          },
+        },
+        transaction,
+      }
     );
     if (result[0] === 0) {
       throw new CustomError(404, "User not found!");

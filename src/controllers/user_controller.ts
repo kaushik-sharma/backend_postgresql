@@ -1,5 +1,6 @@
 import { RequestHandler } from "express";
 import { DateTime } from "luxon";
+import { Transaction } from "sequelize";
 
 import { asyncHandler } from "../helpers/async_handler.js";
 import {
@@ -120,14 +121,10 @@ export class UserController {
 
       const parsedData = req.parsedData! as UpdateProfileType;
 
-      // If the image file is passed, then deleting the old image from S3 (if exists),
-      // Then adding the new image.
       let imagePath: string | null = null;
       let imageUrl: string | null = null;
       const imageFile = req.file as Express.Multer.File | undefined;
       if (imageFile !== undefined) {
-        await this.deleteCustomProfileImage(userId);
-
         imagePath = await AwsS3Service.uploadFile(
           imageFile,
           AwsS3FileCategory.profiles
@@ -142,7 +139,10 @@ export class UserController {
         updatedFields["profileImagePath"] = imagePath;
       }
 
-      await UserDatasource.updateProfile(userId, updatedFields);
+      await performTransaction<void>(async (tx) => {
+        await this.#deleteCustomProfileImage(userId, tx);
+        await UserDatasource.updateProfile(userId, updatedFields, tx);
+      });
 
       const resData: SuccessResponseHandlerParams = {
         res: res,
@@ -160,8 +160,7 @@ export class UserController {
     async (req, res, next) => {
       const userId = req.user!.userId;
 
-      await this.deleteCustomProfileImage(userId);
-      await UserDatasource.resetProfileImage(userId);
+      await this.#deleteCustomProfileImage(userId);
 
       const profileImageUrl = AwsS3Service.getCloudFrontSignedUrl(
         Constants.defaultProfileImagePath
@@ -416,14 +415,16 @@ export class UserController {
     }
   );
 
-  static readonly deleteCustomProfileImage = async (
-    userId: string
+  static readonly #deleteCustomProfileImage = async (
+    userId: string,
+    transaction?: Transaction
   ): Promise<void> => {
     const profileImagePath = await UserDatasource.getUserProfileImagePath(
       userId
     );
     if (profileImagePath !== null) {
       AwsS3Service.initiateDeleteFile(profileImagePath);
+      await UserDatasource.deleteProfileImage(userId, transaction);
     }
   };
 
@@ -432,10 +433,8 @@ export class UserController {
       const userIds = await UserDatasource.getDueDeletionUserIds();
 
       for (const userId of userIds) {
-        await UserController.deleteCustomProfileImage(userId);
-
         await performTransaction<void>(async (transaction) => {
-          await SessionDatasource.signOutAllSessions(userId, transaction);
+          await this.#deleteCustomProfileImage(userId, transaction);
           await UserDatasource.deleteUser(userId, transaction);
           await UserDatasource.removeDeletionRequest(userId, transaction);
         });
