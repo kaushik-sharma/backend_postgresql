@@ -297,12 +297,11 @@ export class AuthController {
         );
       }
 
-      if (parsedData.cancelAccountDeletionRequest) {
-        await UserDatasource.removeDeletionRequest(user.id!);
-      }
-
       // Checking if the user is marked for deletion
-      if (user.status === EntityStatus.requestedDeletion) {
+      if (
+        user.status === EntityStatus.requestedDeletion &&
+        !parsedData.cancelAccountDeletionRequest
+      ) {
         throw new CustomError(
           403,
           "You have an active account deletion request pending."
@@ -310,7 +309,11 @@ export class AuthController {
       }
 
       const authToken = await performTransaction<string>(async (tx) => {
-        /// Delete anonymous user (if exists)
+        if (parsedData.cancelAccountDeletionRequest) {
+          await UserDatasource.removeDeletionRequest(user.id!, tx);
+          await UserDatasource.setUserActive(user.id!, tx);
+        }
+        // Delete anonymous user (if exists)
         if (anonymousUserId !== null) {
           await SessionDatasource.signOutAllSessions(anonymousUserId!, tx);
           await UserDatasource.deleteAnonymousUser(anonymousUserId!, tx);

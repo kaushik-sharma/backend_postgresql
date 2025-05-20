@@ -313,7 +313,7 @@ export class UserDatasource {
 
   static readonly removeDeletionRequest = async (
     userId: string,
-    transaction?: Transaction
+    transaction: Transaction
   ): Promise<void> => {
     const count = await UserDeletionRequestModel.destroy({
       where: { userId: userId },
@@ -336,6 +336,25 @@ export class UserDatasource {
       {
         where: { id: userId },
         transaction: transaction,
+      }
+    );
+
+    if (result[0] === 0) {
+      throw new CustomError(404, "User not found!");
+    }
+  };
+
+  static readonly setUserActive = async (
+    userId: string,
+    transaction: Transaction
+  ) => {
+    const result = await UserModel.update(
+      {
+        status: EntityStatus.active,
+      },
+      {
+        where: { id: userId },
+        transaction,
       }
     );
 
