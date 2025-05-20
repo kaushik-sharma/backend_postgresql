@@ -90,8 +90,7 @@ SocketManager.init(server);
 CronService.init();
 
 const port = Number(process.env.PORT!);
-const host = "0.0.0.0";
 
-server.listen(port, host, () => {
-  logger.info(`Server running at http://${host}:${port}/`);
+server.listen(port, "0.0.0.0", () => {
+  logger.info(`Server running at http://localhost:${port}/`);
 });
