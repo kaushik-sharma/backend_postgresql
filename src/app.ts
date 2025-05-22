@@ -21,6 +21,7 @@ import { CronService } from "./services/cron_service.js";
 import { initModels } from "./models/index.js";
 import { RedisService } from "./services/redis_service.js";
 import { hitCounter } from "./middlewares/hit_counter_middleware.js";
+import { getHealthCheckRouter } from "./routes/health_check_routes.js";
 // import { KafkaService } from "./services/kafka_service.js";
 
 Constants.env = $enum(Env).asValueOrThrow(process.env.ENV!);
@@ -62,6 +63,8 @@ app.use(express.json({ limit: "100kb" }));
 app.use(hitCounter());
 
 app.use(getDefaultRateLimiter());
+
+app.use("/api/health", getHealthCheckRouter());
 
 app.use("/api/v1/auth", getAuthRouter());
 app.use("/api/v1/user", getUserRouter());
