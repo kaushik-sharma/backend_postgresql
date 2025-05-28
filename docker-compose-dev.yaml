@@ -9,7 +9,7 @@ services:
       - .:/app
       - /app/node_modules
     expose:
-      - '3000'
+      - '443'
     ports:
-      - '3000:3000'
-    command: npm run start:dev
+      - '443:3000'
+    command: npm run watch:dev

@@ -92,8 +92,6 @@ const server = http.createServer(
 SocketManager.init(server);
 CronService.init();
 
-const port = Number(process.env.PORT!);
-
-server.listen(port, "0.0.0.0", () => {
-  logger.info(`Server running at http://localhost:${port}/`);
+server.listen(3000, "0.0.0.0", () => {
+  logger.info("Server running at http://localhost:3000/");
 });

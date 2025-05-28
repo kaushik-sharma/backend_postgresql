@@ -11,5 +11,5 @@ services:
     expose:
       - '443'
     ports:
-      - '443:443'
-    command: npm run start:prod
+      - '443:3000'
+    command: npm run watch:prod

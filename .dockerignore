@@ -3,8 +3,14 @@
 node_modules
 src
 .sequelizerc
+Dockerfile
 docker-compose-dev.yaml
 docker-compose-prod.yaml
-Dockerfile
+deploy-dev.sh
+deploy-prod.sh
+deployment-dev.yaml
+deployment-prod.yaml
+dev-rbac.yaml
+ngrok-deployment.yaml
 generate_migration.sh
 tsconfig.json

@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+spec:
+  selector:
+    app: testapp-dev
+  ports:
+    - protocol: 'TCP'
+      port: 443
+      targetPort: 3000
+  type: LoadBalancer
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: testapp-dev-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: testapp-dev
+      tier: backend
+  template:
+    metadata:
+      labels:
+        app: testapp-dev
+        tier: backend
+    spec:
+      containers:
+        - name: testapp-dev
+          image: kns1997/testapp-dev:latest
+          command: ["npm", "run", "start:dev"]
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            periodSeconds: 60
+            initialDelaySeconds: 10
+      imagePullSecrets:
+        - name: regcred

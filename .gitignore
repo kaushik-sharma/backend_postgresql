@@ -17,3 +17,5 @@ cloudfront-prod-private-key.pem
 cloudfront-prod-public-key.pem
 supabase-dev-db-ssl.crt
 supabase-prod-db-ssl.crt
+
+ngrok-deployment.yaml
