@@ -8,18 +8,8 @@ import { ModerationController } from "../controllers/moderation_controller.js";
 
 export class CronService {
   static readonly init = () => {
-    this.#scheduleDailyEmails();
     this.#scheduleRequestedUserDeletions();
     this.#scheduleModerationCheckup();
-  };
-
-  static readonly #scheduleDailyEmails = () => {
-    // Sends regular notifications/emails. Runs at 10 AM everyday.
-    cron.schedule("0 0 10 * * *", () => {
-      logger.info("Sending emails.");
-      // Send notifications / emails
-      logger.info("Emails successfully sent.");
-    });
   };
 
   static readonly #scheduleRequestedUserDeletions = () => {
