@@ -17,11 +17,11 @@ import { SocketManager } from "./socket.js";
 import logger from "./utils/logger.js";
 import { Env } from "./constants/enums.js";
 import { Constants } from "./constants/values.js";
-import { CronService } from "./services/cron_service.js";
 import { initModels } from "./models/index.js";
 import { RedisService } from "./services/redis_service.js";
 import { hitCounter } from "./middlewares/hit_counter_middleware.js";
 import { getHealthCheckRouter } from "./routes/health_check_routes.js";
+import { getCronRouter } from "./routes/cron_router.js";
 // import { KafkaService } from "./services/kafka_service.js";
 
 Constants.env = $enum(Env).asValueOrThrow(process.env.ENV!);
@@ -71,6 +71,7 @@ app.use("/api/v1/user", getUserRouter());
 app.use("/api/v1/posts", getPostRouter());
 app.use("/api/v1/moderation", getModerationRouter());
 app.use("/api/v1/connections", getConnectionRouter());
+app.use("/api/v1/cron", getCronRouter());
 
 app.use(errorHandler);
 
@@ -90,7 +91,6 @@ const server = http.createServer(
 );
 
 SocketManager.init(server);
-CronService.init();
 
 server.listen(3000, "0.0.0.0", () => {
   logger.info("Server running at http://localhost:3000/");

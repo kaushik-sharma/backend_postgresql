@@ -28,7 +28,6 @@ import { PostDatasource } from "../datasources/post_datasource.js";
 import { PostAttributes } from "../models/post/post_model.js";
 import { UserPostDto } from "../dtos/user_post_dto.js";
 import { UserCommentDto } from "../dtos/user_comment_dto.js";
-import logger from "../utils/logger.js";
 
 export class UserController {
   static readonly getUser: RequestHandler = asyncHandler(
@@ -140,7 +139,7 @@ export class UserController {
       }
 
       await performTransaction<void>(async (tx) => {
-        await this.#deleteCustomProfileImage(userId, tx);
+        await this.deleteCustomProfileImage(userId, tx);
         await UserDatasource.updateProfile(userId, updatedFields, tx);
       });
 
@@ -160,7 +159,7 @@ export class UserController {
     async (req, res, next) => {
       const userId = req.user!.userId;
 
-      await this.#deleteCustomProfileImage(userId);
+      await this.deleteCustomProfileImage(userId);
 
       const profileImageUrl = AwsS3Service.getCloudFrontSignedUrl(
         Constants.defaultProfileImagePath
@@ -415,7 +414,7 @@ export class UserController {
     }
   );
 
-  static readonly #deleteCustomProfileImage = async (
+  static readonly deleteCustomProfileImage = async (
     userId: string,
     transaction?: Transaction
   ): Promise<void> => {
@@ -425,24 +424,6 @@ export class UserController {
     if (profileImagePath !== null) {
       AwsS3Service.initiateDeleteFile(profileImagePath);
       await UserDatasource.deleteProfileImage(userId, transaction);
-    }
-  };
-
-  static readonly deleteScheduledUserAccounts = async () => {
-    try {
-      const userIds = await UserDatasource.getDueDeletionUserIds();
-
-      for (const userId of userIds) {
-        await performTransaction<void>(async (transaction) => {
-          await this.#deleteCustomProfileImage(userId, transaction);
-          await UserDatasource.deleteUser(userId, transaction);
-          await UserDatasource.removeDeletionRequest(userId, transaction);
-        });
-      }
-
-      logger.info(`Deleted ${userIds.length} scheduled user deletions.`);
-    } catch (err) {
-      logger.error(err);
     }
   };
 }

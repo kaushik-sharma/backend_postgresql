@@ -2,6 +2,7 @@ import { RequestHandler } from "express";
 
 import { JwtService } from "../services/jwt_service.js";
 import { AuthMode } from "../constants/enums.js";
+import { CustomError } from "./error_middlewares.js";
 
 export const requireAuth = ({
   authMode = AuthMode.authenticated,
@@ -21,6 +22,14 @@ export const optionalAuth: RequestHandler = async (req, res, next) => {
     req.user = await JwtService.verifyAuthToken(token, {
       authMode: AuthMode.anonymousOnly,
     });
+  }
+  next();
+};
+
+export const authenticateCronRequest: RequestHandler = (req, res, next) => {
+  const secret = req.headers["x-cron-secret"] as string;
+  if (secret !== process.env.CRON_SECRET!) {
+    throw new CustomError(401, "Unauthenticated request");
   }
   next();
 };

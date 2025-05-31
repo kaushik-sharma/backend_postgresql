@@ -1,0 +1,69 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: user-deletion-trigger-dev
+spec:
+  schedule: "0,20,40 * * * *"
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: call-delete-scheduled-users
+              image: curlimages/curl:latest
+              # Use a shell so that $CRON_SECRET expands
+              command: ["/bin/sh", "-c"]
+              args:
+                - |
+                  curl -X DELETE \
+                    "https://valid-hip-catfish.ngrok-free.app/api/v1/cron/delete-scheduled-users" \
+                    -H "Content-Type: application/json" \
+                    -H "x-cron-secret: $CRON_SECRET" \
+                    -d "{}"
+              env:
+                - name: CRON_SECRET
+                  valueFrom:
+                    secretKeyRef:
+                      name: cron-secret-dev
+                      key: CRON_SECRET
+          imagePullSecrets:
+            - name: regcred
+          restartPolicy: OnFailure
+
+---
+
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: moderation-checkup-trigger-dev
+spec:
+  schedule: "10,30,50 * * * *"
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: call-moderation-checkup
+              image: curlimages/curl:latest
+              # Use a shell so that $CRON_SECRET expands
+              command: ["/bin/sh", "-c"]
+              args:
+                - |
+                  curl -X POST \
+                    "https://valid-hip-catfish.ngrok-free.app/api/v1/cron/moderation-checkup" \
+                    -H "Content-Type: application/json" \
+                    -H "x-cron-secret: $CRON_SECRET" \
+                    -d "{}"
+              env:
+                - name: CRON_SECRET
+                  valueFrom:
+                    secretKeyRef:
+                      name: cron-secret-dev
+                      key: CRON_SECRET
+          imagePullSecrets:
+            - name: regcred
+          restartPolicy: OnFailure
