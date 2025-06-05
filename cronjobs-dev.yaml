@@ -17,7 +17,7 @@ spec:
               command: ["/bin/sh", "-c"]
               args:
                 - |
-                  curl -X DELETE \
+                  curl --http1.1 -X DELETE \
                     "https://valid-hip-catfish.ngrok-free.app/api/v1/cron/delete-scheduled-users" \
                     -H "Content-Type: application/json" \
                     -H "x-cron-secret: $CRON_SECRET" \
@@ -53,7 +53,7 @@ spec:
               command: ["/bin/sh", "-c"]
               args:
                 - |
-                  curl -X POST \
+                  curl --http1.1 -X POST \
                     "https://valid-hip-catfish.ngrok-free.app/api/v1/cron/moderation-checkup" \
                     -H "Content-Type: application/json" \
                     -H "x-cron-secret: $CRON_SECRET" \
