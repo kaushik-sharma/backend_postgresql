@@ -2,7 +2,12 @@ import jwt from "jsonwebtoken";
 import fs from "fs";
 
 import { PrismaService } from "../services/prisma_service.js";
-import { Prisma, EntityStatus, Platform, Session } from "../generated/prisma/index.js";
+import {
+  Prisma,
+  EntityStatus,
+  Platform,
+  Session,
+} from "../generated/prisma/index.js";
 import { CustomError } from "../middlewares/error_middlewares.js";
 import { AuthMode } from "../constants/enums.js";
 import { RedisService } from "./redis_service.js";
@@ -38,10 +43,16 @@ export class JwtService {
 
   static readonly #verifyJwt = (token: string): jwt.JwtPayload => {
     try {
+      const verifyOptions: jwt.VerifyOptions = {
+        algorithms: [this.#authTokenSignOptions.algorithm!],
+        audience: this.#authTokenSignOptions.audience as string,
+        issuer: this.#authTokenSignOptions.issuer,
+      };
+
       return jwt.verify(
         token,
         this.#publicKey,
-        this.#authTokenSignOptions
+        verifyOptions
       ) as jwt.JwtPayload;
     } catch (err: any) {
       if (err.name === jwt.TokenExpiredError.name) {
