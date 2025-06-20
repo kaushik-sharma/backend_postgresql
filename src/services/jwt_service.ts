@@ -45,7 +45,7 @@ export class JwtService {
     try {
       const verifyOptions: jwt.VerifyOptions = {
         algorithms: [this.#authTokenSignOptions.algorithm!],
-        audience: this.#authTokenSignOptions.audience as string,
+        audience: this.#authTokenSignOptions.audience,
         issuer: this.#authTokenSignOptions.issuer,
       };
 
