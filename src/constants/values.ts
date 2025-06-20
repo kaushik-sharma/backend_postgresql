@@ -1,7 +1,8 @@
 import { DateTime, Duration } from "luxon";
 
+import { ReportTargetType } from "../generated/prisma/index.js";
 import { AwsS3FileCategory } from "../services/aws_s3_service.js";
-import { Env, ReportTargetType } from "./enums.js";
+import { Env } from "./enums.js";
 
 export class Constants {
   static env: Env;
@@ -25,7 +26,7 @@ export class Constants {
   static readonly minAccountOpeningAge = 18;
   static readonly defaultProfileImagePath = `${AwsS3FileCategory.static}/default_profile_image.png`;
   static get userDeletionGracePeriodDuration(): Duration {
-    return this.env === Env.production
+    return this.env === Env.PRODUCTION
       ? Duration.fromObject({ days: 30 })
       : Duration.fromObject({ minutes: 5 });
   }
@@ -37,19 +38,19 @@ export class Constants {
 
   // Content Moderation
   static readonly #devModerationThreshold = {
-    [ReportTargetType.post]: 10,
-    [ReportTargetType.comment]: 10,
-    [ReportTargetType.user]: 10,
+    [ReportTargetType.POST]: 10,
+    [ReportTargetType.COMMENT]: 10,
+    [ReportTargetType.USER]: 10,
   };
   static readonly #prodModerationThreshold = {
-    [ReportTargetType.post]: 2000,
-    [ReportTargetType.comment]: 1000,
-    [ReportTargetType.user]: 1000,
+    [ReportTargetType.POST]: 2000,
+    [ReportTargetType.COMMENT]: 1000,
+    [ReportTargetType.USER]: 1000,
   };
   static readonly contentModerationThreshold = (
     targetType: ReportTargetType
   ): number => {
-    return this.env === Env.production
+    return this.env === Env.PRODUCTION
       ? this.#prodModerationThreshold[targetType]
       : this.#devModerationThreshold[targetType];
   };

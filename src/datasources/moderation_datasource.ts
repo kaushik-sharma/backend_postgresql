@@ -1,18 +1,17 @@
-import sequelize, { Op, Transaction } from "sequelize";
-
-import { ReportStatus, ReportTargetType } from "../constants/enums.js";
 import { Constants } from "../constants/values.js";
+import { PrismaService } from "../services/prisma_service.js";
 import {
-  ReportAttributes,
-  ReportModel,
-} from "../models/moderation/report_model.js";
+  Prisma,
+  ReportTargetType,
+  ReportStatus,
+} from "../generated/prisma/index.js";
 
 export class ModerationDatasource {
   static readonly createReport = async (
-    data: ReportAttributes
+    data: Prisma.ReportCreateInput
   ): Promise<void> => {
     try {
-      await ReportModel.create(data);
+      await PrismaService.client.report.create({ data });
     } catch (err: any) {
       // Silently ignoring on duplicate entries
       if (err.name === "SequelizeUniqueConstraintError") return;
@@ -26,37 +25,24 @@ export class ModerationDatasource {
   ): Promise<string[]> => {
     const threshold = Constants.contentModerationThreshold(targetType);
 
-    const reports = await ReportModel.findAll({
-      attributes: ["targetId"],
-      where: { targetType, status: ReportStatus.active },
-      group: ["targetId"],
-      having: sequelize.where(
-        sequelize.fn("COUNT", sequelize.col("targetId")),
-        { [Op.gte]: threshold }
-      ),
+    const reports = await PrismaService.client.report.groupBy({
+      by: ["targetId"],
+      where: { targetType, status: ReportStatus.ACTIVE },
+      having: { targetId: { _count: { gte: threshold } } },
     });
 
-    return reports.map((report) => report.toJSON().targetId);
+    return reports.map((report) => report.targetId);
   };
 
   static readonly markAsResolved = async (
     targetIds: string[],
-    transaction: Transaction
+    transaction: Prisma.TransactionClient
   ): Promise<void> => {
-    const result = await ReportModel.update(
-      {
-        status: ReportStatus.resolved,
+    await transaction.report.updateMany({
+      where: {
+        targetId: { in: targetIds },
       },
-      {
-        where: {
-          targetId: { [Op.in]: targetIds },
-        },
-        transaction,
-      }
-    );
-
-    if (result[0] === 0) {
-      throw new Error("Report target Ids not resolved.");
-    }
+      data: { status: ReportStatus.RESOLVED },
+    });
   };
 }

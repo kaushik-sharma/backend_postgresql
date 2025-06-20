@@ -1,0 +1,214 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-arm64-openssl-3.0.x"]
+  output        = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// -------------------------------------------- MODELS --------------------------------------------
+
+model User {
+  id               String       @id @default(uuid())
+  firstName        String?      @db.VarChar(50)
+  lastName         String?      @db.VarChar(50)
+  gender           Gender?
+  countryCode      String?      @db.VarChar(4)
+  phoneNumber      String?      @db.VarChar(10)
+  email            String?
+  dob              String?
+  profileImagePath String?
+  status           EntityStatus
+  bannedAt         DateTime?
+  deletedAt        DateTime?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  sessions            Session[]
+  posts               Post[]
+  comments            Comment[]
+  reactions           Reaction[]
+  followees           Connection[]         @relation("Follower")
+  followers           Connection[]         @relation("Followee")
+  reports             Report[]
+  userDeletionRequest UserDeletionRequest?
+
+  @@index([countryCode, phoneNumber])
+  @@index([email])
+  @@index([status])
+  @@map("users")
+}
+
+model Session {
+  id         String   @id @default(uuid())
+  userId     String
+  deviceId   String
+  deviceName String
+  platform   Platform
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model Post {
+  id             String       @id @default(uuid())
+  userId         String
+  repostedPostId String?
+  text           String       @db.VarChar(500)
+  imagePath      String?
+  status         EntityStatus
+  bannedAt       DateTime?
+  deletedAt      DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  reposts   Post[]     @relation("PostReposts")
+  comments  Comment[]
+  reactions Reaction[]
+
+  user         User  @relation(fields: [userId], references: [id])
+  repostedPost Post? @relation("PostReposts", fields: [repostedPostId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@map("posts")
+}
+
+model Comment {
+  id              String       @id @default(uuid())
+  postId          String
+  userId          String
+  parentCommentId String?
+  level           Int
+  text            String       @db.VarChar(500)
+  status          EntityStatus
+  bannedAt        DateTime?
+  deletedAt       DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  post Post @relation(fields: [postId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([postId])
+  @@index([userId])
+  @@index([status])
+  @@map("comments")
+}
+
+model Reaction {
+  id          String      @id @default(uuid())
+  userId      String
+  postId      String
+  emotionType EmotionType
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+  post Post @relation(fields: [postId], references: [id])
+
+  @@unique([userId, postId])
+  @@index([userId])
+  @@index([postId])
+  @@map("reactions")
+}
+
+model Connection {
+  id         String   @id @default(uuid())
+  followerId String
+  followeeId String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  follower User @relation("Follower", fields: [followerId], references: [id])
+  followee User @relation("Followee", fields: [followeeId], references: [id])
+
+  @@unique([followerId, followeeId])
+  @@index([followerId])
+  @@index([followeeId])
+  @@map("connections")
+}
+
+model Report {
+  id         String           @id @default(uuid())
+  targetType ReportTargetType
+  targetId   String
+  reporterId String
+  reason     ReportReason
+  status     ReportStatus
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  reporter User @relation(fields: [reporterId], references: [id])
+
+  @@unique([targetId, reporterId])
+  @@index([targetType])
+  @@index([targetId])
+  @@index([reporterId])
+  @@map("reports")
+}
+
+model UserDeletionRequest {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  deleteAt  DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([deleteAt])
+  @@map("user_deletion_requests")
+}
+
+// -------------------------------------------- ENUMS --------------------------------------------
+
+enum Gender {
+  MALE
+  FEMALE
+  NON_BINARY
+}
+
+enum EntityStatus {
+  ACTIVE
+  BANNED
+  DELETED
+  REQUESTED_DELETION
+  ANONYMOUS
+}
+
+enum Platform {
+  ANDROID
+  IOS
+  WEB
+}
+
+enum EmotionType {
+  LIKE
+  DISLIKE
+}
+
+enum ReportTargetType {
+  POST
+  COMMENT
+  USER
+}
+
+enum ReportReason {
+  SPAM
+  MISLEADING
+  HATEFUL_CONTENT
+}
+
+enum ReportStatus {
+  ACTIVE
+  RESOLVED
+}

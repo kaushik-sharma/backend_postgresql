@@ -1,7 +1,7 @@
 import { RequestHandler } from "express";
 import { DateTime } from "luxon";
-import { Transaction } from "sequelize";
 
+import { Prisma, Session, User } from "../generated/prisma/index.js";
 import { asyncHandler } from "../helpers/async_handler.js";
 import {
   successResponseHandler,
@@ -15,19 +15,25 @@ import {
   UpdateProfileType,
 } from "../validation/profile_schema.js";
 import { CustomError } from "../middlewares/error_middlewares.js";
-import { UserDeletionRequestAttributes } from "../models/user/user_deletion_request_model.js";
-import { performTransaction } from "../helpers/transaction_helper.js";
 import { UserDatasource } from "../datasources/user_datasource.js";
-import { SessionDatasource } from "../datasources/session_datasource.js";
 import { ProfileDto, PublicProfileDto } from "../dtos/profile_dto.js";
 import {
   ActiveSessionParams,
   ActiveSessionsOverviewDto,
 } from "../dtos/session_dto.js";
-import { PostDatasource } from "../datasources/post_datasource.js";
-import { PostAttributes } from "../models/post/post_model.js";
-import { UserPostDto } from "../dtos/user_post_dto.js";
-import { UserCommentDto } from "../dtos/user_comment_dto.js";
+import { PrismaService } from "../services/prisma_service.js";
+import { SessionDatasource } from "../datasources/session_datasource.js";
+
+export type ProfileUser = User & {
+  followerCount: number;
+  followeeCount: number;
+  isFollowee: boolean;
+};
+
+export type ActiveSessionInfo = Pick<
+  Session,
+  "id" | "deviceName" | "platform" | "createdAt"
+>;
 
 export class UserController {
   static readonly getUser: RequestHandler = asyncHandler(
@@ -138,7 +144,7 @@ export class UserController {
         updatedFields["profileImagePath"] = imagePath;
       }
 
-      await performTransaction<void>(async (tx) => {
+      await PrismaService.client.$transaction<void>(async (tx) => {
         await this.deleteCustomProfileImage(userId, tx);
         await UserDatasource.updateProfile(userId, updatedFields, tx);
       });
@@ -183,12 +189,15 @@ export class UserController {
         .plus(Constants.userDeletionGracePeriodDuration)
         .toJSDate();
 
-      const requestData: UserDeletionRequestAttributes = { userId, deleteAt };
+      const data: Prisma.UserDeletionRequestCreateInput = {
+        deleteAt: deleteAt,
+        user: { connect: { id: userId } },
+      };
 
-      await performTransaction<void>(async (tx) => {
+      await PrismaService.client.$transaction<void>(async (tx) => {
         await SessionDatasource.signOutAllSessions(userId, tx);
         await UserDatasource.markUserForDeletion(userId, tx);
-        await UserDatasource.createUserDeletionRequest(requestData, tx);
+        await UserDatasource.createUserDeletionRequest(data, tx);
       });
 
       successResponseHandler({
@@ -286,137 +295,9 @@ export class UserController {
     }
   );
 
-  static readonly #processUserPosts = (
-    posts: PostAttributes[]
-  ): UserPostDto[] => {
-    return posts.map((post) => {
-      const postImageUrl =
-        post.imagePath != null
-          ? AwsS3Service.getCloudFrontSignedUrl(post.imagePath)
-          : null;
-
-      return new UserPostDto({
-        id: post.id!,
-        text: post.text,
-        imageUrl: postImageUrl,
-        likeCount: post.likeCount!,
-        dislikeCount: post.dislikeCount!,
-        commentCount: post.commentCount!,
-        createdAt: post.createdAt!,
-      });
-    });
-  };
-
-  static readonly getUserPosts: RequestHandler = asyncHandler(
-    async (req, res, next) => {
-      const userId = req.user!.userId;
-
-      const page = parseInt(req.query.page as string);
-      if (page < 0) {
-        throw new CustomError(400, "Page can not be less than zero!");
-      }
-
-      const posts = await PostDatasource.getPostsByUserId(userId, page);
-      const postDtos = this.#processUserPosts(posts);
-
-      successResponseHandler({
-        res: res,
-        status: 200,
-        data: postDtos,
-      });
-    }
-  );
-
-  static readonly getUserComments: RequestHandler = asyncHandler(
-    async (req, res, next) => {
-      const userId = req.user!.userId;
-
-      const page = parseInt(req.query.page as string);
-      if (page < 0) {
-        throw new CustomError(400, "Page can not be less than zero!");
-      }
-
-      const comments = await PostDatasource.getCommentsByUserId(userId, page);
-      const commentDtos = comments.map((comment) => {
-        return new UserCommentDto({
-          id: comment.id!,
-          postId: comment.postId,
-          text: comment.text,
-          createdAt: comment.createdAt!,
-        });
-      });
-
-      successResponseHandler({
-        res: res,
-        status: 200,
-        data: commentDtos,
-      });
-    }
-  );
-
-  static readonly deletePost: RequestHandler = asyncHandler(
-    async (req, res, next) => {
-      const userId = req.user!.userId;
-
-      const postId = req.params.postId;
-      if (!postId) {
-        throw new CustomError(400, "Post ID is required.");
-      }
-
-      const postUserId = await PostDatasource.getPostUserId(postId);
-      if (!postUserId) {
-        throw new CustomError(404, "Post not found!");
-      }
-      if (postUserId !== userId) {
-        throw new CustomError(403, "Can not delete other users' posts!");
-      }
-
-      // Delete the post image if it exists from S3 & CloudFront
-      const imagePath: string | null = await PostDatasource.getPostImagePath(
-        postId
-      );
-      if (imagePath !== null) {
-        AwsS3Service.initiateDeleteFile(imagePath);
-      }
-
-      await PostDatasource.deletePost(postId, userId);
-
-      successResponseHandler({
-        res: res,
-        status: 200,
-      });
-    }
-  );
-
-  static readonly deleteComment: RequestHandler = asyncHandler(
-    async (req, res, next) => {
-      const userId = req.user!.userId;
-
-      const commentId = req.params.commentId;
-      if (!commentId) {
-        throw new CustomError(400, "Comment ID is required.");
-      }
-
-      const commentUserId = await PostDatasource.getCommentUserId(commentId);
-      if (!commentUserId) {
-        throw new CustomError(404, "Comment not found!");
-      }
-      if (commentUserId !== userId) {
-        throw new CustomError(403, "Can not delete other users' comments!");
-      }
-
-      await PostDatasource.deleteComment(commentId, userId);
-
-      successResponseHandler({
-        res: res,
-        status: 200,
-      });
-    }
-  );
-
   static readonly deleteCustomProfileImage = async (
     userId: string,
-    transaction?: Transaction
+    transaction?: Prisma.TransactionClient
   ): Promise<void> => {
     const profileImagePath = await UserDatasource.getUserProfileImagePath(
       userId

@@ -17,7 +17,7 @@ export const getPostRouter = (): Router => {
   );
   router.get(
     "/",
-    requireAuth({ authMode: AuthMode.allowAnonymous }),
+    requireAuth({ authMode: AuthMode.ALLOW_ANONYMOUS }),
     PostController.getPostsFeed
   );
 
@@ -29,7 +29,7 @@ export const getPostRouter = (): Router => {
   );
   router.get(
     "/:postId/comments",
-    requireAuth({ authMode: AuthMode.allowAnonymous }),
+    requireAuth({ authMode: AuthMode.ALLOW_ANONYMOUS }),
     PostController.getCommentsByPostId
   );
 

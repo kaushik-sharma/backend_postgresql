@@ -2,7 +2,6 @@
 .git
 node_modules
 src
-.sequelizerc
 Dockerfile
 docker-compose-dev.yaml
 docker-compose-prod.yaml
@@ -12,5 +11,4 @@ deployment-dev.yaml
 deployment-prod.yaml
 dev-rbac.yaml
 ngrok-deployment.yaml
-generate_migration.sh
 tsconfig.json

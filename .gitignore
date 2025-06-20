@@ -5,7 +5,9 @@ node_modules/
 dist/
 
 .env.development
+.env.migration.development
 .env.production
+.env.migration.production
 
 jwt-dev-private-key.pem
 jwt-dev-public-key.pem
@@ -15,7 +17,10 @@ cloudfront-dev-private-key.pem
 cloudfront-dev-public-key.pem
 cloudfront-prod-private-key.pem
 cloudfront-prod-public-key.pem
-supabase-dev-db-ssl.crt
-supabase-prod-db-ssl.crt
+
+supabase-ca-dev.crt
+supabase-ca-prod.crt
 
 ngrok-deployment.yaml
+
+/src/generated/

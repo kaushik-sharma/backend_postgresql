@@ -14,16 +14,41 @@ import { asyncHandler } from "../helpers/async_handler.js";
 import { PostDatasource } from "../datasources/post_datasource.js";
 import { CustomError } from "../middlewares/error_middlewares.js";
 import { AwsS3Service, AwsS3FileCategory } from "../services/aws_s3_service.js";
-import { PostAttributes } from "../models/post/post_model.js";
-import { EntityStatus } from "../constants/enums.js";
 import { SocketManager } from "../socket.js";
 import { successResponseHandler } from "../helpers/success_handler.js";
-import { ReactionAttributes } from "../models/post/reaction_model.js";
-import { CommentAttributes } from "../models/post/comment_model.js";
 import { Constants } from "../constants/values.js";
 import { FeedPostDto, FeedPostParams } from "../dtos/feed_post_dto.js";
 import { FeedCommentDto } from "../dtos/feed_comment_dto.js";
+import {
+  Prisma,
+  EntityStatus,
+  Post,
+  Comment,
+  User,
+} from "../generated/prisma/index.js";
+import { UserPostDto } from "../dtos/user_post_dto.js";
+import { UserCommentDto } from "../dtos/user_comment_dto.js";
 // import { KafkaService } from "../services/kafka_service.js";
+
+type Creator = Pick<
+  User,
+  "id" | "firstName" | "lastName" | "profileImagePath" | "status"
+>;
+
+export type FeedPost = Pick<
+  Post,
+  "id" | "text" | "imagePath" | "status" | "createdAt"
+> & {
+  user: Creator;
+  repostedPost: FeedPost | null;
+  likeCount: number;
+  dislikeCount: number;
+  commentCount: number;
+};
+
+export type FeedComment = Comment & {
+  user: Creator;
+};
 
 export class PostController {
   static readonly validateCreatePostRequest: RequestHandler = (
@@ -61,70 +86,19 @@ export class PostController {
         imageUrl = AwsS3Service.getCloudFrontSignedUrl(imagePath);
       }
 
-      const postData: PostAttributes = {
-        userId: userId,
+      const postData: Prisma.PostCreateInput = {
+        user: { connect: { id: userId } },
         text: parsedData.text,
         imagePath: imagePath,
-        repostedPostId: parsedData.repostedPostId ?? null,
-        status: EntityStatus.active,
+        repostedPost: parsedData.repostedPostId
+          ? { connect: { id: parsedData.repostedPostId } }
+          : undefined,
+        status: EntityStatus.ACTIVE,
       };
       const postId = await PostDatasource.createPost(postData);
 
-      const createdPostData = await PostDatasource.getPostById(postId);
-
-      const profileImageUrl = AwsS3Service.getCloudFrontSignedUrl(
-        createdPostData.user!.profileImagePath ??
-          Constants.defaultProfileImagePath
-      );
-
-      let repostedPostParams: FeedPostParams | null = null;
-      if (parsedData.repostedPostId !== undefined) {
-        const repostedPost = createdPostData.repostedPost!;
-        const imageUrl =
-          repostedPost.imagePath !== null
-            ? AwsS3Service.getCloudFrontSignedUrl(repostedPost.imagePath)
-            : null;
-        const profileImageUrl = AwsS3Service.getCloudFrontSignedUrl(
-          repostedPost.user!.profileImagePath ??
-            Constants.defaultProfileImagePath
-        );
-
-        repostedPostParams = {
-          id: repostedPost.id!,
-          text: repostedPost.text,
-          imageUrl: imageUrl,
-          likeCount: repostedPost.likeCount!,
-          dislikeCount: repostedPost.dislikeCount!,
-          commentCount: repostedPost.commentCount!,
-          createdAt: repostedPost.createdAt!,
-          repostedPost: null,
-          creator: {
-            id: repostedPost.user!.id!,
-            firstName: repostedPost.user!.firstName!,
-            lastName: repostedPost.user!.lastName!,
-            profileImageUrl: profileImageUrl,
-          },
-          status: repostedPost.status,
-        };
-      }
-
-      const createdPostDto = new FeedPostDto({
-        id: createdPostData.id!,
-        text: createdPostData.text,
-        imageUrl: imageUrl,
-        likeCount: createdPostData.likeCount!,
-        dislikeCount: createdPostData.dislikeCount!,
-        commentCount: createdPostData.commentCount!,
-        createdAt: createdPostData.createdAt!,
-        repostedPost: repostedPostParams,
-        creator: {
-          id: createdPostData.user!.id!,
-          firstName: createdPostData.user!.firstName!,
-          lastName: createdPostData.user!.lastName!,
-          profileImageUrl: profileImageUrl,
-        },
-        status: createdPostData.status,
-      });
+      const createdPost = await PostDatasource.getPostById(postId);
+      const feedPostDto = this.#processFeedPosts([createdPost])[0];
 
       SocketManager.io.emit("newPostsAvailable", {
         message: "New posts added. Refresh the feed.",
@@ -133,7 +107,7 @@ export class PostController {
       successResponseHandler({
         res: res,
         status: 200,
-        data: createdPostDto,
+        data: feedPostDto,
       });
     }
   );
@@ -162,9 +136,9 @@ export class PostController {
         throw new CustomError(404, "Post not found!");
       }
 
-      const reactionData: ReactionAttributes = {
-        userId: userId,
-        postId: parsedData.postId,
+      const reactionData: Prisma.ReactionCreateInput = {
+        user: { connect: { id: userId } },
+        post: { connect: { id: parsedData.postId } },
         emotionType: parsedData.emotionType,
       };
       await PostDatasource.createReaction(reactionData);
@@ -228,14 +202,15 @@ export class PostController {
         }
       }
 
-      const commentData: CommentAttributes = {
-        postId: parsedData.postId,
-        userId: parsedData.userId,
+      const commentData: Prisma.CommentCreateInput = {
+        post: { connect: { id: parsedData.postId } },
+        user: { connect: { id: parsedData.userId } },
         parentCommentId: parsedData.parentCommentId,
         level: parsedData.level,
         text: parsedData.text,
-        status: EntityStatus.active,
+        status: EntityStatus.ACTIVE,
       };
+
       const commentId = await PostDatasource.createComment(commentData);
 
       const createdCommentData = await PostDatasource.getCommentById(commentId);
@@ -273,8 +248,8 @@ export class PostController {
         commentStatus: EntityStatus,
         userStatus: EntityStatus
       ): EntityStatus => {
-        return userStatus !== EntityStatus.active
-          ? EntityStatus.deleted
+        return userStatus !== EntityStatus.ACTIVE
+          ? EntityStatus.DELETED
           : commentStatus;
       };
 
@@ -292,7 +267,7 @@ export class PostController {
 
       const commentDtos = commentsData.map((comment) => {
         const status = getEffectiveStatus(comment.status, comment.user!.status);
-        const isActive = status === EntityStatus.active;
+        const isActive = status === EntityStatus.ACTIVE;
 
         const profileImageUrl = isActive
           ? AwsS3Service.getCloudFrontSignedUrl(
@@ -334,9 +309,7 @@ export class PostController {
     }
   );
 
-  static readonly #processFeedPosts = (
-    posts: PostAttributes[]
-  ): FeedPostDto[] => {
+  static readonly #processFeedPosts = (posts: FeedPost[]): FeedPostDto[] => {
     return posts.map((post) => {
       const postImageUrl =
         post.imagePath != null
@@ -347,7 +320,7 @@ export class PostController {
       );
 
       let repostedPost: FeedPostParams | null = null;
-      if (post.repostedPostId !== null) {
+      if (post.repostedPost !== null) {
         const repostImageUrl =
           post.repostedPost?.imagePath != null
             ? AwsS3Service.getCloudFrontSignedUrl(post.repostedPost.imagePath)
@@ -377,7 +350,7 @@ export class PostController {
                   profileImageUrl: repostProfileImageUrl!,
                 }
               : null,
-          status: post.repostedPost?.status ?? EntityStatus.deleted,
+          status: post.repostedPost?.status ?? EntityStatus.DELETED,
         };
       }
 
@@ -415,6 +388,131 @@ export class PostController {
         res: res,
         status: 200,
         data: feed,
+      });
+    }
+  );
+
+  static readonly getUserPosts: RequestHandler = asyncHandler(
+    async (req, res, next) => {
+      const userId = req.user!.userId;
+
+      const page = parseInt(req.query.page as string);
+      if (page < 0) {
+        throw new CustomError(400, "Page can not be less than zero!");
+      }
+
+      const posts = await PostDatasource.getPostsByUserId(userId, page);
+
+      const postDtos = posts.map((post) => {
+        const postImageUrl =
+          post.imagePath != null
+            ? AwsS3Service.getCloudFrontSignedUrl(post.imagePath)
+            : null;
+
+        return new UserPostDto({
+          id: post.id!,
+          text: post.text,
+          imageUrl: postImageUrl,
+          likeCount: post.likeCount!,
+          dislikeCount: post.dislikeCount!,
+          commentCount: post.commentCount!,
+          createdAt: post.createdAt!,
+        });
+      });
+
+      successResponseHandler({
+        res: res,
+        status: 200,
+        data: postDtos,
+      });
+    }
+  );
+
+  static readonly getUserComments: RequestHandler = asyncHandler(
+    async (req, res, next) => {
+      const userId = req.user!.userId;
+
+      const page = parseInt(req.query.page as string);
+      if (page < 0) {
+        throw new CustomError(400, "Page can not be less than zero!");
+      }
+
+      const comments = await PostDatasource.getCommentsByUserId(userId, page);
+
+      const commentDtos = comments.map(
+        (comment) =>
+          new UserCommentDto({
+            id: comment.id!,
+            postId: comment.postId,
+            text: comment.text,
+            createdAt: comment.createdAt!,
+          })
+      );
+
+      successResponseHandler({
+        res: res,
+        status: 200,
+        data: commentDtos,
+      });
+    }
+  );
+
+  static readonly deletePost: RequestHandler = asyncHandler(
+    async (req, res, next) => {
+      const userId = req.user!.userId;
+
+      const postId = req.params.postId;
+      if (!postId) {
+        throw new CustomError(400, "Post ID is required.");
+      }
+
+      const postUserId = await PostDatasource.getPostUserId(postId);
+      if (!postUserId) {
+        throw new CustomError(404, "Post not found!");
+      }
+      if (postUserId !== userId) {
+        throw new CustomError(403, "Can not delete other users' posts!");
+      }
+
+      // Delete the post image if it exists from S3 & CloudFront
+      const imagePath: string | null = await PostDatasource.getPostImagePath(
+        postId
+      );
+      if (imagePath !== null) {
+        AwsS3Service.initiateDeleteFile(imagePath);
+      }
+
+      await PostDatasource.deletePost(postId, userId);
+
+      successResponseHandler({
+        res: res,
+        status: 200,
+      });
+    }
+  );
+
+  static readonly deleteComment: RequestHandler = asyncHandler(
+    async (req, res, next) => {
+      const userId = req.user!.userId;
+
+      const commentId = req.params.commentId;
+      if (!commentId) {
+        throw new CustomError(400, "Comment ID is required.");
+      }
+
+      const commentUserId = await PostDatasource.getCommentUserId(commentId);
+      if (!commentUserId) {
+        throw new CustomError(404, "Comment not found!");
+      }
+      if (commentUserId !== userId) {
+        throw new CustomError(403, "Can not delete other users' comments!");
+      }
+
+      await PostDatasource.deleteComment(commentId, userId);
+
+      successResponseHandler({
+        res: res,
+        status: 200,
       });
     }
   );

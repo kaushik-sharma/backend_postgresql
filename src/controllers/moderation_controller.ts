@@ -8,8 +8,11 @@ import { CustomError } from "../middlewares/error_middlewares.js";
 import { ModerationDatasource } from "../datasources/moderation_datasource.js";
 import { successResponseHandler } from "../helpers/success_handler.js";
 import { UserDatasource } from "../datasources/user_datasource.js";
-import { ReportAttributes } from "../models/moderation/report_model.js";
-import { ReportStatus, ReportTargetType } from "../constants/enums.js";
+import {
+  Prisma,
+  ReportStatus,
+  ReportTargetType,
+} from "../generated/prisma/index.js";
 
 export class ModerationController {
   static readonly validateReportRequest: RequestHandler = (req, res, next) => {
@@ -23,14 +26,14 @@ export class ModerationController {
 
       const parsedData = req.parsedData! as ReportType;
 
-      const data: ReportAttributes = {
+      const data: Prisma.ReportCreateInput = {
         ...parsedData,
-        reporterId: userId,
-        status: ReportStatus.active,
+        reporter: { connect: { id: userId } },
+        status: ReportStatus.ACTIVE,
       };
 
       switch (data.targetType) {
-        case ReportTargetType.post:
+        case ReportTargetType.POST:
           const postUserId = await PostDatasource.getPostUserId(data.targetId);
           if (!postUserId) {
             throw new CustomError(404, "Post not found!");
@@ -39,7 +42,7 @@ export class ModerationController {
             throw new CustomError(403, "Can not report your own post!");
           }
           break;
-        case ReportTargetType.comment:
+        case ReportTargetType.COMMENT:
           const commentUserId = await PostDatasource.getCommentUserId(
             data.targetId
           );
@@ -50,7 +53,7 @@ export class ModerationController {
             throw new CustomError(403, "Can not report your own comment!");
           }
           break;
-        case ReportTargetType.user:
+        case ReportTargetType.USER:
           const isUserActive = await UserDatasource.isUserActive(data.targetId);
           if (!isUserActive) {
             throw new CustomError(404, "User not found!");

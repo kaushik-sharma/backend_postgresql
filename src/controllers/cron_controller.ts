@@ -1,14 +1,14 @@
 import { RequestHandler } from "express";
 
-import { ReportTargetType } from "../constants/enums.js";
 import { ModerationDatasource } from "../datasources/moderation_datasource.js";
 import { PostDatasource } from "../datasources/post_datasource.js";
 import { SessionDatasource } from "../datasources/session_datasource.js";
 import { UserDatasource } from "../datasources/user_datasource.js";
-import { performTransaction } from "../helpers/transaction_helper.js";
 import logger from "../utils/logger.js";
 import { UserController } from "./user_controller.js";
 import { asyncHandler } from "../helpers/async_handler.js";
+import { ReportTargetType } from "../generated/prisma/index.js";
+import { PrismaService } from "../services/prisma_service.js";
 
 export class CronController {
   static readonly deleteScheduledUsers: RequestHandler = asyncHandler(
@@ -18,7 +18,7 @@ export class CronController {
       const userIds = await UserDatasource.getDueDeletionUserIds();
 
       for (const userId of userIds) {
-        await performTransaction<void>(async (transaction) => {
+        await PrismaService.client.$transaction<void>(async (transaction) => {
           await UserController.deleteCustomProfileImage(userId, transaction);
           await UserDatasource.deleteUser(userId, transaction);
           await UserDatasource.removeDeletionRequest(userId, transaction);
@@ -33,26 +33,26 @@ export class CronController {
   static readonly moderationCheckup: RequestHandler = asyncHandler(
     async (req, res, next) => {
       const checkReportTarget = async (targetType: ReportTargetType) => {
-        await performTransaction(async (tx) => {
+        await PrismaService.client.$transaction<void>(async (tx) => {
           const targetIds = await ModerationDatasource.fetchOverThresholdIds(
             targetType
           );
 
           for (const id of targetIds) {
             switch (targetType) {
-              case ReportTargetType.post:
+              case ReportTargetType.POST:
                 const postExists = await PostDatasource.postExists(id);
                 if (postExists) {
                   await PostDatasource.banPost(id, tx);
                 }
                 break;
-              case ReportTargetType.comment:
+              case ReportTargetType.COMMENT:
                 const commentExists = await PostDatasource.commentExists(id);
                 if (commentExists) {
                   await PostDatasource.banComment(id, tx);
                 }
                 break;
-              case ReportTargetType.user:
+              case ReportTargetType.USER:
                 const userExists = await UserDatasource.isUserActive(id);
                 if (userExists) {
                   await SessionDatasource.signOutAllSessions(id, tx);

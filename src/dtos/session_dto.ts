@@ -1,4 +1,4 @@
-import { Platform } from "../constants/enums.js";
+import { Platform } from "../generated/prisma/index.js";
 
 export interface ActiveSessionParams {
   id: string;

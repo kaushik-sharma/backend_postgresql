@@ -1,5 +1,5 @@
 import { CustomError } from "../middlewares/error_middlewares.js";
-import { ConnectionModel } from "../models/connections/connections_model.js";
+import { PrismaService } from "../services/prisma_service.js";
 
 export class ConnectionDatasource {
   static readonly followUser = async (
@@ -7,11 +7,12 @@ export class ConnectionDatasource {
     followeeId: string
   ): Promise<void> => {
     try {
-      const model = new ConnectionModel({
-        followerId,
-        followeeId,
+      await PrismaService.client.connection.create({
+        data: {
+          followerId,
+          followeeId,
+        },
       });
-      await model.save();
     } catch (e: any) {
       if (e.name === "SequelizeUniqueConstraintError") {
         throw new CustomError(409, "Connection already exists.");
@@ -24,11 +25,13 @@ export class ConnectionDatasource {
     followerId: string,
     followeeId: string
   ): Promise<void> => {
-    const count = await ConnectionModel.destroy({
-      where: { followerId, followeeId },
+    await PrismaService.client.connection.delete({
+      where: {
+        followerId_followeeId: {
+          followerId,
+          followeeId,
+        },
+      },
     });
-    if (count === 0) {
-      throw new CustomError(404, "Connection not found!");
-    }
   };
 }

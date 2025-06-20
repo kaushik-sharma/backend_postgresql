@@ -1,63 +1,64 @@
-import { FindOptions, Includeable, literal, Transaction } from "sequelize";
-import { EntityStatus } from "../constants/enums.js";
 import { Constants } from "../constants/values.js";
-import { UserModel } from "../models/user/user_model.js";
+import { PrismaService } from "../services/prisma_service.js";
+import { FeedComment, FeedPost } from "../controllers/post_controller.js";
 import {
-  CommentAttributes,
-  CommentModel,
-} from "../models/post/comment_model.js";
-import { PostAttributes, PostModel } from "../models/post/post_model.js";
-import {
+  Prisma,
+  EntityStatus,
   EmotionType,
-  ReactionAttributes,
-  ReactionModel,
-} from "../models/post/reaction_model.js";
-import { CustomError } from "../middlewares/error_middlewares.js";
+} from "../generated/prisma/index.js";
 
 export class PostDatasource {
   static readonly createPost = async (
-    postData: PostAttributes
+    data: Prisma.PostCreateInput
   ): Promise<string> => {
-    const post = new PostModel(postData);
-    const result = await post.save();
-    return result.toJSON().id!;
+    const post = await PrismaService.client.post.create({ data: data });
+    return post.id;
   };
 
   static readonly postExists = async (id: string): Promise<boolean> => {
-    const count = await PostModel.scope("withActiveUser").count({
+    const count = await PrismaService.client.post.count({
       where: {
-        id: id,
-        status: EntityStatus.active,
+        id,
+        status: EntityStatus.ACTIVE,
+        user: { status: EntityStatus.ACTIVE },
       },
     });
     return count > 0;
   };
 
   static readonly createReaction = async (
-    reactionData: ReactionAttributes
+    data: Prisma.ReactionCreateInput
   ): Promise<void> => {
     // Check if the user already has a reaction for that post
-    const prevReaction = await ReactionModel.findOne({
-      where: {
-        postId: reactionData.postId,
-        userId: reactionData.userId,
-      },
-      attributes: ["emotionType"],
+    const prevReaction = await PrismaService.client.reaction.findFirst({
+      where: { postId: data.post.connect!.id!, userId: data.user.connect!.id! },
+      select: { emotionType: true },
     });
 
     // If same reaction as before then delete it
-    if (reactionData.emotionType === prevReaction?.toJSON().emotionType) {
-      await ReactionModel.destroy({
+    if (data.emotionType === prevReaction?.emotionType) {
+      await PrismaService.client.reaction.delete({
         where: {
-          postId: reactionData.postId,
-          userId: reactionData.userId,
+          userId_postId: {
+            postId: data.post.connect!.id!,
+            userId: data.user.connect!.id!,
+          },
         },
       });
       return;
     }
 
     // Save new or update the existing reaction
-    await ReactionModel.upsert(reactionData);
+    await PrismaService.client.reaction.upsert({
+      where: {
+        userId_postId: {
+          postId: data.post.connect!.id!,
+          userId: data.user.connect!.id!,
+        },
+      },
+      create: { ...data },
+      update: { emotionType: data.emotionType },
+    });
   };
 
   static readonly commentExists = async (
@@ -67,7 +68,7 @@ export class PostDatasource {
   ): Promise<boolean> => {
     const query: Record<string, any> = {
       id: commentId,
-      status: EntityStatus.active,
+      status: EntityStatus.ACTIVE,
     };
     if (level !== undefined) {
       query.level = level;
@@ -76,149 +77,131 @@ export class PostDatasource {
       query.postId = postId;
     }
 
-    const count = await CommentModel.scope("withActiveUser").count({
-      where: query,
+    const count = await PrismaService.client.comment.count({
+      where: {
+        ...query,
+        user: { status: EntityStatus.ACTIVE },
+      },
     });
     return count > 0;
   };
 
   static readonly createComment = async (
-    commentData: CommentAttributes
+    data: Prisma.CommentCreateInput
   ): Promise<string> => {
-    const comment = new CommentModel(commentData);
-    const result = await comment.save();
-    return result.toJSON().id!;
+    const comment = await PrismaService.client.comment.create({ data });
+    return comment.id;
   };
 
   static readonly getPostUserId = async (
     postId: string
   ): Promise<string | null> => {
-    const post = await PostModel.scope("withActiveUser").findOne({
-      where: { id: postId, status: EntityStatus.active },
-      attributes: ["userId"],
+    const post = await PrismaService.client.post.findFirst({
+      where: { id: postId, status: EntityStatus.ACTIVE },
+      select: { userId: true },
     });
-    return post?.toJSON().userId ?? null;
+    return post?.userId ?? null;
   };
 
   static readonly getPostImagePath = async (
     postId: string
   ): Promise<string | null> => {
-    const post = await PostModel.findByPk(postId, {
-      attributes: ["imagePath"],
+    const post = await PrismaService.client.post.findFirst({
+      where: { id: postId },
+      select: { imagePath: true },
     });
-    return post!.toJSON().imagePath;
+    return post!.imagePath;
   };
 
   static readonly deletePost = async (
     postId: string,
     userId: string
   ): Promise<void> => {
-    const result = await PostModel.update(
-      {
-        status: EntityStatus.deleted,
+    await PrismaService.client.post.update({
+      where: { id: postId, userId: userId },
+      data: {
+        status: EntityStatus.DELETED,
         deletedAt: new Date(),
       },
-      {
-        where: {
-          id: postId,
-          userId: userId,
-        },
-      }
-    );
-
-    if (result[0] === 0) {
-      throw new CustomError(404, "Post not found!");
-    }
+    });
   };
 
   static readonly getCommentUserId = async (
     commentId: string
   ): Promise<string | null> => {
-    const comment = await CommentModel.scope("withActiveUser").findOne({
-      where: { id: commentId, status: EntityStatus.active },
-      attributes: ["userId"],
+    const comment = await PrismaService.client.comment.findFirst({
+      where: { id: commentId, status: EntityStatus.ACTIVE },
+      select: { userId: true },
     });
-    return comment?.toJSON().userId ?? null;
+    return comment?.userId ?? null;
   };
 
   static readonly deleteComment = async (
     commentId: string,
     userId: string
   ): Promise<void> => {
-    const result = await CommentModel.update(
-      {
-        status: EntityStatus.deleted,
+    await PrismaService.client.comment.update({
+      where: { id: commentId, userId: userId },
+      data: {
+        status: EntityStatus.DELETED,
         deletedAt: new Date(),
       },
-      {
-        where: {
-          id: commentId,
-          userId: userId,
-        },
-      }
-    );
-
-    if (result[0] === 0) {
-      throw new CustomError(404, "Comment not found!");
-    }
+    });
   };
 
   static readonly #getComments = async (
     filterQuery: Record<string, any>,
     offset?: number
-  ): Promise<CommentAttributes[]> => {
-    const options: FindOptions = {
-      where: filterQuery,
-      include: [
-        {
-          model: UserModel,
-          as: "user",
-          attributes: [
-            "id",
-            "firstName",
-            "lastName",
-            "profileImagePath",
-            "status",
-          ],
-          required: true,
-        },
-      ],
-      order: [["createdAt", "DESC"]],
-      nest: true,
-    };
-    if (offset !== undefined) {
-      options.offset = offset;
-      options.limit = Constants.commentsPageSize;
+  ): Promise<FeedComment[]> => {
+    const offsetFields: Record<string, any> = {};
+    if (offset) {
+      offsetFields.skip = offset;
+      offsetFields.take = Constants.commentsPageSize;
     }
 
-    const comments = await CommentModel.findAll(options);
+    const comments = await PrismaService.client.comment.findMany({
+      where: filterQuery,
+      orderBy: { createdAt: "desc" },
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            profileImagePath: true,
+            status: true,
+          },
+        },
+      },
+      ...offsetFields,
+    });
 
-    return comments.map((comment) => comment.toJSON());
+    return comments;
   };
 
   static readonly getCommentsByPostId = async (
     postId: string
-  ): Promise<CommentAttributes[]> => {
+  ): Promise<FeedComment[]> => {
     return await this.#getComments({ postId: postId });
   };
 
   static readonly getCommentsByUserId = async (
     userId: string,
     page: number
-  ): Promise<CommentAttributes[]> => {
+  ): Promise<FeedComment[]> => {
     const offset = page * Constants.commentsPageSize;
     return await this.#getComments(
-      { userId: userId, status: EntityStatus.active },
+      { userId: userId, status: EntityStatus.ACTIVE },
       offset
     );
   };
 
   static readonly getCommentById = async (
     commentId: string
-  ): Promise<CommentAttributes> => {
+  ): Promise<FeedComment> => {
     const result = await this.#getComments({
       id: commentId,
-      status: EntityStatus.active,
+      status: EntityStatus.ACTIVE,
     });
     if (result.length === 0) {
       throw new Error("Comment not found");
@@ -229,169 +212,175 @@ export class PostDatasource {
   static readonly #getPosts = async (
     page: number,
     {
-      filterQuery = {},
-      includeRepostedPost = true,
-    }: { filterQuery?: Record<string, any>; includeRepostedPost?: boolean } = {}
-  ): Promise<PostAttributes[]> => {
-    const whereCondition: Record<string, any> = {
-      ...(filterQuery ?? {}),
-      status: EntityStatus.active,
+      postId,
+      userId,
+      includeRepostedPost,
+    }: {
+      postId?: string | null;
+      userId?: string | null;
+      includeRepostedPost?: boolean;
+    } = { postId: null, userId: null, includeRepostedPost: true }
+  ): Promise<FeedPost[]> => {
+    const whereQuery: Prisma.PostWhereInput = {
+      status: EntityStatus.ACTIVE,
+      user: { status: EntityStatus.ACTIVE },
     };
-
-    const offset = page * Constants.postsPageSize;
-
-    const include: Includeable[] = [
-      {
-        model: UserModel,
-        as: "user",
-        attributes: [
-          "id",
-          "firstName",
-          "lastName",
-          "profileImagePath",
-          "status",
-        ],
-        where: { status: EntityStatus.active },
-        required: true,
-      },
-    ];
-    if (includeRepostedPost) {
-      include.push({
-        model: PostModel,
-        as: "repostedPost",
-        attributes: {
-          include: [
-            [
-              // Count likes for this reposted post.
-              literal(`(
-                SELECT CAST(COUNT(*) AS INTEGER) 
-                FROM reactions AS r 
-                INNER JOIN users AS ru ON r."userId" = ru."id"
-                WHERE r."postId" = "repostedPost"."id" 
-                  AND r."emotionType" = '${EmotionType.like}'
-                  AND ru."status" = '${EntityStatus.active}'
-              )`),
-              "likeCount",
-            ],
-            [
-              // Count dislikes for this reposted post.
-              literal(`(
-                SELECT CAST(COUNT(*) AS INTEGER) 
-                FROM reactions AS r 
-                INNER JOIN users AS ru ON r."userId" = ru."id"
-                WHERE r."postId" = "repostedPost"."id" 
-                  AND r."emotionType" = '${EmotionType.dislike}'
-                  AND ru."status" = '${EntityStatus.active}'
-              )`),
-              "dislikeCount",
-            ],
-            [
-              // Count active comments for this reposted post.
-              literal(`(
-                SELECT CAST(COUNT(*) AS INTEGER) 
-                FROM comments AS c
-                INNER JOIN users AS cu ON c."userId" = cu."id"
-                WHERE c."postId" = "repostedPost"."id" 
-                  AND c."status" = '${EntityStatus.active}'
-                  AND cu."status" = '${EntityStatus.active}'
-              )`),
-              "commentCount",
-            ],
-          ],
-        },
-        include: [
-          {
-            model: UserModel,
-            as: "user",
-            attributes: [
-              "id",
-              "firstName",
-              "lastName",
-              "profileImagePath",
-              "status",
-            ],
-            where: { status: EntityStatus.active },
-            required: true,
-          },
-        ],
-        where: { status: EntityStatus.active },
-        required: false,
-      });
+    if (postId) {
+      whereQuery.id = postId;
+    }
+    if (userId) {
+      whereQuery.userId = userId;
     }
 
-    const posts = await PostModel.findAll({
-      where: whereCondition,
-      attributes: {
-        include: [
-          [
-            // Count likes for this post.
-            literal(`(
-              SELECT CAST(COUNT(*) AS INTEGER) 
-              FROM reactions AS r 
-              INNER JOIN users AS ru ON r."userId" = ru."id"
-              WHERE r."postId" = "PostModel"."id" 
-                AND r."emotionType" = '${EmotionType.like}'
-                AND ru."status" = '${EntityStatus.active}'
-            )`),
-            "likeCount",
-          ],
-          [
-            // Count dislikes for this post.
-            literal(`(
-              SELECT CAST(COUNT(*) AS INTEGER) 
-              FROM reactions AS r 
-              INNER JOIN users AS ru ON r."userId" = ru."id"
-              WHERE r."postId" = "PostModel"."id" 
-                AND r."emotionType" = '${EmotionType.dislike}'
-                AND ru."status" = '${EntityStatus.active}'
-            )`),
-            "dislikeCount",
-          ],
-          [
-            // Count active comments for this post.
-            literal(`(
-              SELECT CAST(COUNT(*) AS INTEGER) 
-              FROM comments AS c
-              INNER JOIN users AS cu ON c."userId" = cu."id"
-              WHERE c."postId" = "PostModel"."id" 
-                AND c."status" = '${EntityStatus.active}'
-                AND cu."status" = '${EntityStatus.active}'
-            )`),
-            "commentCount",
-          ],
-        ],
+    const posts = await PrismaService.client.post.findMany({
+      where: whereQuery,
+      select: {
+        id: true,
+        text: true,
+        imagePath: true,
+        status: true,
+        createdAt: true,
+        // Creator info
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            profileImagePath: true,
+            status: true,
+          },
+        },
+        // Conditionally include the repost
+        repostedPost: includeRepostedPost
+          ? {
+              select: {
+                id: true,
+                text: true,
+                imagePath: true,
+                status: true,
+                createdAt: true,
+                // Creator info
+                user: {
+                  select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                    profileImagePath: true,
+                    status: true,
+                  },
+                },
+                // Count relations on the post
+                _count: {
+                  select: {
+                    comments: true,
+                  },
+                },
+              },
+            }
+          : false,
+        // Count relations on the post
+        _count: {
+          select: {
+            comments: true,
+          },
+        },
       },
-      include: include,
-      order: [["createdAt", "DESC"]],
-      offset: offset,
-      limit: Constants.postsPageSize,
-      nest: true,
+      orderBy: { createdAt: "desc" },
+      skip: page * Constants.postsPageSize,
+      take: Constants.postsPageSize,
     });
 
-    return posts.map((post) => post.toJSON());
+    const postsWithCounts = await Promise.all(
+      posts.map(async (post) => {
+        // 1) Count likes/dislikes on the main post
+        const [likesCount, dislikesCount] =
+          await PrismaService.client.$transaction([
+            PrismaService.client.reaction.count({
+              where: {
+                postId: post.id,
+                emotionType: EmotionType.LIKE,
+                user: { status: EntityStatus.ACTIVE },
+              },
+            }),
+            PrismaService.client.reaction.count({
+              where: {
+                postId: post.id,
+                emotionType: EmotionType.DISLIKE,
+                user: { status: EntityStatus.ACTIVE },
+              },
+            }),
+          ]);
+
+        let repostLikesCount: number | null = null;
+        let repostDislikesCount: number | null = null;
+
+        // 2) If there’s a repost, count on that too
+        if (post.repostedPost) {
+          const repostId = post.repostedPost.id;
+          [repostLikesCount, repostDislikesCount] =
+            await PrismaService.client.$transaction([
+              PrismaService.client.reaction.count({
+                where: {
+                  postId: repostId,
+                  emotionType: EmotionType.LIKE,
+                  user: { status: EntityStatus.ACTIVE },
+                },
+              }),
+              PrismaService.client.reaction.count({
+                where: {
+                  postId: repostId,
+                  emotionType: EmotionType.DISLIKE,
+                  user: { status: EntityStatus.ACTIVE },
+                },
+              }),
+            ]);
+        }
+
+        // 3) Return a combined object
+        return {
+          ...post,
+          likesCount,
+          dislikesCount,
+          repostLikesCount,
+          repostDislikesCount,
+        };
+      })
+    );
+
+    return postsWithCounts.map(
+      (post) =>
+        <FeedPost>{
+          id: post.id,
+          text: post.text,
+          imagePath: post.imagePath,
+          status: post.status,
+          createdAt: post.createdAt,
+          user: post.user,
+          repostedPost: post.repostedPost,
+          likeCount: post.likesCount,
+          dislikeCount: post.dislikesCount,
+          commentCount: post._count.comments,
+        }
+    );
   };
 
-  static readonly getPostsFeed = async (
-    page: number
-  ): Promise<PostAttributes[]> => {
+  static readonly getPostsFeed = async (page: number): Promise<FeedPost[]> => {
     return await this.#getPosts(page);
   };
 
   static readonly getPostsByUserId = async (
     userId: string,
     page: number
-  ): Promise<PostAttributes[]> => {
+  ): Promise<FeedPost[]> => {
     return await this.#getPosts(page, {
-      filterQuery: { userId: userId },
+      userId: userId,
       includeRepostedPost: false,
     });
   };
 
-  static readonly getPostById = async (
-    postId: string
-  ): Promise<PostAttributes> => {
+  static readonly getPostById = async (postId: string): Promise<FeedPost> => {
     const result = await this.#getPosts(0, {
-      filterQuery: { id: postId },
+      postId: postId,
     });
     if (result.length === 0) {
       throw new Error("Post not found!");
@@ -401,41 +390,21 @@ export class PostDatasource {
 
   static readonly banPost = async (
     postId: string,
-    transaction: Transaction
+    transaction: Prisma.TransactionClient
   ): Promise<void> => {
-    const result = await PostModel.update(
-      {
-        status: EntityStatus.banned,
-        bannedAt: new Date(),
-      },
-      {
-        where: { id: postId },
-        transaction,
-      }
-    );
-
-    if (result[0] === 0) {
-      throw new CustomError(404, "Post not found!");
-    }
+    await transaction.post.update({
+      where: { id: postId },
+      data: { status: EntityStatus.BANNED, bannedAt: new Date() },
+    });
   };
 
   static readonly banComment = async (
     commentId: string,
-    transaction: Transaction
+    transaction: Prisma.TransactionClient
   ): Promise<void> => {
-    const result = await CommentModel.update(
-      {
-        status: EntityStatus.banned,
-        bannedAt: new Date(),
-      },
-      {
-        where: { id: commentId },
-        transaction,
-      }
-    );
-
-    if (result[0] === 0) {
-      throw new CustomError(404, "Comment not found!");
-    }
+    await transaction.comment.update({
+      where: { id: commentId },
+      data: { status: EntityStatus.BANNED, bannedAt: new Date() },
+    });
   };
 }

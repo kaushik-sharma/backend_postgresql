@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { ReportReason, ReportTargetType } from "../constants/enums.js";
+import { ReportReason, ReportTargetType } from "../generated/prisma/index.js";
 
 export const reportSchema = z.object({
   targetType: z.nativeEnum(ReportTargetType, {

@@ -1,10 +1,10 @@
 import jwt from "jsonwebtoken";
 import fs from "fs";
-import { Transaction } from "sequelize";
 
-import { SessionModel } from "../models/session/session_model.js";
+import { PrismaService } from "../services/prisma_service.js";
+import { Prisma, EntityStatus, Platform, Session } from "../generated/prisma/index.js";
 import { CustomError } from "../middlewares/error_middlewares.js";
-import { AuthMode, EntityStatus, Platform } from "../constants/enums.js";
+import { AuthMode } from "../constants/enums.js";
 import { RedisService } from "./redis_service.js";
 import { Constants } from "../constants/values.js";
 import { AuthenticatedUser } from "../@types/custom.js";
@@ -57,22 +57,20 @@ export class JwtService {
     deviceId: string,
     deviceName: string,
     platform: Platform,
-    transaction: Transaction
+    transaction: Prisma.TransactionClient
   ): Promise<string> => {
-    const session = await SessionModel.create(
-      { userId, deviceId, deviceName, platform },
-      { transaction }
-    );
-    const sessionId = session.toJSON().id!;
+    const session = await transaction.session.create({
+      data: { userId, deviceId, deviceName, platform },
+    });
 
     await RedisService.client.set(
-      `sessions:${sessionId}`,
+      `sessions:${session.id}`,
       JSON.stringify({ userId, userStatus }),
       "EX",
       Constants.sessionCacheExpiryDurationInSec
     );
 
-    const payload = { sessionId, userId, userStatus, v: 1 };
+    const payload = { sessionId: session.id, userId, userStatus, v: 1 };
 
     return jwt.sign(payload, this.#privateKey, this.#authTokenSignOptions);
   };
@@ -94,11 +92,12 @@ export class JwtService {
     const cachedSessionData = await RedisService.client.get(
       `sessions:${sessionId}`
     );
-    let dbSessionData: SessionModel | null = null;
+    let dbSessionData: Pick<Session, "userId"> | null = null;
 
     if (cachedSessionData === null) {
-      dbSessionData = await SessionModel.findByPk(sessionId, {
-        attributes: ["userId"],
+      dbSessionData = await PrismaService.client.session.findUnique({
+        where: { id: sessionId },
+        select: { userId: true },
       });
     }
 
@@ -109,28 +108,28 @@ export class JwtService {
     const savedUserId =
       cachedSessionData !== null
         ? (JSON.parse(cachedSessionData)["userId"] as string)
-        : dbSessionData!.toJSON().userId;
+        : dbSessionData!.userId;
 
     if (userId !== savedUserId) {
       throw new CustomError(409, "Wrong user ID in the auth token.");
     }
 
     switch (authMode) {
-      case AuthMode.authenticated:
-        if (userStatus === EntityStatus.anonymous) {
+      case AuthMode.AUTHENTICATED:
+        if (userStatus === EntityStatus.ANONYMOUS) {
           throw new CustomError(
             401,
             "Access denied: Anonymous users cannot perform this action."
           );
-        } else if (userStatus !== EntityStatus.active) {
+        } else if (userStatus !== EntityStatus.ACTIVE) {
           throw new CustomError(403, "Access denied: User is not active.");
         }
         break;
-      case AuthMode.allowAnonymous:
+      case AuthMode.ALLOW_ANONYMOUS:
         // Both anonymous and authenticated users are allowed.
         if (
-          userStatus !== EntityStatus.active &&
-          userStatus !== EntityStatus.anonymous
+          userStatus !== EntityStatus.ACTIVE &&
+          userStatus !== EntityStatus.ANONYMOUS
         ) {
           throw new CustomError(
             403,
@@ -138,8 +137,8 @@ export class JwtService {
           );
         }
         break;
-      case AuthMode.anonymousOnly:
-        if (userStatus !== EntityStatus.anonymous) {
+      case AuthMode.ANONYMOUS_ONLY:
+        if (userStatus !== EntityStatus.ANONYMOUS) {
           throw new CustomError(
             401,
             "Access denied: Only anonymous users are allowed."

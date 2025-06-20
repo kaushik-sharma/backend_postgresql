@@ -3,6 +3,7 @@ import { Router } from "express";
 import { requireAuth } from "../middlewares/auth_middlewares.js";
 import { UserController } from "../controllers/user_controller.js";
 import { createSingleImageUploadMiddleware } from "../middlewares/file_upload_middlewares.js";
+import { PostController } from "../controllers/post_controller.js";
 
 export const getUserRouter = (): Router => {
   const router = Router();
@@ -48,13 +49,13 @@ export const getUserRouter = (): Router => {
   );
   router.delete("/sessions", requireAuth(), UserController.signOutAllSessions);
 
-  router.get("/posts", requireAuth(), UserController.getUserPosts);
-  router.delete("/posts/:postId", requireAuth(), UserController.deletePost);
-  router.get("/comments", requireAuth(), UserController.getUserComments);
+  router.get("/posts", requireAuth(), PostController.getUserPosts);
+  router.delete("/posts/:postId", requireAuth(), PostController.deletePost);
+  router.get("/comments", requireAuth(), PostController.getUserComments);
   router.delete(
     "/comments/:commentId",
     requireAuth(),
-    UserController.deleteComment
+    PostController.deleteComment
   );
 
   return router;

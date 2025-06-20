@@ -5,32 +5,29 @@ import helmet from "helmet";
 import morgan from "morgan";
 import { $enum } from "ts-enum-util";
 
-import { PostgresService } from "./services/postgres_service.js";
+import { PrismaService } from "./services/prisma_service.js";
 import { getAuthRouter } from "./routes/auth_routes.js";
 import { getUserRouter } from "./routes/user_routes.js";
 import { getPostRouter } from "./routes/post_routes.js";
 import { getModerationRouter } from "./routes/moderation_routes.js";
 import { getConnectionRouter } from "./routes/connection_routes.js";
+import { getCronRouter } from "./routes/cron_router.js";
 import { getDefaultRateLimiter } from "./middlewares/rate_limiter_middlewares.js";
 import { errorHandler } from "./middlewares/error_middlewares.js";
 import { SocketManager } from "./socket.js";
 import logger from "./utils/logger.js";
 import { Env } from "./constants/enums.js";
 import { Constants } from "./constants/values.js";
-import { initModels } from "./models/index.js";
 import { RedisService } from "./services/redis_service.js";
 import { hitCounter } from "./middlewares/hit_counter_middleware.js";
 import { getHealthCheckRouter } from "./routes/health_check_routes.js";
-import { getCronRouter } from "./routes/cron_router.js";
 // import { KafkaService } from "./services/kafka_service.js";
 
 Constants.env = $enum(Env).asValueOrThrow(process.env.ENV!);
 
 dotenv.config({ path: `.env.${Constants.env.toLowerCase()}` });
 
-await PostgresService.connect();
-initModels();
-
+await PrismaService.connect();
 await RedisService.initClient();
 
 // await KafkaService.setupProducers();

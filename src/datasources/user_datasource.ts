@@ -1,23 +1,11 @@
-import {
-  cast,
-  FindAttributeOptions,
-  literal,
-  Op,
-  Transaction,
-} from "sequelize";
-
-import { EntityStatus } from "../constants/enums.js";
-import {
-  UserDeletionRequestAttributes,
-  UserDeletionRequestModel,
-} from "../models/user/user_deletion_request_model.js";
-import { UserModel, UserAttributes } from "../models/user/user_model.js";
-import { CustomError } from "../middlewares/error_middlewares.js";
+import { PrismaService } from "../services/prisma_service.js";
+import { ProfileUser } from "../controllers/user_controller.js";
+import { Prisma, User, EntityStatus } from "../generated/prisma/index.js";
 
 export class UserDatasource {
   static readonly isUserActive = async (userId: string): Promise<boolean> => {
-    const count = await UserModel.count({
-      where: { id: userId, status: EntityStatus.active },
+    const count = await PrismaService.client.user.count({
+      where: { id: userId, status: EntityStatus.ACTIVE },
     });
     if (count > 1) {
       throw new Error("Multiple active users found!");
@@ -27,29 +15,26 @@ export class UserDatasource {
 
   static readonly findUserByEmail = async (
     email: string
-  ): Promise<UserAttributes | null> => {
-    const user = await UserModel.findOne({
+  ): Promise<Pick<User, "id" | "status"> | null> => {
+    return await PrismaService.client.user.findFirst({
       where: {
-        email: email,
-        status: {
-          [Op.ne]: EntityStatus.deleted,
-        },
+        email,
+        status: { not: EntityStatus.DELETED },
       },
-      attributes: ["id", "status"],
+      select: {
+        id: true,
+        status: true,
+      },
     });
-
-    return user?.toJSON() ?? null;
   };
 
   static readonly userByEmailExists = async (
     email: string
   ): Promise<boolean> => {
-    const count = await UserModel.count({
+    const count = await PrismaService.client.user.count({
       where: {
         email,
-        status: {
-          [Op.ne]: EntityStatus.deleted,
-        },
+        status: { not: EntityStatus.DELETED },
       },
     });
 
@@ -60,13 +45,11 @@ export class UserDatasource {
     countryCode: string,
     phoneNumber: string
   ): Promise<boolean> => {
-    const count = await UserModel.count({
+    const count = await PrismaService.client.user.count({
       where: {
         countryCode,
         phoneNumber,
-        status: {
-          [Op.ne]: EntityStatus.deleted,
-        },
+        status: { not: EntityStatus.DELETED },
       },
     });
 
@@ -75,34 +58,28 @@ export class UserDatasource {
 
   static readonly deleteAnonymousUser = async (
     userId: string,
-    transaction: Transaction
+    transaction: Prisma.TransactionClient
   ): Promise<void> => {
-    const count = await UserModel.destroy({
-      where: { id: userId, status: EntityStatus.anonymous },
-      transaction: transaction,
+    await transaction.user.delete({
+      where: { id: userId, status: EntityStatus.ANONYMOUS },
     });
-
-    if (count === 0) {
-      throw new CustomError(404, "User not found!");
-    }
   };
 
   static readonly createUser = async (
-    userData: UserAttributes,
-    transaction: Transaction
+    user: Prisma.UserCreateInput,
+    transaction: Prisma.TransactionClient
   ): Promise<string> => {
-    const user = new UserModel(userData);
-    const createdUser = await user.save({ transaction: transaction });
-    return createdUser.toJSON().id!;
+    const createdUser = await transaction.user.create({ data: user });
+    return createdUser.id;
   };
 
   static readonly anonymousUserExists = async (
     userId: string
   ): Promise<boolean> => {
-    const count = await UserModel.count({
+    const count = await PrismaService.client.user.count({
       where: {
         id: userId,
-        status: EntityStatus.anonymous,
+        status: EntityStatus.ANONYMOUS,
       },
     });
     return count > 0;
@@ -110,256 +87,174 @@ export class UserDatasource {
 
   static readonly convertAnonymousUserToActive = async (
     anonymousUserId: string,
-    userData: UserAttributes,
-    transaction: Transaction
+    user: Prisma.UserCreateInput,
+    transaction: Prisma.TransactionClient
   ): Promise<string> => {
-    await UserModel.update(
-      {
-        ...userData,
-      },
-      {
-        where: { id: anonymousUserId, status: EntityStatus.anonymous },
-        transaction: transaction,
-      }
-    );
-    return anonymousUserId;
+    const createdUser = await transaction.user.update({
+      where: { id: anonymousUserId, status: EntityStatus.ANONYMOUS },
+      data: user,
+    });
+    return createdUser.id;
   };
 
   static readonly markUserForDeletion = async (
     userId: string,
-    transaction: Transaction
-  ) => {
-    const result = await UserModel.update(
-      {
-        status: EntityStatus.requestedDeletion,
+    transaction: Prisma.TransactionClient
+  ): Promise<void> => {
+    await transaction.user.update({
+      where: { id: userId, status: EntityStatus.ACTIVE },
+      data: {
+        status: EntityStatus.REQUESTED_DELETION,
       },
-      {
-        where: {
-          id: userId,
-          status: EntityStatus.active,
-        },
-        transaction: transaction,
-      }
-    );
-
-    if (result[0] === 0) {
-      throw new CustomError(404, "User not found!");
-    }
+    });
   };
 
   static readonly getUserById = async (
     userId: string,
     fields: string[],
     currentUserId?: string
-  ): Promise<UserAttributes | null> => {
-    const attributes: FindAttributeOptions = [
-      ...fields,
-      [
-        cast(
-          literal(`(
-            SELECT COUNT(*)
-            FROM "connections" AS c
-            JOIN "users" AS u
-              ON u."id" = c."followerId"
-            WHERE
-              c."followeeId" = "UserModel"."id"
-              AND u."status" = '${EntityStatus.active}'
-          )`),
-          "integer"
-        ),
-        "followerCount",
-      ],
-      [
-        cast(
-          literal(`(
-            SELECT COUNT(*)
-            FROM "connections" AS c
-            JOIN "users" AS u
-              ON u."id" = c."followeeId"
-            WHERE
-              c."followerId" = "UserModel"."id"
-              AND u."status" = '${EntityStatus.active}'
-          )`),
-          "integer"
-        ),
-        "followeeCount",
-      ],
-    ];
+  ): Promise<ProfileUser | null> => {
+    const selectFields = fields.reduce((acc, field) => {
+      acc[field] = true;
+      return acc;
+    }, {} as Record<string, boolean>);
 
-    if (currentUserId) {
-      attributes.push([
-        literal(`
-          EXISTS(
-            SELECT 1
-            FROM "connections" AS c
-            WHERE
-              c."followerId" = '${currentUserId}'
-              AND c."followeeId" = "UserModel"."id"
-          )
-        `),
-        "isFollowee",
-      ]);
-    }
-
-    const user = await UserModel.findOne({
+    const user = await PrismaService.client.user.findFirst({
       where: {
         id: userId,
-        status: EntityStatus.active,
+        status: EntityStatus.ACTIVE,
       },
-      attributes: attributes,
+      select: {
+        ...selectFields,
+        _count: {
+          select: {
+            followees: true,
+            followers: true,
+          },
+        },
+        followers: currentUserId
+          ? {
+              where: { followerId: currentUserId },
+              select: { id: true },
+              take: 1,
+            }
+          : false,
+      },
     });
 
-    return user?.toJSON() ?? null;
+    if (!user) return null;
+
+    const isFollowee =
+      Array.isArray(user.followers) && user.followers.length > 0;
+
+    const profileUser: ProfileUser = {
+      ...(user as unknown as User),
+      followeeCount: user._count.followees,
+      followerCount: user._count.followers,
+      isFollowee: isFollowee,
+    };
+
+    return profileUser;
   };
 
   static readonly deleteUser = async (
     userId: string,
-    transaction: Transaction
+    transaction: Prisma.TransactionClient
   ): Promise<void> => {
-    const result = await UserModel.update(
-      {
-        status: EntityStatus.deleted,
+    await transaction.user.update({
+      where: { id: userId },
+      data: {
+        status: EntityStatus.DELETED,
         deletedAt: new Date(),
       },
-      {
-        where: { id: userId },
-        transaction: transaction,
-      }
-    );
-
-    if (result[0] === 0) {
-      throw new CustomError(404, "User not found!");
-    }
+    });
   };
 
   static readonly updateProfile = async (
     userId: string,
     updatedFields: Record<string, any>,
-    transaction: Transaction
+    transaction: Prisma.TransactionClient
   ): Promise<void> => {
-    const result = await UserModel.update(
-      {
-        ...updatedFields,
-      },
-      {
-        where: {
-          id: userId,
-          status: EntityStatus.active,
-        },
-        transaction,
-      }
-    );
-
-    if (result[0] === 0) {
-      throw new CustomError(404, "User not found!");
-    }
+    await transaction.user.update({
+      where: { id: userId, status: EntityStatus.ACTIVE },
+      data: { ...updatedFields },
+    });
   };
 
   static readonly getUserProfileImagePath = async (
     userId: string
   ): Promise<string | null> => {
-    const user = await UserModel.findByPk(userId, {
-      attributes: ["profileImagePath"],
+    const result = await PrismaService.client.user.findUnique({
+      where: { id: userId },
+      select: { profileImagePath: true },
     });
-    const profileImagePath = user!.toJSON().profileImagePath;
-    if (profileImagePath === undefined) {
-      throw new Error("profileImagePath does not exist.");
-    }
-    return profileImagePath;
+    return result?.profileImagePath ?? null;
   };
 
   static readonly deleteProfileImage = async (
     userId: string,
-    transaction?: Transaction
-  ) => {
-    const result = await UserModel.update(
-      {
-        profileImagePath: null,
-      },
-      {
-        where: {
-          id: userId,
-          status: {
-            [Op.in]: [EntityStatus.active, EntityStatus.requestedDeletion],
-          },
+    transaction?: Prisma.TransactionClient
+  ): Promise<void> => {
+    const db = transaction ?? PrismaService.client;
+
+    await db.user.update({
+      where: {
+        id: userId,
+        status: {
+          in: [EntityStatus.ACTIVE, EntityStatus.REQUESTED_DELETION],
         },
-        transaction,
-      }
-    );
-    if (result[0] === 0) {
-      throw new CustomError(404, "User not found!");
-    }
+      },
+      data: { profileImagePath: null },
+    });
   };
 
   static readonly createUserDeletionRequest = async (
-    data: UserDeletionRequestAttributes,
-    transaction: Transaction
+    data: Prisma.UserDeletionRequestCreateInput,
+    transaction: Prisma.TransactionClient
   ): Promise<void> => {
-    await UserDeletionRequestModel.create(data, { transaction });
+    await transaction.userDeletionRequest.create({ data: data });
   };
 
   static readonly getDueDeletionUserIds = async (): Promise<string[]> => {
-    const result = await UserDeletionRequestModel.findAll({
+    const result = await PrismaService.client.userDeletionRequest.findMany({
       where: {
         deleteAt: {
-          [Op.lte]: new Date(),
+          lte: new Date(),
         },
       },
-      attributes: ["userId"],
+      select: { userId: true },
     });
 
-    return result.map((data) => data.toJSON()["userId"]);
+    return result.map((x) => x.userId);
   };
 
   static readonly removeDeletionRequest = async (
     userId: string,
-    transaction: Transaction
+    transaction: Prisma.TransactionClient
   ): Promise<void> => {
-    const count = await UserDeletionRequestModel.destroy({
-      where: { userId: userId },
-      transaction: transaction,
-    });
-    if (count === 0) {
-      throw new CustomError(404, "Deletion request not found!");
-    }
+    await transaction.userDeletionRequest.delete({ where: { userId: userId } });
   };
 
   static readonly banUser = async (
     userId: string,
-    transaction: Transaction
+    transaction: Prisma.TransactionClient
   ): Promise<void> => {
-    const result = await UserModel.update(
-      {
-        status: EntityStatus.banned,
+    await transaction.user.update({
+      where: { id: userId },
+      data: {
+        status: EntityStatus.BANNED,
         bannedAt: new Date(),
       },
-      {
-        where: { id: userId },
-        transaction: transaction,
-      }
-    );
-
-    if (result[0] === 0) {
-      throw new CustomError(404, "User not found!");
-    }
+    });
   };
 
-  static readonly setUserActive = async (
+  static readonly setUserAsActive = async (
     userId: string,
-    transaction: Transaction
-  ) => {
-    const result = await UserModel.update(
-      {
-        status: EntityStatus.active,
-      },
-      {
-        where: { id: userId },
-        transaction,
-      }
-    );
-
-    if (result[0] === 0) {
-      throw new CustomError(404, "User not found!");
-    }
+    transaction: Prisma.TransactionClient
+  ): Promise<void> => {
+    await transaction.user.update({
+      where: { id: userId },
+      data: { status: EntityStatus.ACTIVE },
+    });
   };
 }

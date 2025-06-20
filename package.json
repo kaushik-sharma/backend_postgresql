@@ -8,12 +8,9 @@
     "start:prod": "ENV=PRODUCTION node dist/app.js",
     "watch:dev": "ENV=DEVELOPMENT tsx watch --inspect=0.0.0.0:9229 src/app.ts",
     "watch:prod": "ENV=PRODUCTION tsx watch --inspect=0.0.0.0:9229 src/app.ts",
-    "db:migrate:dev": "ENV=DEVELOPMENT npx sequelize-cli db:migrate --env development --debug",
-    "db:migrate:undo:dev": "ENV=DEVELOPMENT npx sequelize-cli db:migrate:undo --env development --debug",
-    "db:seed:dev": "ENV=DEVELOPMENT npx sequelize-cli db:seed:all --env development --debug",
-    "db:migrate:prod": "ENV=PRODUCTION npx sequelize-cli db:migrate --env production --debug",
-    "db:migrate:undo:prod": "ENV=PRODUCTION npx sequelize-cli db:migrate:undo --env production --debug",
-    "db:seed:prod": "ENV=PRODUCTION npx sequelize-cli db:seed:all --env production --debug"
+    "prisma:generate": "npx prisma generate",
+    "prisma:deploy:dev": "npx dotenv -e .env.migration.development -- prisma migrate dev",
+    "prisma:deploy:prod": "npx dotenv -e .env.migration.production -- prisma migrate deploy"
   },
   "author": "",
   "license": "ISC",
@@ -22,6 +19,7 @@
     "@aws-sdk/client-cloudfront": "^3.716.0",
     "@aws-sdk/client-s3": "^3.717.0",
     "@aws-sdk/cloudfront-signer": "^3.734.0",
+    "@prisma/client": "^6.9.0",
     "bcrypt": "^5.1.1",
     "dotenv": "^16.4.5",
     "express": "^5.0.1",
@@ -40,7 +38,6 @@
     "pg": "^8.14.1",
     "pg-native": "^3.3.0",
     "rate-limit-redis": "^4.2.0",
-    "sequelize": "^6.37.7",
     "socket.io": "^4.8.1",
     "ts-enum-util": "^4.1.0",
     "uuid": "^11.1.0",
@@ -59,7 +56,8 @@
     "@types/nodemailer": "^6.4.17",
     "@types/pg": "^8.11.13",
     "@types/winston": "^2.4.4",
-    "sequelize-cli": "^6.6.2",
+    "dotenv-cli": "^8.0.0",
+    "prisma": "^6.9.0",
     "tsx": "^4.19.4",
     "typescript": "^5.6.3"
   }

@@ -1,4 +1,4 @@
-import { EntityStatus } from "../constants/enums.js";
+import { EntityStatus } from "../generated/prisma/index.js";
 
 export interface CreatorParams {
   id: string;

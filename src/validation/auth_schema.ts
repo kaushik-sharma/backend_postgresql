@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { DateTime } from "luxon";
 
-import { Gender, Platform } from "../constants/enums.js";
+import { Gender, Platform } from "../generated/prisma/index.js";
 import { Constants } from "../constants/values.js";
 import {
   COUNTRY_CODE_REGEX,

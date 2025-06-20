@@ -1,20 +1,15 @@
 -- ─────────────────────────────────────────────────────────────────────────────
--- SEQUELIZE_META TABLE
+-- GRANT TABLE-LEVEL RIGHTS
 -- ─────────────────────────────────────────────────────────────────────────────
 
-ALTER TABLE public."SequelizeMeta" ENABLE ROW LEVEL SECURITY;
+GRANT USAGE ON SCHEMA public TO app_user;
 
-CREATE POLICY insert_policy_postgres
-  ON public."SequelizeMeta"
-  FOR INSERT
-  TO postgres
-  WITH CHECK (true);
+GRANT SELECT, INSERT, UPDATE, DELETE
+  ON ALL TABLES IN SCHEMA public
+  TO app_user;
 
-CREATE POLICY select_policy_postgres
-  ON public."SequelizeMeta"
-  FOR SELECT
-  TO postgres
-  USING (true);
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+  GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO app_user;
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- USERS TABLE

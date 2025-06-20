@@ -1,6 +1,7 @@
 import { RequestHandler } from "express";
 import { randomInt } from "crypto";
 
+import { EntityStatus, Prisma } from "../generated/prisma/index.js";
 import { asyncHandler } from "../helpers/async_handler.js";
 import {
   anonymousAuthSchema,
@@ -16,15 +17,14 @@ import {
 } from "../validation/auth_schema.js";
 import { validateData } from "../helpers/validation_helper.js";
 import { successResponseHandler } from "../helpers/success_handler.js";
-import { AuthUserAction, EntityStatus, Env } from "../constants/enums.js";
+import { AuthUserAction, Env } from "../constants/enums.js";
 import { CustomError } from "../middlewares/error_middlewares.js";
 import { JwtService } from "../services/jwt_service.js";
-import { UserAttributes } from "../models/user/user_model.js";
-import { performTransaction } from "../helpers/transaction_helper.js";
 import { BcryptService } from "../services/bcrypt_service.js";
 import { MailService } from "../services/mail_service.js";
 import { Constants } from "../constants/values.js";
 import { UserDatasource } from "../datasources/user_datasource.js";
+import { PrismaService } from "../services/prisma_service.js";
 import { SessionDatasource } from "../datasources/session_datasource.js";
 
 export class AuthController {
@@ -37,7 +37,7 @@ export class AuthController {
   };
 
   static readonly #requiresEmailVerification = (email: string): boolean => {
-    if (Constants.env === Env.production) return true;
+    if (Constants.env === Env.PRODUCTION) return true;
 
     const domain = email.split("@")[1];
     return Constants.devEmailVerificationWhitelist.includes(domain);
@@ -120,28 +120,28 @@ export class AuthController {
         return successResponseHandler({
           res: res,
           status: 200,
-          data: { userAction: AuthUserAction.signUp },
+          data: { userAction: AuthUserAction.SIGN_UP },
         });
       }
 
       switch (user.status) {
-        case EntityStatus.active:
+        case EntityStatus.ACTIVE:
           return successResponseHandler({
             res: res,
             status: 200,
-            data: { userAction: AuthUserAction.signIn },
+            data: { userAction: AuthUserAction.SIGN_IN },
           });
-        case EntityStatus.banned:
+        case EntityStatus.BANNED:
           return successResponseHandler({
             res: res,
             status: 200,
-            data: { userAction: AuthUserAction.banned },
+            data: { userAction: AuthUserAction.BANNED },
           });
-        case EntityStatus.requestedDeletion:
+        case EntityStatus.REQUESTED_DELETION:
           return successResponseHandler({
             res: res,
             status: 200,
-            data: { userAction: AuthUserAction.requestedDeletion },
+            data: { userAction: AuthUserAction.REQUESTED_DELETION },
           });
       }
     }
@@ -216,7 +216,7 @@ export class AuthController {
         );
       }
 
-      const userData: UserAttributes = {
+      const userData: Prisma.UserCreateInput = {
         firstName: parsedData.firstName,
         lastName: parsedData.lastName,
         gender: parsedData.gender,
@@ -225,31 +225,33 @@ export class AuthController {
         email: parsedData.email,
         dob: parsedData.dob,
         profileImagePath: null,
-        status: EntityStatus.active,
+        status: EntityStatus.ACTIVE,
         bannedAt: null,
         deletedAt: null,
       };
 
-      const authToken = await performTransaction<string>(async (tx) => {
-        let userId: string;
-        if (anonymousUserId !== null) {
-          userId = await UserDatasource.convertAnonymousUserToActive(
-            anonymousUserId,
-            userData,
+      const authToken = await PrismaService.client.$transaction<string>(
+        async (tx) => {
+          let userId: string;
+          if (anonymousUserId !== null) {
+            userId = await UserDatasource.convertAnonymousUserToActive(
+              anonymousUserId,
+              userData,
+              tx
+            );
+          } else {
+            userId = await UserDatasource.createUser(userData, tx);
+          }
+          return await JwtService.createAuthToken(
+            userId,
+            EntityStatus.ACTIVE,
+            parsedData.deviceId,
+            parsedData.deviceName,
+            parsedData.platform,
             tx
           );
-        } else {
-          userId = await UserDatasource.createUser(userData, tx);
         }
-        return await JwtService.createAuthToken(
-          userId,
-          EntityStatus.active,
-          parsedData.deviceId,
-          parsedData.deviceName,
-          parsedData.platform,
-          tx
-        );
-      });
+      );
 
       successResponseHandler({
         res: res,
@@ -290,7 +292,7 @@ export class AuthController {
         throw new CustomError(404, "Account with this email not found.");
       }
 
-      if (user.status === EntityStatus.banned) {
+      if (user.status === EntityStatus.BANNED) {
         throw new CustomError(
           403,
           "Your account is banned due to violation of our moderation guidelines. Please contact our customer support."
@@ -299,7 +301,7 @@ export class AuthController {
 
       // Checking if the user is marked for deletion
       if (
-        user.status === EntityStatus.requestedDeletion &&
+        user.status === EntityStatus.REQUESTED_DELETION &&
         !parsedData.cancelAccountDeletionRequest
       ) {
         throw new CustomError(
@@ -308,25 +310,27 @@ export class AuthController {
         );
       }
 
-      const authToken = await performTransaction<string>(async (tx) => {
-        if (parsedData.cancelAccountDeletionRequest) {
-          await UserDatasource.removeDeletionRequest(user.id!, tx);
-          await UserDatasource.setUserActive(user.id!, tx);
+      const authToken = await PrismaService.client.$transaction<string>(
+        async (tx) => {
+          if (parsedData.cancelAccountDeletionRequest) {
+            await UserDatasource.removeDeletionRequest(user.id!, tx);
+            await UserDatasource.setUserAsActive(user.id!, tx);
+          }
+          // Delete anonymous user (if exists)
+          if (anonymousUserId !== null) {
+            await SessionDatasource.signOutAllSessions(anonymousUserId!, tx);
+            await UserDatasource.deleteAnonymousUser(anonymousUserId!, tx);
+          }
+          return await JwtService.createAuthToken(
+            user.id!,
+            EntityStatus.ACTIVE,
+            parsedData.deviceId,
+            parsedData.deviceName,
+            parsedData.platform,
+            tx
+          );
         }
-        // Delete anonymous user (if exists)
-        if (anonymousUserId !== null) {
-          await SessionDatasource.signOutAllSessions(anonymousUserId!, tx);
-          await UserDatasource.deleteAnonymousUser(anonymousUserId!, tx);
-        }
-        return await JwtService.createAuthToken(
-          user.id!,
-          EntityStatus.active,
-          parsedData.deviceId,
-          parsedData.deviceName,
-          parsedData.platform,
-          tx
-        );
-      });
+      );
 
       successResponseHandler({
         res: res,
@@ -361,21 +365,23 @@ export class AuthController {
     async (req, res, next) => {
       const parsedData = req.parsedData! as AnonymousAuthType;
 
-      const userData: UserAttributes = {
-        status: EntityStatus.anonymous,
+      const userData: Prisma.UserCreateInput = {
+        status: EntityStatus.ANONYMOUS,
       };
 
-      const authToken = await performTransaction<string>(async (tx) => {
-        const userId = await UserDatasource.createUser(userData, tx);
-        return await JwtService.createAuthToken(
-          userId,
-          EntityStatus.anonymous,
-          parsedData.deviceId,
-          parsedData.deviceName,
-          parsedData.platform,
-          tx
-        );
-      });
+      const authToken = await PrismaService.client.$transaction<string>(
+        async (tx) => {
+          const userId = await UserDatasource.createUser(userData, tx);
+          return await JwtService.createAuthToken(
+            userId,
+            EntityStatus.ANONYMOUS,
+            parsedData.deviceId,
+            parsedData.deviceName,
+            parsedData.platform,
+            tx
+          );
+        }
+      );
 
       successResponseHandler({
         res: res,

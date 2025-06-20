@@ -1,4 +1,4 @@
-import { EntityStatus } from "../constants/enums.js";
+import { EntityStatus } from "../generated/prisma/index.js";
 import { CreatorParams } from "./feed_post_dto.js";
 
 export interface FeedCommentParams {

@@ -1,11 +1,7 @@
-import { Transaction } from "sequelize";
-
-import {
-  SessionAttributes,
-  SessionModel,
-} from "../models/session/session_model.js";
 import { RedisService } from "../services/redis_service.js";
-import { CustomError } from "../middlewares/error_middlewares.js";
+import { PrismaService } from "../services/prisma_service.js";
+import { ActiveSessionInfo } from "../controllers/user_controller.js";
+import { Prisma } from "../generated/prisma/index.js";
 
 export class SessionDatasource {
   static readonly signOutSession = async (
@@ -14,59 +10,54 @@ export class SessionDatasource {
   ): Promise<void> => {
     await RedisService.client.del(`sessions:${sessionId}`);
 
-    const count = await SessionModel.destroy({
+    await PrismaService.client.session.delete({
       where: {
         id: sessionId,
         userId: userId,
       },
     });
-
-    if (count === 0) {
-      throw new CustomError(404, "Session not found!");
-    }
   };
 
   static readonly signOutAllSessions = async (
     userId: string,
-    transaction?: Transaction
+    transaction?: Prisma.TransactionClient
   ): Promise<void> => {
-    const sessions = await SessionModel.findAll({
+    const db = transaction ?? PrismaService.client;
+
+    const sessions = await db.session.findMany({
       where: { userId: userId },
-      attributes: ["id"],
+      select: { id: true },
     });
-    const sessionIds = sessions.map((session) => session.toJSON().id!);
+    const sessionIds = sessions.map((x) => x.id);
 
     for (const sessionId of sessionIds) {
       await RedisService.client.del(`sessions:${sessionId}`);
     }
 
-    const count = await SessionModel.destroy({
+    await db.session.deleteMany({
       where: { userId: userId },
-      transaction: transaction,
     });
-
-    if (count === 0) {
-      throw new CustomError(404, "Sessions not found!");
-    }
   };
 
   static readonly getActiveSessions = async (
     userId: string
-  ): Promise<SessionAttributes[]> => {
-    const sessions = await SessionModel.findAll({
+  ): Promise<ActiveSessionInfo[]> => {
+    return await PrismaService.client.session.findMany({
       where: { userId: userId },
-      attributes: ["id", "deviceName", "platform", "createdAt"],
-      order: [["createdAt", "DESC"]],
+      select: { id: true, deviceName: true, platform: true, createdAt: true },
+      orderBy: { createdAt: "desc" },
     });
-    return sessions.map((session) => session.toJSON());
   };
 
   static readonly getUserIdFromSessionId = async (
     sessionId: string
   ): Promise<string | null> => {
-    const result = await SessionModel.findByPk(sessionId, {
-      attributes: ["userId"],
+    const result = await PrismaService.client.session.findFirst({
+      where: { id: sessionId },
+      select: {
+        userId: true,
+      },
     });
-    return result?.toJSON().userId ?? null;
+    return result?.userId ?? null;
   };
 }
