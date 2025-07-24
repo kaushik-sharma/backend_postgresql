@@ -10,7 +10,7 @@
     "watch:prod": "ENV=PRODUCTION tsx watch --inspect=0.0.0.0:9229 src/app.ts",
     "prisma:generate": "npx prisma generate",
     "prisma:deploy:dev": "npx dotenv -e .env.migration.development -- prisma migrate dev",
-    "prisma:deploy:prod": "npx dotenv -e .env.migration.production -- prisma migrate deploy"
+    "prisma:deploy:prod": "npx dotenv -e .env.migration.production -- prisma migrate dev"
   },
   "author": "",
   "license": "ISC",
