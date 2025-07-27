@@ -1,11 +1,14 @@
 import { DateTime, Duration } from "luxon";
+import { $enum } from "ts-enum-util";
 
 import { ReportTargetType } from "../generated/prisma/index.js";
 import { AwsS3FileCategory } from "../services/aws_s3_service.js";
 import { Env } from "./enums.js";
 
 export class Constants {
-  static env: Env;
+  static get env(): Env {
+    return $enum(Env).asValueOrThrow(process.env.ENV!);
+  }
 
   // Auth Tokens
   static readonly authTokenExpiryDurationInSec = Duration.fromObject({

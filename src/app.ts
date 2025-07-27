@@ -3,7 +3,6 @@ import dotenv from "dotenv";
 import express from "express";
 import helmet from "helmet";
 import morgan from "morgan";
-import { $enum } from "ts-enum-util";
 
 import { PrismaService } from "./services/prisma_service.js";
 import { getAuthRouter } from "./routes/auth_routes.js";
@@ -16,14 +15,11 @@ import { getDefaultRateLimiter } from "./middlewares/rate_limiter_middlewares.js
 import { errorHandler } from "./middlewares/error_middlewares.js";
 import { SocketManager } from "./socket.js";
 import logger from "./utils/logger.js";
-import { Env } from "./constants/enums.js";
 import { Constants } from "./constants/values.js";
 import { RedisService } from "./services/redis_service.js";
 import { hitCounter } from "./middlewares/hit_counter_middleware.js";
 import { getHealthCheckRouter } from "./routes/health_check_routes.js";
 // import { KafkaService } from "./services/kafka_service.js";
-
-Constants.env = $enum(Env).asValueOrThrow(process.env.ENV!);
 
 dotenv.config({ path: `.env.${Constants.env.toLowerCase()}` });
 
