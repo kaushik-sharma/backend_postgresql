@@ -28,6 +28,7 @@ export class JwtService {
       algorithm: "PS512",
       expiresIn: Constants.authTokenExpiryDurationInSec,
       keyid: "ps512-v1",
+      audience: "https://valid-hip-catfish.ngrok-free.app",
     };
     return options;
   }
@@ -45,7 +46,7 @@ export class JwtService {
     try {
       const verifyOptions: jwt.VerifyOptions = {
         algorithms: [this.#authTokenSignOptions.algorithm!],
-        audience: this.#authTokenSignOptions.audience,
+        audience: this.#authTokenSignOptions.audience as string,
         issuer: this.#authTokenSignOptions.issuer,
       };
 
