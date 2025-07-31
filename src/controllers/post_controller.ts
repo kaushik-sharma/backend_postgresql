@@ -16,7 +16,7 @@ import { CustomError } from "../middlewares/error_middlewares.js";
 import { AwsS3Service, AwsS3FileCategory } from "../services/aws_s3_service.js";
 import { SocketManager } from "../socket.js";
 import { successResponseHandler } from "../helpers/success_handler.js";
-import { Constants } from "../constants/values.js";
+import { Constants } from "../constants/constants.js";
 import { FeedPostDto, FeedPostParams } from "../dtos/feed_post_dto.js";
 import { FeedCommentDto } from "../dtos/feed_comment_dto.js";
 import {

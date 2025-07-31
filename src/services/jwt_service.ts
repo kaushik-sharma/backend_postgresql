@@ -11,7 +11,7 @@ import {
 import { CustomError } from "../middlewares/error_middlewares.js";
 import { AuthMode } from "../constants/enums.js";
 import { RedisService } from "./redis_service.js";
-import { Constants } from "../constants/values.js";
+import { Constants } from "../constants/constants.js";
 import { AuthenticatedUser } from "../@types/custom.js";
 
 export class JwtService {

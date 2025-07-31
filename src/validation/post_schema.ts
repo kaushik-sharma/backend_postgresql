@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { Constants } from "../constants/values.js";
+import { Constants } from "../constants/constants.js";
 import { EmotionType } from "../generated/prisma/index.js";
 
 export const createPostSchema = z.object({

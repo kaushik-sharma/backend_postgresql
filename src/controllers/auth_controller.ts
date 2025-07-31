@@ -22,7 +22,7 @@ import { CustomError } from "../middlewares/error_middlewares.js";
 import { JwtService } from "../services/jwt_service.js";
 import { BcryptService } from "../services/bcrypt_service.js";
 import { MailService } from "../services/mail_service.js";
-import { Constants } from "../constants/values.js";
+import { Constants } from "../constants/constants.js";
 import { UserDatasource } from "../datasources/user_datasource.js";
 import { PrismaService } from "../services/prisma_service.js";
 import { SessionDatasource } from "../datasources/session_datasource.js";

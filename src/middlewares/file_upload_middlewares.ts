@@ -1,7 +1,7 @@
 import { RequestHandler } from "express";
 import multer from "multer";
 
-import { Constants } from "../constants/values.js";
+import { Constants } from "../constants/constants.js";
 import { CustomError } from "./error_middlewares.js";
 
 export const createSingleImageUploadMiddleware = ({

@@ -1,6 +1,6 @@
 import rateLimit from "express-rate-limit";
 
-import { Constants } from "../constants/values.js";
+import { Constants } from "../constants/constants.js";
 import { RedisService } from "../services/redis_service.js";
 
 export const getDefaultRateLimiter = () =>

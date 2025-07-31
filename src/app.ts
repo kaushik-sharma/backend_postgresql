@@ -15,7 +15,7 @@ import { getDefaultRateLimiter } from "./middlewares/rate_limiter_middlewares.js
 import { errorHandler } from "./middlewares/error_middlewares.js";
 import { SocketManager } from "./socket.js";
 import logger from "./utils/logger.js";
-import { Constants } from "./constants/values.js";
+import { Constants } from "./constants/constants.js";
 import { RedisService } from "./services/redis_service.js";
 import { hitCounter } from "./middlewares/hit_counter_middleware.js";
 import { getHealthCheckRouter } from "./routes/health_check_routes.js";
@@ -78,7 +78,7 @@ process.on("uncaughtException", (error, origin) => {
 
 const server = http.createServer(
   {
-    maxHeaderSize: 8192,
+    maxHeaderSize: 8192, // 8 kB
   },
   app
 );

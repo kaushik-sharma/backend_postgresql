@@ -8,7 +8,7 @@ import {
   SuccessResponseHandlerParams,
 } from "../helpers/success_handler.js";
 import { AwsS3Service, AwsS3FileCategory } from "../services/aws_s3_service.js";
-import { Constants } from "../constants/values.js";
+import { Constants } from "../constants/constants.js";
 import { validateData } from "../helpers/validation_helper.js";
 import {
   updateProfileSchema,

@@ -2,7 +2,7 @@ import { z } from "zod";
 import { DateTime } from "luxon";
 
 import { Gender, Platform } from "../generated/prisma/index.js";
-import { Constants } from "../constants/values.js";
+import { Constants } from "../constants/constants.js";
 import {
   COUNTRY_CODE_REGEX,
   DOB_DATE_REGEX,

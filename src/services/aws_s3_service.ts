@@ -15,7 +15,7 @@ import { v4 as uuidv4 } from "uuid";
 import mime from "mime";
 import { DateTime } from "luxon";
 
-import { Constants } from "../constants/values.js";
+import { Constants } from "../constants/constants.js";
 
 export enum AwsS3FileCategory {
   profiles = "profiles",

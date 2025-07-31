@@ -1,4 +1,4 @@
-import { Constants } from "../constants/values.js";
+import { Constants } from "../constants/constants.js";
 import { PrismaService } from "../services/prisma_service.js";
 import { FeedComment, FeedPost } from "../controllers/post_controller.js";
 import {
