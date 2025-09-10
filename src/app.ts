@@ -88,3 +88,13 @@ SocketManager.init(server);
 server.listen(3000, "0.0.0.0", () => {
   logger.info("Server running at http://localhost:3000/");
 });
+
+// npm update:
+
+// Minor versions:
+// npm update
+
+// Major versions:
+// npm install -g npm-check-updates
+// ncu -u
+// npm install
