@@ -2,27 +2,27 @@ import { RequestHandler } from "express";
 import { DateTime } from "luxon";
 
 import { Prisma, Session, User } from "../generated/prisma/index.js";
-import { asyncHandler } from "../helpers/async_handler.js";
+import { asyncHandler } from "../helpers/async-handler.js";
 import {
   successResponseHandler,
   SuccessResponseHandlerParams,
-} from "../helpers/success_handler.js";
-import { AwsS3Service, AwsS3FileCategory } from "../services/aws_s3_service.js";
+} from "../helpers/success-handler.js";
+import { AwsS3Service, AwsS3FileCategory } from "../services/aws-s3-service.js";
 import { Constants } from "../constants/constants.js";
-import { validateData } from "../helpers/validation_helper.js";
+import { validateData } from "../helpers/validation-helper.js";
 import {
   updateProfileSchema,
   UpdateProfileType,
-} from "../validation/profile_schema.js";
-import { CustomError } from "../middlewares/error_middlewares.js";
-import { UserDatasource } from "../datasources/user_datasource.js";
-import { ProfileDto, PublicProfileDto } from "../dtos/profile_dto.js";
+} from "../validation/profile-schema.js";
+import { CustomError } from "../middlewares/error-middlewares.js";
+import { UserDatasource } from "../datasources/user-datasource.js";
+import { ProfileDto, PublicProfileDto } from "../dtos/profile-dto.js";
 import {
   ActiveSessionParams,
   ActiveSessionsOverviewDto,
-} from "../dtos/session_dto.js";
-import { PrismaService } from "../services/prisma_service.js";
-import { SessionDatasource } from "../datasources/session_datasource.js";
+} from "../dtos/session-dto.js";
+import { PrismaService } from "../services/prisma-service.js";
+import { SessionDatasource } from "../datasources/session-datasource.js";
 
 export type ProfileUser = User & {
   followerCount: number;

@@ -1,6 +1,6 @@
-import { RedisService } from "../services/redis_service.js";
-import { PrismaService } from "../services/prisma_service.js";
-import { ActiveSessionInfo } from "../controllers/user_controller.js";
+import { RedisService } from "../services/redis-service.js";
+import { PrismaService } from "../services/prisma-service.js";
+import { ActiveSessionInfo } from "../controllers/user-controller.js";
 import { Prisma } from "../generated/prisma/index.js";
 
 export class SessionDatasource {

@@ -1,13 +1,13 @@
 import { RequestHandler } from "express";
 
-import { validateData } from "../helpers/validation_helper.js";
-import { reportSchema, ReportType } from "../validation/report_schema.js";
-import { asyncHandler } from "../helpers/async_handler.js";
-import { PostDatasource } from "../datasources/post_datasource.js";
-import { CustomError } from "../middlewares/error_middlewares.js";
-import { ModerationDatasource } from "../datasources/moderation_datasource.js";
-import { successResponseHandler } from "../helpers/success_handler.js";
-import { UserDatasource } from "../datasources/user_datasource.js";
+import { validateData } from "../helpers/validation-helper.js";
+import { reportSchema, ReportType } from "../validation/report-schema.js";
+import { asyncHandler } from "../helpers/async-handler.js";
+import { PostDatasource } from "../datasources/post-datasource.js";
+import { CustomError } from "../middlewares/error-middlewares.js";
+import { ModerationDatasource } from "../datasources/moderation-datasource.js";
+import { successResponseHandler } from "../helpers/success-handler.js";
+import { UserDatasource } from "../datasources/user-datasource.js";
 import {
   Prisma,
   ReportStatus,

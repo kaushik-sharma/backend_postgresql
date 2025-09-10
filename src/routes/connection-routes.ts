@@ -1,7 +1,7 @@
 import { Router } from "express";
 
-import { requireAuth } from "../middlewares/auth_middlewares.js";
-import { ConnectionController } from "../controllers/connection_controller.js";
+import { requireAuth } from "../middlewares/auth-middlewares.js";
+import { ConnectionController } from "../controllers/connection-controller.js";
 
 export const getConnectionRouter = (): Router => {
   const router = Router();

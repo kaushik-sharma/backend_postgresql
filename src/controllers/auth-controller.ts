@@ -2,7 +2,7 @@ import { RequestHandler } from "express";
 import { randomInt } from "crypto";
 
 import { EntityStatus, Prisma } from "../generated/prisma/index.js";
-import { asyncHandler } from "../helpers/async_handler.js";
+import { asyncHandler } from "../helpers/async-handler.js";
 import {
   anonymousAuthSchema,
   AnonymousAuthType,
@@ -14,18 +14,18 @@ import {
   SignInType,
   signUpSchema,
   SignUpType,
-} from "../validation/auth_schema.js";
-import { validateData } from "../helpers/validation_helper.js";
-import { successResponseHandler } from "../helpers/success_handler.js";
+} from "../validation/auth-schema.js";
+import { validateData } from "../helpers/validation-helper.js";
+import { successResponseHandler } from "../helpers/success-handler.js";
 import { AuthUserAction, Env } from "../constants/enums.js";
-import { CustomError } from "../middlewares/error_middlewares.js";
-import { JwtService } from "../services/jwt_service.js";
-import { BcryptService } from "../services/bcrypt_service.js";
-import { MailService } from "../services/mail_service.js";
+import { CustomError } from "../middlewares/error-middlewares.js";
+import { JwtService } from "../services/jwt-service.js";
+import { BcryptService } from "../services/bcrypt-service.js";
+import { MailService } from "../services/mail-service.js";
 import { Constants } from "../constants/constants.js";
-import { UserDatasource } from "../datasources/user_datasource.js";
-import { PrismaService } from "../services/prisma_service.js";
-import { SessionDatasource } from "../datasources/session_datasource.js";
+import { UserDatasource } from "../datasources/user-datasource.js";
+import { PrismaService } from "../services/prisma-service.js";
+import { SessionDatasource } from "../datasources/session-datasource.js";
 
 export class AuthController {
   static readonly #generateVerificationCode = (): string => {

@@ -1,6 +1,6 @@
 import { Router } from "express";
 
-import { successResponseHandler } from "../helpers/success_handler.js";
+import { successResponseHandler } from "../helpers/success-handler.js";
 
 export const getHealthCheckRouter = (): Router => {
   const router = Router();

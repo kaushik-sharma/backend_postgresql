@@ -1,8 +1,8 @@
 import { Router } from "express";
 
-import { createSingleImageUploadMiddleware } from "../middlewares/file_upload_middlewares.js";
-import { requireAuth } from "../middlewares/auth_middlewares.js";
-import { PostController } from "../controllers/post_controller.js";
+import { createSingleImageUploadMiddleware } from "../middlewares/file-upload-middlewares.js";
+import { requireAuth } from "../middlewares/auth-middlewares.js";
+import { PostController } from "../controllers/post-controller.js";
 import { AuthMode } from "../constants/enums.js";
 
 export const getPostRouter = (): Router => {

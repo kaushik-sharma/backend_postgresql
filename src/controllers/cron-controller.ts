@@ -1,14 +1,14 @@
 import { RequestHandler } from "express";
 
-import { ModerationDatasource } from "../datasources/moderation_datasource.js";
-import { PostDatasource } from "../datasources/post_datasource.js";
-import { SessionDatasource } from "../datasources/session_datasource.js";
-import { UserDatasource } from "../datasources/user_datasource.js";
+import { ModerationDatasource } from "../datasources/moderation-datasource.js";
+import { PostDatasource } from "../datasources/post-datasource.js";
+import { SessionDatasource } from "../datasources/session-datasource.js";
+import { UserDatasource } from "../datasources/user-datasource.js";
 import logger from "../utils/logger.js";
-import { UserController } from "./user_controller.js";
-import { asyncHandler } from "../helpers/async_handler.js";
+import { UserController } from "./user-controller.js";
+import { asyncHandler } from "../helpers/async-handler.js";
 import { ReportTargetType } from "../generated/prisma/index.js";
-import { PrismaService } from "../services/prisma_service.js";
+import { PrismaService } from "../services/prisma-service.js";
 
 export class CronController {
   static readonly deleteScheduledUsers: RequestHandler = asyncHandler(

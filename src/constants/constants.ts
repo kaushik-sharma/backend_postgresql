@@ -2,7 +2,7 @@ import { DateTime, Duration } from "luxon";
 import { $enum } from "ts-enum-util";
 
 import { ReportTargetType } from "../generated/prisma/index.js";
-import { AwsS3FileCategory } from "../services/aws_s3_service.js";
+import { AwsS3FileCategory } from "../services/aws-s3-service.js";
 import { Env } from "./enums.js";
 
 export class Constants {

@@ -1,5 +1,5 @@
-import { PrismaService } from "../services/prisma_service.js";
-import { ProfileUser } from "../controllers/user_controller.js";
+import { PrismaService } from "../services/prisma-service.js";
+import { ProfileUser } from "../controllers/user-controller.js";
 import { Prisma, User, EntityStatus } from "../generated/prisma/index.js";
 
 export class UserDatasource {

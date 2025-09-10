@@ -1,8 +1,8 @@
 import { RequestHandler } from "express";
 
-import { JwtService } from "../services/jwt_service.js";
+import { JwtService } from "../services/jwt-service.js";
 import { AuthMode } from "../constants/enums.js";
-import { CustomError } from "./error_middlewares.js";
+import { CustomError } from "./error-middlewares.js";
 
 export const requireAuth = ({
   authMode = AuthMode.AUTHENTICATED,

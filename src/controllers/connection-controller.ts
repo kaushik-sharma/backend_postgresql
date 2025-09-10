@@ -1,10 +1,10 @@
 import { RequestHandler } from "express";
 
-import { asyncHandler } from "../helpers/async_handler.js";
-import { ConnectionDatasource } from "../datasources/connection_datasource.js";
-import { CustomError } from "../middlewares/error_middlewares.js";
-import { successResponseHandler } from "../helpers/success_handler.js";
-import { UserDatasource } from "../datasources/user_datasource.js";
+import { asyncHandler } from "../helpers/async-handler.js";
+import { ConnectionDatasource } from "../datasources/connection-datasource.js";
+import { CustomError } from "../middlewares/error-middlewares.js";
+import { successResponseHandler } from "../helpers/success-handler.js";
+import { UserDatasource } from "../datasources/user-datasource.js";
 
 export class ConnectionController {
   static readonly followUser: RequestHandler = asyncHandler(

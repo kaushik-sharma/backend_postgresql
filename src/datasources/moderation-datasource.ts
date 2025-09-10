@@ -1,5 +1,5 @@
 import { Constants } from "../constants/constants.js";
-import { PrismaService } from "../services/prisma_service.js";
+import { PrismaService } from "../services/prisma-service.js";
 import {
   Prisma,
   ReportTargetType,

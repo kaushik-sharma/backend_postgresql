@@ -1,7 +1,7 @@
 import { Router } from "express";
 
-import { authenticateCronRequest } from "../middlewares/auth_middlewares.js";
-import { CronController } from "../controllers/cron_controller.js";
+import { authenticateCronRequest } from "../middlewares/auth-middlewares.js";
+import { CronController } from "../controllers/cron-controller.js";
 
 export const getCronRouter = (): Router => {
   const router = Router();

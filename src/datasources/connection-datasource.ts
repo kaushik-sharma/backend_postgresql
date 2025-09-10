@@ -1,5 +1,5 @@
-import { CustomError } from "../middlewares/error_middlewares.js";
-import { PrismaService } from "../services/prisma_service.js";
+import { CustomError } from "../middlewares/error-middlewares.js";
+import { PrismaService } from "../services/prisma-service.js";
 
 export class ConnectionDatasource {
   static readonly followUser = async (

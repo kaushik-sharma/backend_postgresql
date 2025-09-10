@@ -1,9 +1,9 @@
 import { Router } from "express";
 
-import { requireAuth } from "../middlewares/auth_middlewares.js";
-import { UserController } from "../controllers/user_controller.js";
-import { createSingleImageUploadMiddleware } from "../middlewares/file_upload_middlewares.js";
-import { PostController } from "../controllers/post_controller.js";
+import { requireAuth } from "../middlewares/auth-middlewares.js";
+import { UserController } from "../controllers/user-controller.js";
+import { createSingleImageUploadMiddleware } from "../middlewares/file-upload-middlewares.js";
+import { PostController } from "../controllers/post-controller.js";
 
 export const getUserRouter = (): Router => {
   const router = Router();

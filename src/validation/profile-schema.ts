@@ -5,7 +5,7 @@ import {
   firstNameValidation,
   genderValidation,
   lastNameValidation,
-} from "./auth_schema.js";
+} from "./auth-schema.js";
 
 export const updateProfileSchema = z
   .object({

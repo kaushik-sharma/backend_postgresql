@@ -1,7 +1,7 @@
 import { RequestHandler } from "express";
 import { arrayToTree } from "performant-array-to-tree";
 
-import { validateData } from "../helpers/validation_helper.js";
+import { validateData } from "../helpers/validation-helper.js";
 import {
   createCommentSchema,
   CreateCommentType,
@@ -9,16 +9,16 @@ import {
   CreatePostType,
   createReactionSchema,
   CreateReactionType,
-} from "../validation/post_schema.js";
-import { asyncHandler } from "../helpers/async_handler.js";
-import { PostDatasource } from "../datasources/post_datasource.js";
-import { CustomError } from "../middlewares/error_middlewares.js";
-import { AwsS3Service, AwsS3FileCategory } from "../services/aws_s3_service.js";
+} from "../validation/post-schema.js";
+import { asyncHandler } from "../helpers/async-handler.js";
+import { PostDatasource } from "../datasources/post-datasource.js";
+import { CustomError } from "../middlewares/error-middlewares.js";
+import { AwsS3Service, AwsS3FileCategory } from "../services/aws-s3-service.js";
 import { SocketManager } from "../socket.js";
-import { successResponseHandler } from "../helpers/success_handler.js";
+import { successResponseHandler } from "../helpers/success-handler.js";
 import { Constants } from "../constants/constants.js";
-import { FeedPostDto, FeedPostParams } from "../dtos/feed_post_dto.js";
-import { FeedCommentDto } from "../dtos/feed_comment_dto.js";
+import { FeedPostDto, FeedPostParams } from "../dtos/feed-post-dto.js";
+import { FeedCommentDto } from "../dtos/feed-comment-dto.js";
 import {
   Prisma,
   EntityStatus,
@@ -26,8 +26,8 @@ import {
   Comment,
   User,
 } from "../generated/prisma/index.js";
-import { UserPostDto } from "../dtos/user_post_dto.js";
-import { UserCommentDto } from "../dtos/user_comment_dto.js";
+import { UserPostDto } from "../dtos/user-post-dto.js";
+import { UserCommentDto } from "../dtos/user-comment-dto.js";
 // import { KafkaService } from "../services/kafka_service.js";
 
 type Creator = Pick<

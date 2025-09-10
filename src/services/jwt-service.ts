@@ -1,16 +1,16 @@
 import jwt from "jsonwebtoken";
 import fs from "fs";
 
-import { PrismaService } from "../services/prisma_service.js";
+import { PrismaService } from "./prisma-service.js";
 import {
   Prisma,
   EntityStatus,
   Platform,
   Session,
 } from "../generated/prisma/index.js";
-import { CustomError } from "../middlewares/error_middlewares.js";
+import { CustomError } from "../middlewares/error-middlewares.js";
 import { AuthMode } from "../constants/enums.js";
-import { RedisService } from "./redis_service.js";
+import { RedisService } from "./redis-service.js";
 import { Constants } from "../constants/constants.js";
 import { AuthenticatedUser } from "../@types/custom.js";
 

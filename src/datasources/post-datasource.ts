@@ -1,6 +1,6 @@
 import { Constants } from "../constants/constants.js";
-import { PrismaService } from "../services/prisma_service.js";
-import { FeedComment, FeedPost } from "../controllers/post_controller.js";
+import { PrismaService } from "../services/prisma-service.js";
+import { FeedComment, FeedPost } from "../controllers/post-controller.js";
 import {
   Prisma,
   EntityStatus,
