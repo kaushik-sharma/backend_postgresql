@@ -1,6 +1,6 @@
 import { ZodSchema } from "zod";
 
-import logger from "../utils/logger.js";
+import { logger } from "../utils/logger.js";
 import { CustomError } from "../middlewares/error-middlewares.js";
 
 export function validateData<T>(schema: ZodSchema<T>, data: any): T {

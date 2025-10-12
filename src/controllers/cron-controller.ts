@@ -4,7 +4,7 @@ import { ModerationDatasource } from "../datasources/moderation-datasource.js";
 import { PostDatasource } from "../datasources/post-datasource.js";
 import { SessionDatasource } from "../datasources/session-datasource.js";
 import { UserDatasource } from "../datasources/user-datasource.js";
-import logger from "../utils/logger.js";
+import { logger } from "../utils/logger.js";
 import { UserController } from "./user-controller.js";
 import { asyncHandler } from "../helpers/async-handler.js";
 import { ReportTargetType } from "../generated/prisma/index.js";

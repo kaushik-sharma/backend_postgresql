@@ -1,6 +1,6 @@
 import { ErrorRequestHandler } from "express";
 
-import logger from "../utils/logger.js";
+import { logger } from "../utils/logger.js";
 
 export class CustomError extends Error {
   readonly statusCode: number;

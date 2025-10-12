@@ -14,7 +14,7 @@ import { getCronRouter } from "./routes/cron-router.js";
 import { getDefaultRateLimiter } from "./middlewares/rate-limiter-middlewares.js";
 import { errorHandler } from "./middlewares/error-middlewares.js";
 import { SocketManager } from "./socket.js";
-import logger from "./utils/logger.js";
+import { logger } from "./utils/logger.js";
 import { Constants } from "./constants/constants.js";
 import { RedisService } from "./services/redis-service.js";
 import { hitCounter } from "./middlewares/hit-counter-middleware.js";
