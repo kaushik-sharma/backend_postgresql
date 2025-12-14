@@ -5,7 +5,7 @@ import { AuthMode } from "../constants/enums.js";
 import { CustomError } from "./error-middlewares.js";
 
 export const requireAuth = ({
-  authMode = AuthMode.AUTHENTICATED,
+  authMode = 'AUTHENTICATED',
 }: { authMode?: AuthMode } = {}): RequestHandler => {
   return async (req, res, next) => {
     const token = req.headers["authorization"] as string;
@@ -20,7 +20,7 @@ export const optionalAuth: RequestHandler = async (req, res, next) => {
   const token = req.headers["authorization"] as string | undefined;
   if (token !== undefined) {
     req.user = await JwtService.verifyAuthToken(token, {
-      authMode: AuthMode.ANONYMOUS_ONLY,
+      authMode: 'ANONYMOUS_ONLY',
     });
   }
   next();

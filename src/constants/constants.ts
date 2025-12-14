@@ -1,5 +1,4 @@
 import { DateTime, Duration } from "luxon";
-import { $enum } from "ts-enum-util";
 
 import { ReportTargetType } from "../generated/prisma/index.js";
 import { AwsS3FileCategory } from "../services/aws-s3-service.js";
@@ -7,7 +6,8 @@ import { Env } from "./enums.js";
 
 export class Constants {
   static get env(): Env {
-    return $enum(Env).asValueOrThrow(process.env.ENV!);
+    console.log(process.env.ENV! as Env);
+    return process.env.ENV! as Env;
   }
 
   // Auth Tokens
@@ -29,7 +29,7 @@ export class Constants {
   static readonly minAccountOpeningAge = 18;
   static readonly defaultProfileImagePath = `${AwsS3FileCategory.static}/default_profile_image.png`;
   static get userDeletionGracePeriodDuration(): Duration {
-    return this.env === Env.PRODUCTION
+    return this.env === 'PRODUCTION'
       ? Duration.fromObject({ days: 30 })
       : Duration.fromObject({ minutes: 5 });
   }
@@ -53,7 +53,7 @@ export class Constants {
   static readonly contentModerationThreshold = (
     targetType: ReportTargetType
   ): number => {
-    return this.env === Env.PRODUCTION
+    return this.env === 'PRODUCTION'
       ? this.#prodModerationThreshold[targetType]
       : this.#devModerationThreshold[targetType];
   };

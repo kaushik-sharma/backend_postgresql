@@ -3,7 +3,6 @@ import { Router } from "express";
 import { createSingleImageUploadMiddleware } from "../middlewares/file-upload-middlewares.js";
 import { requireAuth } from "../middlewares/auth-middlewares.js";
 import { PostController } from "../controllers/post-controller.js";
-import { AuthMode } from "../constants/enums.js";
 
 export const getPostRouter = (): Router => {
   const router = Router();
@@ -17,7 +16,7 @@ export const getPostRouter = (): Router => {
   );
   router.get(
     "/",
-    requireAuth({ authMode: AuthMode.ALLOW_ANONYMOUS }),
+    requireAuth({ authMode: 'ALLOW_ANONYMOUS' }),
     PostController.getPostsFeed
   );
 
@@ -29,7 +28,7 @@ export const getPostRouter = (): Router => {
   );
   router.get(
     "/:postId/comments",
-    requireAuth({ authMode: AuthMode.ALLOW_ANONYMOUS }),
+    requireAuth({ authMode: 'ALLOW_ANONYMOUS' }),
     PostController.getCommentsByPostId
   );
 

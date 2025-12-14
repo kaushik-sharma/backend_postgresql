@@ -127,7 +127,7 @@ export class JwtService {
     }
 
     switch (authMode) {
-      case AuthMode.AUTHENTICATED:
+      case 'AUTHENTICATED':
         if (userStatus === EntityStatus.ANONYMOUS) {
           throw new CustomError(
             401,
@@ -137,7 +137,7 @@ export class JwtService {
           throw new CustomError(403, "Access denied: User is not active.");
         }
         break;
-      case AuthMode.ALLOW_ANONYMOUS:
+      case 'ALLOW_ANONYMOUS':
         // Both anonymous and authenticated users are allowed.
         if (
           userStatus !== EntityStatus.ACTIVE &&
@@ -149,7 +149,7 @@ export class JwtService {
           );
         }
         break;
-      case AuthMode.ANONYMOUS_ONLY:
+      case 'ANONYMOUS_ONLY':
         if (userStatus !== EntityStatus.ANONYMOUS) {
           throw new CustomError(
             401,

@@ -1,17 +1,9 @@
-export enum Env {
-  DEVELOPMENT = "DEVELOPMENT",
-  PRODUCTION = "PRODUCTION",
-}
+export type Env = "DEVELOPMENT" | "PRODUCTION";
 
-export enum AuthUserAction {
-  SIGN_IN = "SIGN_IN",
-  SIGN_UP = "SIGN_UP",
-  BANNED = "BANNED",
-  REQUESTED_DELETION = "REQUESTED_DELETION",
-}
+export type AuthUserAction =
+  | "SIGN_IN"
+  | "SIGN_UP"
+  | "BANNED"
+  | "REQUESTED_DELETION";
 
-export enum AuthMode {
-  AUTHENTICATED = "AUTHENTICATED",
-  ANONYMOUS_ONLY = "ANONYMOUS_ONLY",
-  ALLOW_ANONYMOUS = "ALLOW_ANONYMOUS",
-}
+export type AuthMode = "AUTHENTICATED" | "ANONYMOUS_ONLY" | "ALLOW_ANONYMOUS";

@@ -2,7 +2,6 @@ import { Router } from "express";
 
 import { AuthController } from "../controllers/auth-controller.js";
 import { requireAuth, optionalAuth } from "../middlewares/auth-middlewares.js";
-import { AuthMode } from "../constants/enums.js";
 import { getRequestEmailCodeRateLimiter } from "../middlewares/rate-limiter-middlewares.js";
 
 export const getAuthRouter = (): Router => {
@@ -38,7 +37,7 @@ export const getAuthRouter = (): Router => {
   );
   router.post(
     "/token/refresh",
-    requireAuth({ authMode: AuthMode.ALLOW_ANONYMOUS }),
+    requireAuth({ authMode: 'ALLOW_ANONYMOUS' }),
     AuthController.refreshAuthToken
   );
 

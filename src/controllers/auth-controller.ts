@@ -37,7 +37,7 @@ export class AuthController {
   };
 
   static readonly #requiresEmailVerification = (email: string): boolean => {
-    if (Constants.env === Env.PRODUCTION) return true;
+    if (Constants.env === 'PRODUCTION') return true;
 
     const domain = email.split("@")[1];
     return Constants.devEmailVerificationWhitelist.includes(domain);
@@ -120,7 +120,7 @@ export class AuthController {
         return successResponseHandler({
           res: res,
           status: 200,
-          data: { userAction: AuthUserAction.SIGN_UP },
+          data: { userAction: 'SIGN_UP' },
         });
       }
 
@@ -129,19 +129,19 @@ export class AuthController {
           return successResponseHandler({
             res: res,
             status: 200,
-            data: { userAction: AuthUserAction.SIGN_IN },
+            data: { userAction: 'SIGN_IN' },
           });
         case EntityStatus.BANNED:
           return successResponseHandler({
             res: res,
             status: 200,
-            data: { userAction: AuthUserAction.BANNED },
+            data: { userAction: 'BANNED' },
           });
         case EntityStatus.REQUESTED_DELETION:
           return successResponseHandler({
             res: res,
             status: 200,
-            data: { userAction: AuthUserAction.REQUESTED_DELETION },
+            data: { userAction: 'REQUESTED_DELETION' },
           });
       }
     }

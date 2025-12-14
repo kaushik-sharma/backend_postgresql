@@ -39,7 +39,6 @@
     "pg-native": "^3.5.2",
     "rate-limit-redis": "^4.2.2",
     "socket.io": "^4.8.1",
-    "ts-enum-util": "^4.1.0",
     "uuid": "^13.0.0",
     "winston": "^3.17.0",
     "zod": "^4.1.5"

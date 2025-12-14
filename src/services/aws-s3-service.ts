@@ -17,11 +17,14 @@ import { DateTime } from "luxon";
 
 import { Constants } from "../constants/constants.js";
 
-export enum AwsS3FileCategory {
-  profiles = "profiles",
-  posts = "posts",
-  static = "static",
-}
+export const AwsS3FileCategory = {
+  profiles: "profiles",
+  posts: "posts",
+  static: "static",
+} as const;
+
+export type AwsS3FileCategory =
+  (typeof AwsS3FileCategory)[keyof typeof AwsS3FileCategory];
 
 export class AwsS3Service {
   static get #s3Client(): S3Client {
